@@ -1,0 +1,6 @@
+{
+  "name": "Nexus AI Browser",
+  "description": "Intelligent web research and productivity browser with multi-tab browsing, live web scraping proxy, AI sidebar assistant, webpage summarization, deep research mode, PDF intelligence, and product comparison.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

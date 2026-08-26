@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import { StickyNote, Search, Trash2, Copy, Check, ExternalLink, Download, Sparkles, Plus } from 'lucide-react';
+import Markdown from 'react-markdown';
+import { AINote } from '../../types';
+
+interface AINotesViewProps {
+  notes: AINote[];
+  onDeleteNote: (id: string) => void;
+  onNavigateUrl?: (url: string) => void;
+}
+
+export const AINotesView: React.FC<AINotesViewProps> = ({
+  notes,
+  onDeleteNote,
+  onNavigateUrl,
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedNote, setSelectedNote] = useState<AINote | null>(notes[0] || null);
+  const [copied, setCopied] = useState(false);
+
+  const filteredNotes = notes.filter(
+    (n) =>
+      n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      n.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleCopy = () => {
+    if (selectedNote) {
+      navigator.clipboard.writeText(selectedNote.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExportAll = () => {
+    const markdownBundle = notes
+      .map((n) => `# ${n.title}\n*Saved: ${n.createdAt} | Source: ${n.sourceUrl || 'AI Query'}*\n\n${n.content}\n\n---\n`)
+      .join('\n');
+    const blob = new Blob([markdownBundle], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nexus-ai-knowledge-notes.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="h-full flex flex-col md:flex-row bg-slate-950 text-slate-100 overflow-hidden select-text">
+      {/* Left List of Notes */}
+      <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-900/60">
+        <div className="p-4 border-b border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center justify-center">
+                <StickyNote className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm font-bold text-white">AI Knowledge Notes</h2>
+            </div>
+
+            <button
+              onClick={handleExportAll}
+              disabled={notes.length === 0}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              title="Export all notes to Markdown"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search notes..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-yellow-500"
+            />
+          </div>
+        </div>
+
+        {/* Notes list */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+          {filteredNotes.map((note) => (
+            <div
+              key={note.id}
+              onClick={() => setSelectedNote(note)}
+              className={`p-3 rounded-xl cursor-pointer transition-all border text-xs ${
+                selectedNote?.id === note.id
+                  ? 'bg-slate-800 border-yellow-500/50 text-white shadow-md'
+                  : 'bg-slate-900/40 hover:bg-slate-800/60 border-slate-800/80 text-slate-300'
+              }`}
+            >
+              <div className="font-semibold text-xs truncate text-slate-200 mb-1">{note.title}</div>
+              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                {note.content.replace(/[#*`]/g, '')}
+              </p>
+              <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2">
+                <span>{note.createdAt}</span>
+                {note.tags && note.tags[0] && (
+                  <span className="px-1.5 py-0.2 rounded bg-slate-800 text-yellow-400/80">
+                    #{note.tags[0]}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {filteredNotes.length === 0 && (
+            <div className="py-12 text-center text-slate-500 text-xs p-4">
+              No notes found. Click "Save to Notes" on any AI summary or research result!
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Note Detail Viewer */}
+      <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+        {selectedNote ? (
+          <>
+            {/* Note Top Bar */}
+            <div className="h-12 px-6 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-3 truncate">
+                <span className="font-bold text-sm text-slate-100 truncate max-w-md">
+                  {selectedNote.title}
+                </span>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  ({selectedNote.createdAt})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedNote.sourceUrl && onNavigateUrl && (
+                  <button
+                    onClick={() => onNavigateUrl(selectedNote.sourceUrl!)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-300 text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Source</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleCopy}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                  title="Copy Note"
+                >
+                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    onDeleteNote(selectedNote.id);
+                    setSelectedNote(null);
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-400 transition-colors"
+                  title="Delete Note"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Note Content Body */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-4">
+              <div className="markdown-body prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed">
+                <Markdown>{selectedNote.content}</Markdown>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-3">
+            <StickyNote className="w-12 h-12 text-slate-600" />
+            <h3 className="text-base font-semibold text-slate-300">Select or Create a Note</h3>
+            <p className="text-xs text-slate-500 max-w-sm">
+              Use Nexus AI to summarize articles, research complex topics, or save study guides directly to this knowledge base.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

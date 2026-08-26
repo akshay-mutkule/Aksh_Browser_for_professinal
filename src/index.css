@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+    background-color: #0f172a;
+    user-select: none;
+    overflow: hidden;
+  }
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.font-serif-reading {
+  font-family: 'Newsreader', Georgia, serif;
+}
+
+/* Custom Scrollbar for Browser UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Markdown typography styling */
+.markdown-body {
+  font-size: 0.925rem;
+  line-height: 1.65;
+}
+.markdown-body h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.markdown-body h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+.markdown-body h3 {
+  font-size: 1.025rem;
+  font-weight: 600;
+  margin-top: 0.65rem;
+  margin-bottom: 0.25rem;
+}
+.markdown-body p {
+  margin-bottom: 0.75rem;
+}
+.markdown-body ul, .markdown-body ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.markdown-body ul {
+  list-style-type: disc;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+}
+.markdown-body li {
+  margin-bottom: 0.25rem;
+}
+.markdown-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.825em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  background-color: rgba(100, 116, 139, 0.15);
+}
+.markdown-body pre {
+  background-color: #090d16;
+  color: #e2e8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+.markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+.markdown-body blockquote {
+  border-left: 3px solid #3b82f6;
+  padding-left: 0.75rem;
+  font-style: italic;
+  margin-bottom: 0.75rem;
+  opacity: 0.9;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+.markdown-body th, .markdown-body td {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+.markdown-body th {
+  background-color: rgba(148, 163, 184, 0.1);
+  font-weight: 600;
+}
