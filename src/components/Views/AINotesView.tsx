@@ -40,7 +40,7 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'nexus-ai-knowledge-notes.md';
+    a.download = 'aksh-ai-knowledge-notes.md';
     a.click();
     URL.revokeObjectURL(url);
   };

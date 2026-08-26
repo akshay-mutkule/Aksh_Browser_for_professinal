@@ -87,10 +87,10 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       // Dynamic suggestions
       const list = [
         { title: `Search Google for "${val}"`, url: `https://www.google.com/search?q=${encodeURIComponent(val)}`, type: 'search' },
-        { title: `AI Research: "${val}"`, url: `nexus://research?q=${encodeURIComponent(val)}`, type: 'ai' },
+        { title: `AI Research: "${val}"`, url: `aksh://research?q=${encodeURIComponent(val)}`, type: 'ai' },
         { title: 'Top 5 Python Courses 2026', url: 'https://learn.python.org/courses/2026-guide', type: 'site' },
         { title: 'MacBook Pro vs XPS 15 vs ThinkPad', url: 'https://tech-radar.io/laptops/flagship-comparison-2026', type: 'site' },
-        { title: 'Transformer Architecture PDF', url: 'nexus://pdf/transformer-paper', type: 'pdf' },
+        { title: 'Transformer Architecture PDF', url: 'aksh://pdf/transformer-paper', type: 'pdf' },
         { title: 'Artificial Intelligence Wikipedia', url: 'https://en.wikipedia.org/wiki/Artificial_intelligence', type: 'site' },
       ].filter((s) => s.title.toLowerCase().includes(val.toLowerCase()) || s.url.toLowerCase().includes(val.toLowerCase()));
       setSuggestions(list.slice(0, 5));
@@ -104,7 +104,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     if (!urlInput.trim()) return;
 
     let target = urlInput.trim();
-    if (target.startsWith('nexus://')) {
+    if (target.startsWith('aksh://') || target.startsWith('nexus://')) {
       onNavigate(target);
     } else if (!target.includes('.') && !target.startsWith('http://') && !target.startsWith('https://')) {
       // Treat as search query
@@ -128,7 +128,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     setSuggestions([]);
   };
 
-  const isSecure = activeTab?.url.startsWith('https://') || activeTab?.url.startsWith('nexus://');
+  const isSecure = activeTab?.url.startsWith('https://') || activeTab?.url.startsWith('aksh://') || activeTab?.url.startsWith('nexus://');
 
   return (
     <div className="h-11 bg-slate-900 border-b border-slate-800 px-3 flex items-center gap-2 relative z-10 select-none">
@@ -182,8 +182,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
           >
             {/* Security Indicator */}
             <div className="flex items-center text-slate-400 shrink-0">
-              {activeTab?.url.startsWith('nexus://') ? (
-                <span title="Nexus Internal Protected View">
+              {activeTab?.url.startsWith('aksh://') || activeTab?.url.startsWith('nexus://') ? (
+                <span title="Aksh Internal Protected View">
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
                 </span>
               ) : isSecure ? (
@@ -234,7 +234,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                   type="button"
                   onClick={onQuickSummarize}
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 transition-all font-sans text-[11px]"
-                  title="✨ Summarize Page with Nexus AI"
+                  title="✨ Summarize Page with Aksh AI"
                 >
                   <Sparkles className="w-3 h-3 text-blue-400 animate-pulse" />
                   <span className="hidden sm:inline">Summarize</span>
@@ -295,7 +295,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         <button
           onClick={() => setShowMenu(!showMenu)}
           className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors"
-          title="Nexus Browser Menu"
+          title="Aksh Browser Menu"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
@@ -303,7 +303,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         {showMenu && (
           <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
             <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-              <span>Nexus AI Features</span>
+              <span>Aksh AI Features</span>
               <Sparkles className="w-3 h-3 text-indigo-400" />
             </div>
 

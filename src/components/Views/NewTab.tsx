@@ -38,7 +38,7 @@ export const NewTab: React.FC<NewTabProps> = ({
     if (!searchInput.trim()) return;
 
     const q = searchInput.trim();
-    if (q.startsWith('http://') || q.startsWith('https://') || q.startsWith('nexus://')) {
+    if (q.startsWith('http://') || q.startsWith('https://') || q.startsWith('aksh://') || q.startsWith('nexus://')) {
       onNavigate(q);
     } else {
       onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
@@ -73,7 +73,7 @@ export const NewTab: React.FC<NewTabProps> = ({
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center gap-3 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-semibold text-slate-300 shadow-inner mb-2">
             <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
-            <span>Nexus AI Browser • Chromium Intelligent Engine</span>
+            <span>Aksh AI Browser • Chromium Intelligent Engine</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
             Intelligent Web Research
@@ -93,7 +93,7 @@ export const NewTab: React.FC<NewTabProps> = ({
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search the web with Google or ask Nexus AI to research..."
+              placeholder="Search the web with Google or ask Aksh AI to research..."
               className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm focus:outline-none py-2"
             />
             <button

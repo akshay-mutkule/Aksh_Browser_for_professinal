@@ -40,7 +40,7 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(bookmarks, null, 2));
     const a = document.createElement('a');
     a.href = dataStr;
-    a.download = 'nexus-bookmarks.json';
+    a.download = 'aksh-bookmarks.json';
     a.click();
   };
 

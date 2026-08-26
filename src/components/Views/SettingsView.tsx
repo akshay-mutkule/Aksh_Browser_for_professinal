@@ -23,7 +23,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Browser & AI Settings</h1>
-            <p className="text-xs text-slate-400">Configure Nexus AI assistant, default engine, shortcuts, and privacy</p>
+            <p className="text-xs text-slate-400">Configure Aksh AI assistant, default engine, shortcuts, and privacy</p>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-slate-300">Toggle Nexus AI Co-Pilot</span>
+              <span className="text-slate-300">Toggle Aksh AI Co-Pilot</span>
               <kbd className="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-[11px] text-amber-300">
                 Ctrl + K
               </kbd>

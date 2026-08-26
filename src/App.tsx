@@ -24,9 +24,9 @@ export function App() {
     {
       id: 'tab-1',
       title: 'New Tab',
-      url: 'nexus://newtab',
+      url: 'aksh://newtab',
       contentType: 'newtab',
-      historyStack: ['nexus://newtab'],
+      historyStack: ['aksh://newtab'],
       historyIndex: 0,
       canGoBack: false,
       canGoForward: false,
@@ -51,7 +51,7 @@ export function App() {
     {
       id: 'tab-3',
       title: 'Attention Is All You Need (Transformer Paper)',
-      url: 'nexus://pdf/transformer-paper',
+      url: 'aksh://pdf/transformer-paper',
       contentType: 'pdf',
       pdfData: {
         filename: SAMPLE_PDFS[0].filename,
@@ -59,7 +59,7 @@ export function App() {
         pageCount: SAMPLE_PDFS[0].pageCount,
         currentPage: 1,
       },
-      historyStack: ['nexus://pdf/transformer-paper'],
+      historyStack: ['aksh://pdf/transformer-paper'],
       historyIndex: 0,
       canGoBack: false,
       canGoForward: false,
@@ -110,17 +110,20 @@ export function App() {
       let extractedText: string | undefined = undefined;
       let pdfData: any = undefined;
 
+      // Normalize protocol alias
+      const normalizedUrl = targetUrl.replace(/^nexus:\/\//, 'aksh://');
+
       // Handle internal scheme routes
-      if (targetUrl === 'nexus://newtab') {
+      if (normalizedUrl === 'aksh://newtab') {
         resolvedType = 'newtab';
         title = 'New Tab';
-      } else if (targetUrl.startsWith('nexus://research')) {
+      } else if (normalizedUrl.startsWith('aksh://research')) {
         resolvedType = 'research';
         title = 'AI Deep Research';
-      } else if (targetUrl.startsWith('nexus://comparison')) {
+      } else if (normalizedUrl.startsWith('aksh://comparison')) {
         resolvedType = 'comparison';
         title = 'AI Product Comparison';
-      } else if (targetUrl.startsWith('nexus://pdf')) {
+      } else if (normalizedUrl.startsWith('aksh://pdf')) {
         resolvedType = 'pdf';
         title = 'PDF Document Reader';
         pdfData = {
@@ -129,24 +132,24 @@ export function App() {
           pageCount: SAMPLE_PDFS[0].pageCount,
           currentPage: 1,
         };
-      } else if (targetUrl === 'nexus://history') {
+      } else if (normalizedUrl === 'aksh://history') {
         resolvedType = 'history';
         title = 'Browsing History';
-      } else if (targetUrl === 'nexus://bookmarks') {
+      } else if (normalizedUrl === 'aksh://bookmarks') {
         resolvedType = 'bookmarks';
         title = 'Bookmarks Manager';
-      } else if (targetUrl === 'nexus://downloads') {
+      } else if (normalizedUrl === 'aksh://downloads') {
         resolvedType = 'downloads';
         title = 'Download Manager';
-      } else if (targetUrl === 'nexus://settings') {
+      } else if (normalizedUrl === 'aksh://settings') {
         resolvedType = 'settings';
         title = 'Settings';
-      } else if (targetUrl === 'nexus://notes') {
+      } else if (normalizedUrl === 'aksh://notes') {
         resolvedType = 'notes';
         title = 'AI Notes';
-      } else if (SAMPLE_WEBSITES[targetUrl]) {
+      } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
-        const site = SAMPLE_WEBSITES[targetUrl];
+        const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
         resolvedType = 'web';
         title = site.title;
         extractedText = site.extractedText;
@@ -217,14 +220,15 @@ export function App() {
     []
   );
 
-  const handleNewTab = (initialUrl: string = 'nexus://newtab') => {
+  const handleNewTab = (initialUrl: string = 'aksh://newtab') => {
     const newId = 'tab-' + Date.now();
+    const cleanUrl = initialUrl.replace(/^nexus:\/\//, 'aksh://');
     const newTabObj: Tab = {
       id: newId,
       title: 'New Tab',
-      url: initialUrl,
-      contentType: initialUrl.startsWith('nexus://') ? (initialUrl.replace('nexus://', '') as PageContentType) : 'newtab',
-      historyStack: [initialUrl],
+      url: cleanUrl,
+      contentType: cleanUrl.startsWith('aksh://') ? (cleanUrl.replace('aksh://', '') as PageContentType) : 'newtab',
+      historyStack: [cleanUrl],
       historyIndex: 0,
       canGoBack: false,
       canGoForward: false,
@@ -233,8 +237,8 @@ export function App() {
     };
     setTabs((prev) => [...prev, newTabObj]);
     setActiveTabId(newId);
-    if (initialUrl !== 'nexus://newtab') {
-      navigateTab(newId, initialUrl);
+    if (cleanUrl !== 'aksh://newtab') {
+      navigateTab(newId, cleanUrl);
     }
   };
 
@@ -244,9 +248,9 @@ export function App() {
       const resetTab: Tab = {
         id: 'tab-' + Date.now(),
         title: 'New Tab',
-        url: 'nexus://newtab',
+        url: 'aksh://newtab',
         contentType: 'newtab',
-        historyStack: ['nexus://newtab'],
+        historyStack: ['aksh://newtab'],
         historyIndex: 0,
         canGoBack: false,
         canGoForward: false,
@@ -367,13 +371,13 @@ export function App() {
     const sampleFiles = [
       { name: 'transformer_attention_paper.pdf', size: '2.4 MB' },
       { name: 'python_mastery_2026_dataset.csv', size: '14.8 MB' },
-      { name: 'nexus_browser_source_bundle.zip', size: '48.2 MB' },
+      { name: 'aksh_browser_source_bundle.zip', size: '48.2 MB' },
     ];
     const picked = sampleFiles[Math.floor(Math.random() * sampleFiles.length)];
     const newDl: DownloadItem = {
       id: String(Date.now()),
       filename: picked.name,
-      url: activeTab?.url || 'https://downloads.nexus-browser.org',
+      url: activeTab?.url || 'https://downloads.aksh-browser.org',
       size: picked.size,
       progress: 100,
       status: 'completed',
@@ -390,9 +394,9 @@ export function App() {
       {
         id: 'tab-1',
         title: 'New Tab',
-        url: 'nexus://newtab',
+        url: 'aksh://newtab',
         contentType: 'newtab',
-        historyStack: ['nexus://newtab'],
+        historyStack: ['aksh://newtab'],
         historyIndex: 0,
         canGoBack: false,
         canGoForward: false,
@@ -429,12 +433,12 @@ export function App() {
       // Open History: Ctrl+H
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
         e.preventDefault();
-        navigateTab(activeTabId, 'nexus://history');
+        navigateTab(activeTabId, 'aksh://history');
       }
       // Open Bookmarks: Ctrl+B
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        navigateTab(activeTabId, 'nexus://bookmarks');
+        navigateTab(activeTabId, 'aksh://bookmarks');
       }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
@@ -457,7 +461,7 @@ export function App() {
         activeTabId={activeTabId}
         onSelectTab={setActiveTabId}
         onCloseTab={handleCloseTab}
-        onNewTab={() => handleNewTab('nexus://newtab')}
+        onNewTab={() => handleNewTab('aksh://newtab')}
         onPinTab={handlePinTab}
         isAiSidebarOpen={isAiSidebarOpen}
         onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
@@ -470,20 +474,20 @@ export function App() {
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}
         onReload={handleReload}
-        onGoHome={() => navigateTab(activeTabId, 'nexus://newtab')}
+        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
         isBookmarked={isCurrentBookmarked}
         onToggleBookmark={handleToggleBookmark}
         onToggleReaderMode={handleToggleReaderMode}
         onQuickSummarize={() => setIsAiSidebarOpen(true)}
         onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
-        onOpenInternalView={(view) => navigateTab(activeTabId, `nexus://${view}`)}
+        onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
       />
 
       {/* 3. Bookmarks Quick Bar */}
       <BookmarksBar
         bookmarks={bookmarks}
         onNavigate={(url) => navigateTab(activeTabId, url)}
-        onOpenBookmarksManager={() => navigateTab(activeTabId, 'nexus://bookmarks')}
+        onOpenBookmarksManager={() => navigateTab(activeTabId, 'aksh://bookmarks')}
       />
 
       {/* 4. Main Body: Active Tab Viewport + AI Co-Pilot Sidebar */}
@@ -497,10 +501,10 @@ export function App() {
                   onNavigate={(url) => navigateTab(activeTab.id, url)}
                   bookmarks={bookmarks}
                   onOpenResearch={(q) => {
-                    navigateTab(activeTab.id, `nexus://research?q=${encodeURIComponent(q)}`);
+                    navigateTab(activeTab.id, `aksh://research?q=${encodeURIComponent(q)}`);
                   }}
                   onOpenPdf={(pdfId) => {
-                    navigateTab(activeTab.id, `nexus://pdf/${pdfId}`);
+                    navigateTab(activeTab.id, `aksh://pdf/${pdfId}`);
                   }}
                 />
               )}
@@ -608,10 +612,10 @@ export function App() {
           activeTab={activeTab}
           onSaveAsNote={handleSaveAsNote}
           onOpenResearchMode={(query) => {
-            handleNewTab(`nexus://research${query ? `?q=${encodeURIComponent(query)}` : ''}`);
+            handleNewTab(`aksh://research${query ? `?q=${encodeURIComponent(query)}` : ''}`);
           }}
           onOpenComparisonMode={() => {
-            handleNewTab('nexus://comparison');
+            handleNewTab('aksh://comparison');
           }}
         />
       </div>

@@ -13,7 +13,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: 'Ctrl + K', desc: 'Toggle Nexus AI Co-Pilot sidebar' },
+    { key: 'Ctrl + K', desc: 'Toggle Aksh AI Co-Pilot sidebar' },
     { key: 'Ctrl + T', desc: 'Open a new browser tab' },
     { key: 'Ctrl + W', desc: 'Close currently active tab' },
     { key: 'Ctrl + R', desc: 'Reload current web page' },
@@ -31,7 +31,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
             <Keyboard className="w-4 h-4 text-amber-400" />
-            <span>Nexus Browser Keyboard Shortcuts</span>
+            <span>Aksh Browser Keyboard Shortcuts</span>
           </div>
           <button
             onClick={onClose}

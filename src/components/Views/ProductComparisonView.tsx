@@ -98,7 +98,7 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-semibold shadow-inner">
             <Scale className="w-4 h-4 text-pink-400" />
-            <span>Nexus AI Product Intelligence</span>
+            <span>Aksh AI Product Intelligence</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
             AI Product Comparison & Decision Matrix

@@ -22,11 +22,11 @@ export const BookmarksBar: React.FC<BookmarksBarProps> = ({
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-slate-800 hover:text-slate-100 transition-colors shrink-0 max-w-[170px]"
           title={b.title + ' (' + b.url + ')'}
         >
-          {b.url.startsWith('nexus://research') ? (
+          {b.url.startsWith('aksh://research') || b.url.startsWith('nexus://research') ? (
             <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
-          ) : b.url.startsWith('nexus://pdf') ? (
+          ) : b.url.startsWith('aksh://pdf') || b.url.startsWith('nexus://pdf') ? (
             <FileText className="w-3 h-3 text-rose-400 shrink-0" />
-          ) : b.url.startsWith('nexus://comparison') ? (
+          ) : b.url.startsWith('aksh://comparison') || b.url.startsWith('nexus://comparison') ? (
             <Scale className="w-3 h-3 text-pink-400 shrink-0" />
           ) : b.favicon ? (
             <img

@@ -36,7 +36,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
   const hasKey = !!process.env.GEMINI_API_KEY;
   res.json({
     status: "ok",
-    app: "Nexus AI Browser Engine",
+    app: "Aksh AI Browser Engine",
     aiEnabled: hasKey,
     timestamp: new Date().toISOString(),
   });
@@ -63,7 +63,7 @@ app.post("/api/scrape-proxy", async (req: Request, res: Response) => {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 NexusAI/1.0",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 AkshAI/1.0",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       },
@@ -153,7 +153,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     if (!ai) {
       res.json({
         reply:
-          "Nexus AI assistant is in local preview mode. Please verify that GEMINI_API_KEY is set in your environment for live cloud generation.\n\nHere is a simulated response based on your query:\n" +
+          "Aksh AI assistant is in local preview mode. Please verify that GEMINI_API_KEY is set in your environment for live cloud generation.\n\nHere is a simulated response based on your query:\n" +
           `You asked: "${message}"\n` +
           (webpageContext ? `Current Webpage: ${webpageContext.title || webpageContext.url}` : ""),
         sources: [],
@@ -161,7 +161,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
       return;
     }
 
-    let systemInstruction = `You are Nexus AI, an intelligent browser assistant embedded directly into Nexus AI Browser.
+    let systemInstruction = `You are Aksh AI, an intelligent browser assistant embedded directly into Aksh AI Browser.
 You help the user navigate, research, synthesize, and answer questions about the current webpage, document, or general topics.
 Be clear, concise, accurate, structured (using markdown with bullet points, bold headers, and code blocks where helpful), and helpful.
 When webpage context is provided, ground your answers directly in the page's facts and content, citing relevant sections.`;
@@ -188,9 +188,9 @@ ${webpageContext.textContent.slice(0, 10000)}
     let promptContents = "";
     if (conversationHistory.length > 0) {
       const historyStr = conversationHistory
-        .map((h: { role: string; content: string }) => `${h.role === "assistant" ? "Nexus AI" : "User"}: ${h.content}`)
+        .map((h: { role: string; content: string }) => `${h.role === "assistant" ? "Aksh AI" : "User"}: ${h.content}`)
         .join("\n\n");
-      promptContents = `Previous Conversation:\n${historyStr}\n\n${contextPrompt}User: ${message}\nNexus AI:`;
+      promptContents = `Previous Conversation:\n${historyStr}\n\n${contextPrompt}User: ${message}\nAksh AI:`;
     } else {
       promptContents = `${contextPrompt}User: ${message}`;
     }
@@ -227,7 +227,7 @@ app.post("/api/summarize", async (req: Request, res: Response) => {
     const ai = getGeminiClient();
     if (!ai) {
       res.json({
-        summary: `### Summary of ${title || "Webpage"}\n\n- **Main Topic**: Webpage content analysis\n- **Key Highlight**: Fast browsing with Nexus AI\n- **Summary**: ${content.slice(0, 250)}...\n\n*Note: Configure GEMINI_API_KEY to activate cloud AI summarization.*`,
+        summary: `### Summary of ${title || "Webpage"}\n\n- **Main Topic**: Webpage content analysis\n- **Key Highlight**: Fast browsing with Aksh AI\n- **Summary**: ${content.slice(0, 250)}...\n\n*Note: Configure GEMINI_API_KEY to activate cloud AI summarization.*`,
         mode,
       });
       return;
@@ -260,7 +260,7 @@ ${content.slice(0, 12000)}
       model: "gemini-3.7-flash",
       contents: prompt,
       config: {
-        systemInstruction: "You are a world-class research analyst for the Nexus AI Browser. Produce clear, beautifully structured markdown summaries with distinct headings, bullet points, and bold key terms.",
+        systemInstruction: "You are a world-class research analyst for the Aksh AI Browser. Produce clear, beautifully structured markdown summaries with distinct headings, bullet points, and bold key terms.",
         temperature: 0.4,
       },
     });
@@ -294,8 +294,8 @@ app.post("/api/research", async (req: Request, res: Response) => {
           query,
           summary: `Comprehensive research report on: **${query}**\n\n### Overview\nThis is a synthesised overview comparing available options and current industry standards.\n\n### Key Findings\n- High demand for practical, hands-on learning.\n- Strong preference for verified certifications.\n- Pricing varies between free and tiered subscriptions.\n\n### Comparison Table\n| Option | Price | Duration | Rating | Best For |\n| :--- | :--- | :--- | :--- | :--- |\n| Core Track A | $49 | 25 Hours | 4.8 / 5 | Beginners |\n| Advanced Track B | $120 | 40 Hours | 4.7 / 5 | Professionals |\n| Open Community | Free | Self-paced | 4.6 / 5 | Self-starters |\n\n*Activate GEMINI_API_KEY for live real-time web search grounding.*`,
           sources: [
-            { title: "Official Documentation & Benchmarks", url: "https://docs.nexus-browser.dev" },
-            { title: "Developer Learning Index 2026", url: "https://research.nexus-browser.dev" },
+            { title: "Official Documentation & Benchmarks", url: "https://docs.aksh-browser.dev" },
+            { title: "Developer Learning Index 2026", url: "https://research.aksh-browser.dev" },
           ],
         },
       });
@@ -515,7 +515,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Nexus AI Browser server running on http://0.0.0.0:${PORT}`);
+    console.log(`Aksh AI Browser server running on http://0.0.0.0:${PORT}`);
   });
 }
 

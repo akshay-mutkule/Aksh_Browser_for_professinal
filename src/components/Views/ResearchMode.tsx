@@ -120,7 +120,7 @@ export const ResearchMode: React.FC<ResearchModeProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `nexus-research-${report.query.slice(0, 25).replace(/\s+/g, '-')}.md`;
+    a.download = `aksh-research-${report.query.slice(0, 25).replace(/\s+/g, '-')}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -132,7 +132,7 @@ export const ResearchMode: React.FC<ResearchModeProps> = ({
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold shadow-inner">
             <Zap className="w-4 h-4 text-indigo-400 animate-pulse" />
-            <span>Nexus AI Deep Research Engine</span>
+            <span>Aksh AI Deep Research Engine</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
             Autonomous Web Research

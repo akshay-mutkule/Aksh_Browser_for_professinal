@@ -274,7 +274,7 @@ For thirty years, the web browser was fundamentally a passive viewport. You type
 
 In 2026, that paradigm is permanently broken.
 
-Enter Nexus AI and the next generation of Chromium-based intelligent browsers. Instead of merely displaying DOM trees, the modern browser incorporates context-aware AI assistants that operate directly alongside your tabs.
+Enter Aksh AI and the next generation of Chromium-based intelligent browsers. Instead of merely displaying DOM trees, the modern browser incorporates context-aware AI assistants that operate directly alongside your tabs.
 
 The Four Pillars of the AI Browser:
 1. In-Situ Page Intelligence: The ability to ask direct questions about any open webpage—summarizing lengthy terms of service, distilling complex research, or converting technical tutorials into step-by-step guides.
@@ -377,11 +377,11 @@ export const SPEED_DIAL_SHORTCUTS = [
   { id: '1', title: 'Google Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
   { id: '2', title: 'Python 2026 Guide', url: 'https://learn.python.org/courses/2026-guide', icon: 'Code', color: 'bg-emerald-600' },
   { id: '3', title: 'Laptop Comparison', url: 'https://tech-radar.io/laptops/flagship-comparison-2026', icon: 'Laptop', color: 'bg-indigo-600' },
-  { id: '4', title: 'Transformer Paper PDF', url: 'nexus://pdf/transformer-paper', icon: 'FileText', color: 'bg-rose-600' },
+  { id: '4', title: 'Transformer Paper PDF', url: 'aksh://pdf/transformer-paper', icon: 'FileText', color: 'bg-rose-600' },
   { id: '5', title: 'AI Wikipedia', url: 'https://en.wikipedia.org/wiki/Artificial_intelligence', icon: 'BookOpen', color: 'bg-amber-600' },
   { id: '6', title: 'The Verge AI Revolution', url: 'https://theverge.com/tech/2026/future-of-ai-agents-browser-revolution', icon: 'Zap', color: 'bg-purple-600' },
-  { id: '7', title: 'AI Deep Research', url: 'nexus://research', icon: 'Sparkles', color: 'bg-gradient-to-r from-blue-500 to-indigo-600' },
-  { id: '8', title: 'Product Comparison', url: 'nexus://comparison', icon: 'Scale', color: 'bg-pink-600' },
+  { id: '7', title: 'AI Deep Research', url: 'aksh://research', icon: 'Sparkles', color: 'bg-gradient-to-r from-blue-500 to-indigo-600' },
+  { id: '8', title: 'Product Comparison', url: 'aksh://comparison', icon: 'Scale', color: 'bg-pink-600' },
 ];
 
 export const INITIAL_BOOKMARKS = [
@@ -396,7 +396,7 @@ export const INITIAL_BOOKMARKS = [
   {
     id: 'bm-2',
     title: 'Attention Is All You Need (Paper)',
-    url: 'nexus://pdf/transformer-paper',
+    url: 'aksh://pdf/transformer-paper',
     folder: 'Research',
     tags: ['ai', 'transformers'],
     createdAt: 'Yesterday',
@@ -412,8 +412,8 @@ export const INITIAL_BOOKMARKS = [
   {
     id: 'bm-4',
     title: 'Autonomous Research Mode',
-    url: 'nexus://research',
-    folder: 'Nexus AI',
+    url: 'aksh://research',
+    folder: 'Aksh AI',
     tags: ['tools', 'ai'],
     createdAt: 'Today',
   },
@@ -424,7 +424,7 @@ export const INITIAL_NOTES = [
     id: 'note-1',
     title: 'Transformer Multi-Head Attention Summary',
     content: `### Key Takeaways from Attention Is All You Need:\n- Replaced recurrent LSTM/RNN bottlenecks with parallelizable self-attention.\n- Scaled Dot-Product: $\\text{Attention}(Q, K, V) = \\text{softmax}(QK^T / \\sqrt{d_k})V$\n- Multi-Head allows the model to jointly attend to different representation subspaces at once.\n- Trained on 8 GPUs for 3.5 days.`,
-    sourceUrl: 'nexus://pdf/transformer-paper',
+    sourceUrl: 'aksh://pdf/transformer-paper',
     tags: ['AI-Paper', 'DeepLearning'],
     createdAt: 'Today at 10:15 AM',
   },

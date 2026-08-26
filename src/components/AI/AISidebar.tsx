@@ -43,7 +43,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
       id: 'welcome',
       role: 'assistant',
       content:
-        '👋 **Hello! I am your Nexus AI Co-Pilot.**\n\nI can analyze this webpage, summarize long articles, generate study notes & quizzes, research across multiple sources, or compare product specs side-by-side.\n\n*Click a quick action below or ask me anything!*',
+        '👋 **Hello! I am your Aksh AI Co-Pilot.**\n\nI can analyze this webpage, summarize long articles, generate study notes & quizzes, research across multiple sources, or compare product specs side-by-side.\n\n*Click a quick action below or ask me anything!*',
       timestamp: 'Just now',
     },
   ]);
@@ -266,7 +266,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
 
   return (
     <aside
-      id="nexus-ai-sidebar"
+      id="aksh-ai-sidebar"
       className="w-96 md:w-[420px] h-full bg-slate-900 border-l border-slate-800 flex flex-col z-30 shadow-2xl relative select-text"
     >
       {/* Sidebar Header */}
@@ -277,7 +277,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-sm text-slate-100">Nexus AI</span>
+              <span className="font-semibold text-sm text-slate-100">Aksh AI</span>
               <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
                 Gemini 3.7
               </span>
@@ -434,7 +434,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
             <div className="bg-slate-800/90 border border-slate-700 rounded-2xl rounded-tl-xs px-4 py-3 text-slate-200 space-y-2">
               <div className="flex items-center gap-2 text-xs text-blue-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                <span>Nexus AI is thinking & reasoning...</span>
+                <span>Aksh AI is thinking & reasoning...</span>
               </div>
               <div className="h-2 bg-slate-700/60 rounded w-48 animate-pulse" />
               <div className="h-2 bg-slate-700/60 rounded w-36 animate-pulse" />
@@ -490,7 +490,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
           </div>
         </div>
         <p className="text-[10px] text-center text-slate-500 mt-1.5">
-          Nexus AI may make mistakes. Verify critical facts and sources.
+          Aksh AI may make mistakes. Verify critical facts and sources.
         </p>
       </div>
     </aside>

@@ -34,10 +34,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <div className="h-3.5 w-px bg-slate-800 ml-1.5" />
         <div className="flex items-center gap-1.5 pl-1">
           <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-white text-[9px] font-black">
-            N
+            A
           </div>
           <span className="text-xs font-semibold text-slate-300 tracking-tight hidden sm:inline">
-            Nexus
+            Aksh
           </span>
         </div>
       </div>
@@ -61,10 +61,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
               ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-indigo-500/25 ring-1 ring-indigo-400/40'
               : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/60'
           }`}
-          title="Toggle Nexus AI Assistant (Ctrl+K)"
+          title="Toggle Aksh AI Assistant (Ctrl+K)"
         >
           <Sparkles className={`w-3.5 h-3.5 ${isAiSidebarOpen ? 'animate-pulse text-amber-300' : 'text-blue-400'}`} />
-          <span className="hidden md:inline">Nexus AI</span>
+          <span className="hidden md:inline">Aksh AI</span>
         </button>
 
         <div className="flex items-center text-slate-500 ml-1">
