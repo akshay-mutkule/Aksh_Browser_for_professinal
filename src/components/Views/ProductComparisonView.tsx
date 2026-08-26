@@ -184,7 +184,7 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
             <div className="w-10 h-10 rounded-full border-3 border-pink-500 border-t-transparent animate-spin mx-auto" />
             <div className="space-y-1">
               <h3 className="text-base font-semibold text-pink-300">
-                Nexus AI is analyzing product specs & benchmarks...
+                Aksh AI is analyzing product specs & benchmarks...
               </h3>
               <p className="text-xs text-slate-400">
                 Comparing processors, thermals, display metrics, and user feedback.

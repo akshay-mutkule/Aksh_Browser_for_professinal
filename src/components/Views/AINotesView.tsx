@@ -174,7 +174,7 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
             <StickyNote className="w-12 h-12 text-slate-600" />
             <h3 className="text-base font-semibold text-slate-300">Select or Create a Note</h3>
             <p className="text-xs text-slate-500 max-w-sm">
-              Use Nexus AI to summarize articles, research complex topics, or save study guides directly to this knowledge base.
+              Use Aksh AI to summarize articles, research complex topics, or save study guides directly to this knowledge base.
             </p>
           </div>
         )}

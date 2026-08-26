@@ -188,7 +188,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           >
             <div className="text-center pb-6 border-b border-slate-200 space-y-2">
               <div className="text-xs uppercase tracking-widest text-slate-500 font-sans font-bold">
-                Nexus AI PDF Engine
+                Aksh AI PDF Engine
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-slate-900 font-sans">
                 {currentPdf.filename.replace(/_/g, ' ').replace('.pdf', '')}

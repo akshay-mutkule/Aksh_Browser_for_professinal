@@ -141,7 +141,7 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
                     required
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="e.g. Nexus AI Research"
+                    placeholder="e.g. Aksh AI Research"
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500"
                   />
                 </div>
