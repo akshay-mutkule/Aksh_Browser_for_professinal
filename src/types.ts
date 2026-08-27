@@ -8,7 +8,9 @@ export type PageContentType =
   | 'bookmarks'
   | 'downloads'
   | 'settings'
-  | 'notes';
+  | 'notes'
+  | 'mindmap'
+  | 'devtools';
 
 export interface Tab {
   id: string;
@@ -25,6 +27,7 @@ export interface Tab {
   contentType: PageContentType;
   extractedText?: string;
   metaDescription?: string;
+  headings?: string[];
   isReaderMode?: boolean;
   pdfData?: {
     filename: string;
@@ -36,6 +39,43 @@ export interface Tab {
     query: string;
     products: any[];
   };
+}
+
+export interface SplitScreenState {
+  enabled: boolean;
+  leftTabId: string | null;
+  rightTabId: string | null;
+  ratio: number; // 50 = 50%, 70 = 70/30, 30 = 30/70
+}
+
+export interface MindmapNode {
+  id: string;
+  label: string;
+  category: 'root' | 'concept' | 'technology' | 'application' | 'challenge' | 'future';
+  description: string;
+}
+
+export interface MindmapEdge {
+  from: string;
+  to: string;
+  label: string;
+}
+
+export interface MindmapGraph {
+  root: string;
+  nodes: MindmapNode[];
+  edges: MindmapEdge[];
+}
+
+export interface NetworkLog {
+  id: string;
+  url: string;
+  method: 'GET' | 'POST' | 'FETCH';
+  status: number;
+  type: string;
+  size: string;
+  timeMs: number;
+  timestamp: string;
 }
 
 export interface Bookmark {
@@ -74,7 +114,7 @@ export interface AIMessage {
   content: string;
   timestamp: string;
   sources?: Array<{ title: string; url: string }>;
-  actionType?: 'summary' | 'research' | 'comparison' | 'pdf' | 'explain' | 'chat';
+  actionType?: 'summary' | 'research' | 'comparison' | 'pdf' | 'explain' | 'chat' | 'mindmap' | 'factcheck' | 'translate';
   isLoading?: boolean;
 }
 
@@ -104,4 +144,6 @@ export interface BrowserSettings {
   showBookmarksBar?: boolean;
   defaultNewTabPage?: 'speed_dial' | 'blank' | 'ai_research';
   enableKeyboardShortcuts?: boolean;
+  voiceSpeed?: number;
+  preferredLanguage?: string;
 }

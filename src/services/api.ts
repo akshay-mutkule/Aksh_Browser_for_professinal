@@ -146,3 +146,70 @@ export async function compareProducts(
   }
   return await res.json();
 }
+
+export async function generateMindmap(
+  topic: string,
+  context?: string
+): Promise<{ graph: { root: string; nodes: any[]; edges: any[] } }> {
+  const res = await fetch('/api/ai/mindmap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, context }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to generate mindmap`);
+  }
+  return await res.json();
+}
+
+export async function translateText(
+  text: string,
+  targetLanguage: string = 'Spanish'
+): Promise<{ translatedText: string; targetLanguage: string }> {
+  const res = await fetch('/api/ai/translate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, targetLanguage }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to translate`);
+  }
+  return await res.json();
+}
+
+export async function factCheckClaim(
+  claim: string,
+  context?: string
+): Promise<{ analysis: string; sources?: Array<{ title: string; url: string }> }> {
+  const res = await fetch('/api/ai/fact-check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ claim, context }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to fact check`);
+  }
+  return await res.json();
+}
+
+export async function inspectCode(
+  url: string,
+  title: string,
+  headings: string[] = [],
+  textSnippet: string = '',
+  action: string = 'audit'
+): Promise<{ report: string }> {
+  const res = await fetch('/api/ai/inspect-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, title, headings, textSnippet, action }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to inspect code`);
+  }
+  return await res.json();
+}

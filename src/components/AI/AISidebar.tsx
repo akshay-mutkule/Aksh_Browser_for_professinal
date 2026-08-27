@@ -15,11 +15,13 @@ import {
   Mic,
   MicOff,
   Zap,
-  GraduationCap
+  GraduationCap,
+  ShieldCheck,
+  Languages
 } from 'lucide-react';
 import { AIMessage, Tab } from '../../types';
 import { AIMessageItem } from './AIMessageItem';
-import { sendAIChat, generateSummary, analyzePDFDocument } from '../../services/api';
+import { sendAIChat, generateSummary, analyzePDFDocument, factCheckClaim, translateText } from '../../services/api';
 
 interface AISidebarProps {
   isOpen: boolean;
@@ -52,6 +54,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
   const [includePageContext, setIncludePageContext] = useState(true);
   const [summaryMode, setSummaryMode] = useState<'short' | 'detailed' | 'beginner' | 'technical'>('detailed');
   const [showSummaryMenu, setShowSummaryMenu] = useState(false);
+  const [showTranslateMenu, setShowTranslateMenu] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,6 +117,108 @@ export const AISidebar: React.FC<AISidebarProps> = ({
           id: String(Date.now() + 1),
           role: 'assistant',
           content: `❌ Error generating summary: ${err.message || 'Server error'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Fact Check
+  const handleFactCheck = async () => {
+    if (!activeTab || (!activeTab.extractedText && !activeTab.pdfData?.text)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          role: 'assistant',
+          content: '⚠️ Please navigate to a webpage with textual content to fact-check.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      return;
+    }
+
+    const contentToCheck = (activeTab.pdfData?.text || activeTab.extractedText || '').slice(0, 1500);
+    const userMsg: AIMessage = {
+      id: String(Date.now()),
+      role: 'user',
+      content: '🛡️ Fact-check key claims on this webpage using real-time search grounding',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      const res = await factCheckClaim(contentToCheck);
+      const aiMsg: AIMessage = {
+        id: String(Date.now() + 1),
+        role: 'assistant',
+        content: `### 🛡️ Fact-Check & Claim Verification Report\n\n${res.analysis}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sources: res.sources || [{ title: activeTab.title, url: activeTab.url }],
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          content: `❌ Fact check failed: ${err.message || 'Server error'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Translation
+  const handleTranslate = async (targetLang: string) => {
+    setShowTranslateMenu(false);
+    if (!activeTab || (!activeTab.extractedText && !activeTab.pdfData?.text)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          role: 'assistant',
+          content: '⚠️ Please navigate to a webpage with content to translate.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      return;
+    }
+
+    const contentToTranslate = (activeTab.pdfData?.text || activeTab.extractedText || '').slice(0, 1200);
+    const userMsg: AIMessage = {
+      id: String(Date.now()),
+      role: 'user',
+      content: `🌐 Translate webpage excerpt to ${targetLang}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      const res = await translateText(contentToTranslate, targetLang);
+      const aiMsg: AIMessage = {
+        id: String(Date.now() + 1),
+        role: 'assistant',
+        content: `### 🌐 Translation (${targetLang})\n\n${res.translatedText}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          content: `❌ Translation failed: ${err.message || 'Server error'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -374,6 +479,41 @@ export const AISidebar: React.FC<AISidebarProps> = ({
                   <span>🔬 Technical Deep Dive</span>
                   {summaryMode === 'technical' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />}
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Fact Check */}
+          <button
+            onClick={handleFactCheck}
+            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Fact-Check</span>
+          </button>
+
+          {/* Translate Dropdown */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowTranslateMenu(!showTranslateMenu)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition-all"
+            >
+              <Languages className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Translate</span>
+              <ChevronDown className="w-3 h-3 text-indigo-400 ml-0.5" />
+            </button>
+
+            {showTranslateMenu && (
+              <div className="absolute top-full left-0 mt-1 w-36 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 py-1 text-xs">
+                {['Spanish', 'French', 'German', 'Hindi', 'Japanese', 'Chinese'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => handleTranslate(lang)}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-700 text-slate-200"
+                  >
+                    {lang}
+                  </button>
+                ))}
               </div>
             )}
           </div>

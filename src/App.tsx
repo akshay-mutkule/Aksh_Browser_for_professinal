@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { TitleBar } from './components/Browser/TitleBar';
 import { AddressBar } from './components/Browser/AddressBar';
 import { BookmarksBar } from './components/Browser/BookmarksBar';
@@ -13,6 +14,12 @@ import { BookmarksView } from './components/Views/BookmarksView';
 import { DownloadsView } from './components/Views/DownloadsView';
 import { SettingsView } from './components/Views/SettingsView';
 import { AINotesView } from './components/Views/AINotesView';
+import { MindmapView } from './components/Views/MindmapView';
+import { DevToolsView } from './components/Views/DevToolsView';
+import { CommandPalette } from './components/Modals/CommandPalette';
+import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
+import { SelectionAiHud } from './components/Browser/SelectionAiHud';
+import { SplitScreenContainer } from './components/Browser/SplitScreenContainer';
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -40,6 +47,8 @@ export function App() {
       url: 'https://learn.python.org/courses/2026-guide',
       contentType: 'web',
       extractedText: SAMPLE_WEBSITES['https://learn.python.org/courses/2026-guide'].extractedText,
+      headings: ['1. Harvard CS50P', '2. Python for Everybody', '3. Automate the Boring Stuff', '4. FastAPI & Async Mastery', '5. Deep Learning with PyTorch'],
+      metaDescription: 'Discover the top 5 Python programming courses in 2026 from beginner fundamentals to neural networks.',
       historyStack: ['https://learn.python.org/courses/2026-guide'],
       historyIndex: 0,
       canGoBack: false,
@@ -71,6 +80,38 @@ export function App() {
   const [activeTabId, setActiveTabId] = useState<string>('tab-1');
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState<boolean>(true);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+
+  // Advanced Feature States: Split-Screen, Audio TTS, and Selection HUD
+  const [splitScreen, setSplitScreen] = useState<{
+    enabled: boolean;
+    leftTabId: string;
+    rightTabId: string;
+    ratio: number;
+  }>({
+    enabled: false,
+    leftTabId: 'tab-1',
+    rightTabId: 'tab-2',
+    ratio: 50,
+  });
+
+  const [audioNarration, setAudioNarration] = useState<{
+    isOpen: boolean;
+    text: string;
+    title: string;
+  }>({
+    isOpen: false,
+    text: '',
+    title: '',
+  });
+
+  const [selectionHud, setSelectionHud] = useState<{
+    selectedText: string;
+    coords: { x: number; y: number } | null;
+  }>({
+    selectedText: '',
+    coords: null,
+  });
 
   // Persistence / Browser State
   const [history, setHistory] = useState<HistoryItem[]>([
@@ -102,12 +143,37 @@ export function App() {
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0] || null;
 
+  // Listen for text selection across web pages for floating AI HUD
+  useEffect(() => {
+    const handleMouseUp = (e: MouseEvent) => {
+      const selection = window.getSelection();
+      const text = selection ? selection.toString().trim() : '';
+
+      if (text && text.length > 3 && !(e.target as HTMLElement).closest('input, textarea, [data-ignore-selection]')) {
+        setSelectionHud({
+          selectedText: text,
+          coords: { x: e.clientX, y: e.clientY },
+        });
+      } else {
+        // Clear if not clicking inside the HUD
+        if (!(e.target as HTMLElement).closest('[data-hud]')) {
+          setSelectionHud({ selectedText: '', coords: null });
+        }
+      }
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
   // Sync tab loading to page content
   const navigateTab = useCallback(
     async (tabId: string, targetUrl: string) => {
       let resolvedType: PageContentType = 'web';
       let title = targetUrl;
       let extractedText: string | undefined = undefined;
+      let headings: string[] | undefined = undefined;
+      let metaDescription: string | undefined = undefined;
       let pdfData: any = undefined;
 
       // Normalize protocol alias
@@ -123,6 +189,12 @@ export function App() {
       } else if (normalizedUrl.startsWith('aksh://comparison')) {
         resolvedType = 'comparison';
         title = 'AI Product Comparison';
+      } else if (normalizedUrl.startsWith('aksh://mindmap')) {
+        resolvedType = 'mindmap';
+        title = 'AI Concept Mindmap';
+      } else if (normalizedUrl.startsWith('aksh://devtools')) {
+        resolvedType = 'devtools';
+        title = 'AI DevTools & DOM Inspector';
       } else if (normalizedUrl.startsWith('aksh://pdf')) {
         resolvedType = 'pdf';
         title = 'PDF Document Reader';
@@ -166,6 +238,8 @@ export function App() {
             title,
             contentType: resolvedType,
             extractedText,
+            headings,
+            metaDescription,
             pdfData,
             isLoading: resolvedType === 'web' && !SAMPLE_WEBSITES[targetUrl],
             historyStack: newStack,
@@ -199,6 +273,7 @@ export function App() {
                 ...t,
                 title: scraped.title || targetUrl,
                 extractedText: scraped.textContent,
+                headings: scraped.headings,
                 metaDescription: scraped.metaDescription,
                 isLoading: false,
               };
@@ -223,11 +298,17 @@ export function App() {
   const handleNewTab = (initialUrl: string = 'aksh://newtab') => {
     const newId = 'tab-' + Date.now();
     const cleanUrl = initialUrl.replace(/^nexus:\/\//, 'aksh://');
+    let resolvedType: PageContentType = 'newtab';
+    if (cleanUrl.startsWith('aksh://')) {
+      const route = cleanUrl.replace('aksh://', '').split('?')[0];
+      resolvedType = (route as PageContentType) || 'newtab';
+    }
+
     const newTabObj: Tab = {
       id: newId,
-      title: 'New Tab',
+      title: resolvedType === 'newtab' ? 'New Tab' : `Aksh ${resolvedType}`,
       url: cleanUrl,
-      contentType: cleanUrl.startsWith('aksh://') ? (cleanUrl.replace('aksh://', '') as PageContentType) : 'newtab',
+      contentType: resolvedType,
       historyStack: [cleanUrl],
       historyIndex: 0,
       canGoBack: false,
@@ -407,11 +488,42 @@ export function App() {
     setActiveTabId('tab-1');
   };
 
+  // Trigger Speech Narration
+  const handleTriggerSpeech = () => {
+    if (!activeTab) return;
+    const text = activeTab.extractedText || activeTab.pdfData?.text || activeTab.title;
+    setAudioNarration({
+      isOpen: true,
+      text: text.slice(0, 3500),
+      title: activeTab.title,
+    });
+  };
+
+  // Toggle Split-Screen
+  const handleToggleSplitScreen = () => {
+    if (splitScreen.enabled) {
+      setSplitScreen((prev) => ({ ...prev, enabled: false }));
+    } else {
+      const rightTabCandidate = tabs.find((t) => t.id !== activeTabId) || tabs[0];
+      setSplitScreen({
+        enabled: true,
+        leftTabId: activeTabId,
+        rightTabId: rightTabCandidate?.id || activeTabId,
+        ratio: 50,
+      });
+    }
+  };
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Toggle AI Assistant: Ctrl+K or Cmd+K
+      // Command Palette: Ctrl+K or Cmd+K
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+      // AI Assistant Sidebar: Ctrl+J or Cmd+J
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
         setIsAiSidebarOpen((prev) => !prev);
       }
@@ -440,18 +552,166 @@ export function App() {
         e.preventDefault();
         navigateTab(activeTabId, 'aksh://bookmarks');
       }
+      // Open Mindmap: Ctrl+M
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        navigateTab(activeTabId, 'aksh://mindmap');
+      }
+      // DevTools: F12 or Ctrl+Shift+I
+      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) {
+        e.preventDefault();
+        navigateTab(activeTabId, 'aksh://devtools');
+      }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         setIsShortcutsOpen(true);
       }
       if (e.key === 'Escape') {
         setIsShortcutsOpen(false);
+        setIsCommandPaletteOpen(false);
+        setSelectionHud({ selectedText: '', coords: null });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab, activeTabId, navigateTab]);
+
+  // Modular Tab View Renderer function
+  const renderTabContent = (targetTab: Tab | null) => {
+    if (!targetTab) {
+      return (
+        <div className="h-full flex items-center justify-center text-slate-500">
+          No tab selected
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full h-full">
+        {targetTab.contentType === 'newtab' && (
+          <NewTab
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+            bookmarks={bookmarks}
+            onOpenResearch={(q) => {
+              navigateTab(targetTab.id, `aksh://research?q=${encodeURIComponent(q)}`);
+            }}
+            onOpenPdf={(pdfId) => {
+              navigateTab(targetTab.id, `aksh://pdf/${pdfId}`);
+            }}
+          />
+        )}
+
+        {targetTab.contentType === 'web' && (
+          <LiveWebView
+            tab={targetTab}
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+            onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
+            onSaveAsNote={(title, content) => handleSaveAsNote(title, content, targetTab.url)}
+          />
+        )}
+
+        {targetTab.contentType === 'pdf' && (
+          <PDFViewer
+            tab={targetTab}
+            onSaveAsNote={handleSaveAsNote}
+            onUpdateTabPdfData={(pdfData) => {
+              setTabs((prev) =>
+                prev.map((t) => (t.id === targetTab.id ? { ...t, pdfData } : t))
+              );
+            }}
+          />
+        )}
+
+        {targetTab.contentType === 'research' && (
+          <ResearchMode
+            initialQuery={
+              targetTab.url.includes('?q=')
+                ? decodeURIComponent(targetTab.url.split('?q=')[1])
+                : ''
+            }
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'mindmap' && (
+          <MindmapView
+            initialTopic={
+              targetTab.url.includes('?topic=')
+                ? decodeURIComponent(targetTab.url.split('?topic=')[1])
+                : activeTab?.title || 'Quantum Computing & LLMs'
+            }
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'devtools' && (
+          <DevToolsView
+            activeTab={tabs.find((t) => t.id === splitScreen.leftTabId) || activeTab}
+            onSaveAsNote={handleSaveAsNote}
+          />
+        )}
+
+        {targetTab.contentType === 'comparison' && (
+          <ProductComparisonView onSaveAsNote={handleSaveAsNote} />
+        )}
+
+        {targetTab.contentType === 'history' && (
+          <HistoryView
+            history={history}
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+            onClearHistory={() => setHistory([])}
+            onDeleteItem={(id) => setHistory((prev) => prev.filter((h) => h.id !== id))}
+          />
+        )}
+
+        {targetTab.contentType === 'bookmarks' && (
+          <BookmarksView
+            bookmarks={bookmarks}
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+            onDeleteBookmark={(id) => setBookmarks((prev) => prev.filter((b) => b.id !== id))}
+            onAddBookmark={(title, url, folder) => {
+              const newBm: Bookmark = {
+                id: String(Date.now()),
+                title,
+                url,
+                folder: folder || 'Custom',
+                tags: [],
+                createdAt: 'Today',
+              };
+              setBookmarks((prev) => [newBm, ...prev]);
+            }}
+          />
+        )}
+
+        {targetTab.contentType === 'downloads' && (
+          <DownloadsView
+            downloads={downloads}
+            onClearDownloads={() => setDownloads([])}
+            onSimulateDownload={handleSimulateDownload}
+          />
+        )}
+
+        {targetTab.contentType === 'notes' && (
+          <AINotesView
+            notes={notes}
+            onDeleteNote={(id) => setNotes((prev) => prev.filter((n) => n.id !== id))}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'settings' && (
+          <SettingsView
+            settings={settings}
+            onUpdateSettings={(newSettings) => setSettings((s) => ({ ...s, ...newSettings }))}
+            onClearAllLocalData={handleClearAllLocalData}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans select-none antialiased">
@@ -481,6 +741,11 @@ export function App() {
         onQuickSummarize={() => setIsAiSidebarOpen(true)}
         onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
         onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onToggleSplitScreen={handleToggleSplitScreen}
+        isSplitScreen={splitScreen.enabled}
+        onTriggerSpeech={handleTriggerSpeech}
+        isSpeaking={audioNarration.isOpen}
       />
 
       {/* 3. Bookmarks Quick Bar */}
@@ -490,118 +755,45 @@ export function App() {
         onOpenBookmarksManager={() => navigateTab(activeTabId, 'aksh://bookmarks')}
       />
 
-      {/* 4. Main Body: Active Tab Viewport + AI Co-Pilot Sidebar */}
+      {/* 4. Main Body: Active Tab Viewport + Split-Screen + AI Sidebar */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Content Viewport */}
         <main className="flex-1 h-full overflow-hidden relative bg-slate-950">
-          {activeTab ? (
-            <>
-              {activeTab.contentType === 'newtab' && (
-                <NewTab
-                  onNavigate={(url) => navigateTab(activeTab.id, url)}
-                  bookmarks={bookmarks}
-                  onOpenResearch={(q) => {
-                    navigateTab(activeTab.id, `aksh://research?q=${encodeURIComponent(q)}`);
-                  }}
-                  onOpenPdf={(pdfId) => {
-                    navigateTab(activeTab.id, `aksh://pdf/${pdfId}`);
-                  }}
-                />
-              )}
-
-              {activeTab.contentType === 'web' && (
-                <LiveWebView
-                  tab={activeTab}
-                  onNavigate={(url) => navigateTab(activeTab.id, url)}
-                  onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
-                  onSaveAsNote={(title, content) => handleSaveAsNote(title, content, activeTab.url)}
-                />
-              )}
-
-              {activeTab.contentType === 'pdf' && (
-                <PDFViewer
-                  tab={activeTab}
-                  onSaveAsNote={handleSaveAsNote}
-                  onUpdateTabPdfData={(pdfData) => {
-                    setTabs((prev) =>
-                      prev.map((t) => (t.id === activeTab.id ? { ...t, pdfData } : t))
-                    );
-                  }}
-                />
-              )}
-
-              {activeTab.contentType === 'research' && (
-                <ResearchMode
-                  initialQuery={
-                    activeTab.url.includes('?q=')
-                      ? decodeURIComponent(activeTab.url.split('?q=')[1])
-                      : ''
-                  }
-                  onSaveAsNote={handleSaveAsNote}
-                  onNavigateUrl={(url) => navigateTab(activeTab.id, url)}
-                />
-              )}
-
-              {activeTab.contentType === 'comparison' && (
-                <ProductComparisonView onSaveAsNote={handleSaveAsNote} />
-              )}
-
-              {activeTab.contentType === 'history' && (
-                <HistoryView
-                  history={history}
-                  onNavigate={(url) => navigateTab(activeTab.id, url)}
-                  onClearHistory={() => setHistory([])}
-                  onDeleteItem={(id) => setHistory((prev) => prev.filter((h) => h.id !== id))}
-                />
-              )}
-
-              {activeTab.contentType === 'bookmarks' && (
-                <BookmarksView
-                  bookmarks={bookmarks}
-                  onNavigate={(url) => navigateTab(activeTab.id, url)}
-                  onDeleteBookmark={(id) => setBookmarks((prev) => prev.filter((b) => b.id !== id))}
-                  onAddBookmark={(title, url, folder) => {
-                    const newBm: Bookmark = {
-                      id: String(Date.now()),
-                      title,
-                      url,
-                      folder: folder || 'Custom',
-                      tags: [],
-                      createdAt: 'Today',
-                    };
-                    setBookmarks((prev) => [newBm, ...prev]);
-                  }}
-                />
-              )}
-
-              {activeTab.contentType === 'downloads' && (
-                <DownloadsView
-                  downloads={downloads}
-                  onClearDownloads={() => setDownloads([])}
-                  onSimulateDownload={handleSimulateDownload}
-                />
-              )}
-
-              {activeTab.contentType === 'notes' && (
-                <AINotesView
-                  notes={notes}
-                  onDeleteNote={(id) => setNotes((prev) => prev.filter((n) => n.id !== id))}
-                  onNavigateUrl={(url) => navigateTab(activeTab.id, url)}
-                />
-              )}
-
-              {activeTab.contentType === 'settings' && (
-                <SettingsView
-                  settings={settings}
-                  onUpdateSettings={(newSettings) => setSettings((s) => ({ ...s, ...newSettings }))}
-                  onClearAllLocalData={handleClearAllLocalData}
-                />
-              )}
-            </>
+          {splitScreen.enabled ? (
+            <SplitScreenContainer
+              leftTab={tabs.find((t) => t.id === splitScreen.leftTabId) || activeTab}
+              rightTab={tabs.find((t) => t.id === splitScreen.rightTabId) || tabs[0]}
+              allTabs={tabs}
+              ratio={splitScreen.ratio}
+              onRatioChange={(r) => setSplitScreen((prev) => ({ ...prev, ratio: r }))}
+              onSelectRightTab={(rTabId) => setSplitScreen((prev) => ({ ...prev, rightTabId: rTabId }))}
+              onCloseSplitScreen={() => setSplitScreen((prev) => ({ ...prev, enabled: false }))}
+              renderTabContent={renderTabContent}
+            />
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-500">
-              No active tab
-            </div>
+            <AnimatePresence mode="wait">
+              {activeTab ? (
+                <motion.div
+                  key={activeTab.id + '-' + activeTab.contentType}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="w-full h-full"
+                >
+                  {renderTabContent(activeTab)}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="no-tab"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="h-full flex items-center justify-center text-slate-500"
+                >
+                  No active tab
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </main>
 
@@ -620,6 +812,48 @@ export function App() {
         />
       </div>
 
+      {/* Floating Audio Narration Player */}
+      <AnimatePresence>
+        {audioNarration.isOpen && (
+          <AudioNarrationBar
+            textToRead={audioNarration.text}
+            title={audioNarration.title}
+            onClose={() => setAudioNarration({ isOpen: false, text: '', title: '' })}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Floating Contextual AI Selection HUD */}
+      <div data-hud="true">
+        <SelectionAiHud
+          selectedText={selectionHud.selectedText}
+          coords={selectionHud.coords}
+          onClose={() => setSelectionHud({ selectedText: '', coords: null })}
+          onSaveAsNote={handleSaveAsNote}
+          onOpenAiSidebarWithMessage={(msg) => {
+            setIsAiSidebarOpen(true);
+          }}
+        />
+      </div>
+
+      {/* Global Command Palette (Ctrl+K or ⌘+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSelectTab={(id) => setActiveTabId(id)}
+        onNavigateTab={(tabId, url) => navigateTab(tabId, url)}
+        onOpenNewTab={(url) => handleNewTab(url)}
+        onToggleSplitScreen={handleToggleSplitScreen}
+        onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
+        onToggleReaderMode={handleToggleReaderMode}
+        onTriggerSpeech={handleTriggerSpeech}
+        onOpenInternalView={(view) => {
+          navigateTab(activeTabId, `aksh://${view}`);
+        }}
+      />
+
       {/* Keyboard Shortcuts Cheat Sheet Modal */}
       <KeyboardShortcutsModal
         isOpen={isShortcutsOpen}
@@ -630,3 +864,4 @@ export function App() {
 }
 
 export default App;
+
