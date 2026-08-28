@@ -3,8 +3,8 @@
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    color: #1e293b;
-    background-color: #0f172a;
+    color: #0f172a;
+    background-color: #ffffff;
     user-select: none;
     overflow: hidden;
   }

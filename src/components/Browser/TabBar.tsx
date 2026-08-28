@@ -54,20 +54,20 @@ export const TabBar: React.FC<TabBarProps> = ({
             onClick={() => onSelectTab(tab.id)}
             className={`group relative flex items-center gap-2 h-9 px-3 min-w-[120px] max-w-[220px] rounded-t-xl text-xs font-medium cursor-pointer transition-all border-t border-x ${
               isActive
-                ? 'bg-slate-900 text-slate-100 border-slate-700/80 shadow-md'
-                : 'bg-slate-950/60 text-slate-400 hover:bg-slate-900/60 hover:text-slate-300 border-transparent'
+                ? 'bg-white text-slate-900 border-slate-300 shadow-xs'
+                : 'bg-slate-200/50 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 border-transparent'
             } ${tab.pinned ? 'min-w-[44px] max-w-[44px] justify-center px-2' : ''}`}
           >
             {/* Loading Spinner or Favicon */}
             {tab.isLoading ? (
-              <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin shrink-0" />
+              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
             ) : (
               getTabIcon(tab)
             )}
 
             {/* Tab Title (hidden if pinned) */}
             {!tab.pinned && (
-              <span className="truncate flex-1 text-left select-none">
+              <span className="truncate flex-1 text-left select-none font-semibold">
                 {tab.title || 'New Tab'}
               </span>
             )}
@@ -75,10 +75,10 @@ export const TabBar: React.FC<TabBarProps> = ({
             {/* Pinned Indicator or Audio or Close Button */}
             <div className="flex items-center gap-0.5 shrink-0">
               {tab.pinned && (
-                <Pin className="w-2.5 h-2.5 text-blue-400" />
+                <Pin className="w-2.5 h-2.5 text-blue-600" />
               )}
               {tab.muted === false && (
-                <Volume2 className="w-3 h-3 text-slate-400" />
+                <Volume2 className="w-3 h-3 text-slate-500" />
               )}
               {!tab.pinned && (
                 <button
@@ -86,7 +86,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     e.stopPropagation();
                     onCloseTab(tab.id);
                   }}
-                  className={`p-0.5 rounded-full hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 transition-colors ${
+                  className={`p-0.5 rounded-full hover:bg-slate-300 text-slate-500 hover:text-slate-800 transition-colors ${
                     isActive ? 'opacity-90' : 'opacity-0 group-hover:opacity-100'
                   }`}
                   title="Close tab (Ctrl+W)"
@@ -102,7 +102,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       {/* New Tab Button */}
       <button
         onClick={onNewTab}
-        className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors shrink-0"
+        className="p-1.5 rounded-lg hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 transition-colors shrink-0"
         title="Open new tab (Ctrl+T)"
       >
         <Plus className="w-4 h-4" />

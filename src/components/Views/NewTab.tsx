@@ -160,7 +160,7 @@ export const NewTab: React.FC<NewTabProps> = ({
   const currentWorkflow = WORKFLOW_STEPS[activeWorkflowStep];
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8 select-none flex flex-col items-center">
+    <div className="h-full overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 md:p-8 select-none flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-8 my-auto py-4">
         {/* Logo & Headline */}
         <motion.div
@@ -169,15 +169,15 @@ export const NewTab: React.FC<NewTabProps> = ({
           transition={{ duration: 0.4 }}
           className="text-center space-y-2"
         >
-          <div className="inline-flex items-center justify-center gap-3 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-semibold text-slate-300 shadow-inner mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+          <div className="inline-flex items-center justify-center gap-3 px-4 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs mb-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
             <span>Aksh AI Browser • Chromium Intelligent Engine</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900">
             Intelligent Web Research
           </h1>
-          <p className="text-sm md:text-base text-slate-400 max-w-xl mx-auto">
+          <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto">
             Browse the live web, synthesize complex topics with multi-source AI research, analyze PDFs, and compare products instantly.
           </p>
         </motion.div>
@@ -190,7 +190,7 @@ export const NewTab: React.FC<NewTabProps> = ({
           onSubmit={handleSearch}
           className="w-full max-w-2xl mx-auto"
         >
-          <div className="relative flex items-center bg-slate-900/90 border border-slate-700/80 hover:border-slate-600 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 rounded-2xl p-2 shadow-2xl transition-all">
+          <div className="relative flex items-center bg-white border border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/15 rounded-2xl p-2 shadow-lg transition-all">
             <div className="pl-3 pr-2 text-slate-400">
               <Search className="w-5 h-5" />
             </div>
@@ -199,11 +199,11 @@ export const NewTab: React.FC<NewTabProps> = ({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search the web with Google or ask Aksh AI to research..."
-              className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm focus:outline-none py-2"
+              className="w-full bg-transparent text-slate-900 placeholder-slate-400 text-sm focus:outline-none py-2"
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
             >
               <span>Search</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -216,18 +216,18 @@ export const NewTab: React.FC<NewTabProps> = ({
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="w-full max-w-3xl mx-auto bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 md:p-5 shadow-xl space-y-4"
+          className="w-full max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-md space-y-4"
         >
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+              <div className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
                 <ListOrdered className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Full Browser AI Workflow Pipeline
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   Step through the complete 5-stage intelligent research and browsing cycle
                 </p>
               </div>
@@ -237,13 +237,13 @@ export const NewTab: React.FC<NewTabProps> = ({
               onClick={() => setAutoPlayWorkflow(!autoPlayWorkflow)}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
                 autoPlayWorkflow
-                  ? 'bg-blue-500/15 border-blue-500/30 text-blue-300 hover:bg-blue-500/25'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                  ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                  : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
               }`}
             >
               {autoPlayWorkflow ? (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                   <span>Auto-cycling</span>
                 </>
               ) : (
@@ -269,19 +269,19 @@ export const NewTab: React.FC<NewTabProps> = ({
                   }}
                   className={`px-2.5 py-2 rounded-xl text-left transition-all border relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                     isActive
-                      ? 'bg-slate-800 border-slate-600 text-white shadow-md'
-                      : 'bg-slate-950/50 hover:bg-slate-800/60 border-slate-800/70 text-slate-400 hover:text-slate-300'
+                      ? 'bg-blue-50/70 border-blue-300 text-blue-950 shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-bold text-slate-500">
+                    <span className="text-[10px] font-mono font-bold text-slate-400">
                       {step.stepNum}
                     </span>
                     <StepIcon
-                      className={`w-3.5 h-3.5 ${isActive ? 'text-blue-400' : 'text-slate-500'}`}
+                      className={`w-3.5 h-3.5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`}
                     />
                   </div>
-                  <span className="text-[11px] font-medium truncate">{step.shortTitle}</span>
+                  <span className="text-[11px] font-semibold truncate">{step.shortTitle}</span>
 
                   {isActive && (
                     <motion.div
@@ -302,29 +302,29 @@ export const NewTab: React.FC<NewTabProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.25 }}
-              className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
               <div className="space-y-1.5 max-w-xl">
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${currentWorkflow.badgeColor}`}>
                     STEP {currentWorkflow.stepNum}
                   </span>
-                  <h4 className="text-xs md:text-sm font-bold text-slate-100">
+                  <h4 className="text-xs md:text-sm font-bold text-slate-900">
                     {currentWorkflow.title}
                   </h4>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   {currentWorkflow.description}
                 </p>
                 <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500 font-mono">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                   <span>Capability: {currentWorkflow.metric}</span>
                 </div>
               </div>
 
               <button
                 onClick={() => onNavigate(currentWorkflow.sampleTarget)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${currentWorkflow.color} hover:opacity-90 transition-all flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${currentWorkflow.color} hover:opacity-90 transition-all flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer`}
               >
                 <span>{currentWorkflow.actionLabel}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -335,47 +335,47 @@ export const NewTab: React.FC<NewTabProps> = ({
 
         {/* AI Quick Research Sparks */}
         <div className="w-full max-w-3xl mx-auto space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            <Zap className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+            <Zap className="w-3.5 h-3.5 text-indigo-600" />
             <span>Try AI Deep Research & Summarization:</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <button
               onClick={() => onOpenResearch('Best Python courses for beginners in 2026')}
-              className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-left text-slate-200 transition-all group shadow-sm flex flex-col justify-between cursor-pointer"
+              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-left text-slate-800 transition-all group shadow-xs flex flex-col justify-between cursor-pointer"
             >
-              <div className="flex items-center justify-between text-indigo-400 mb-1">
+              <div className="flex items-center justify-between text-indigo-600 mb-1">
                 <span className="font-semibold text-[11px] uppercase tracking-wide">Courses</span>
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </div>
-              <span className="text-slate-300 group-hover:text-white line-clamp-2">
+              <span className="text-slate-700 group-hover:text-slate-900 line-clamp-2 font-medium">
                 "Best Python courses for beginners in 2026"
               </span>
             </button>
 
             <button
               onClick={() => onOpenResearch('MacBook Pro M3 vs Dell XPS 15 vs ThinkPad X1 specs')}
-              className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-left text-slate-200 transition-all group shadow-sm flex flex-col justify-between cursor-pointer"
+              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-left text-slate-800 transition-all group shadow-xs flex flex-col justify-between cursor-pointer"
             >
-              <div className="flex items-center justify-between text-pink-400 mb-1">
+              <div className="flex items-center justify-between text-pink-600 mb-1">
                 <span className="font-semibold text-[11px] uppercase tracking-wide">Product Specs</span>
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </div>
-              <span className="text-slate-300 group-hover:text-white line-clamp-2">
+              <span className="text-slate-700 group-hover:text-slate-900 line-clamp-2 font-medium">
                 "MacBook Pro M3 vs XPS 15 showdown"
               </span>
             </button>
 
             <button
               onClick={() => onOpenPdf('transformer-paper')}
-              className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-left text-slate-200 transition-all group shadow-sm flex flex-col justify-between cursor-pointer"
+              className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-left text-slate-800 transition-all group shadow-xs flex flex-col justify-between cursor-pointer"
             >
-              <div className="flex items-center justify-between text-rose-400 mb-1">
+              <div className="flex items-center justify-between text-rose-600 mb-1">
                 <span className="font-semibold text-[11px] uppercase tracking-wide">PDF Reader</span>
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </div>
-              <span className="text-slate-300 group-hover:text-white line-clamp-2">
+              <span className="text-slate-700 group-hover:text-slate-900 line-clamp-2 font-medium">
                 "Attention Is All You Need" paper
               </span>
             </button>
@@ -384,12 +384,12 @@ export const NewTab: React.FC<NewTabProps> = ({
 
         {/* Speed Dial Shortcuts Grid */}
         <div className="w-full max-w-3xl mx-auto space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs text-slate-600 font-semibold uppercase tracking-wider">
             <div className="flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-blue-400" />
+              <Compass className="w-3.5 h-3.5 text-blue-600" />
               <span>Speed Dial & Pinned Sites</span>
             </div>
-            <span className="text-[11px] lowercase text-slate-500">click to launch</span>
+            <span className="text-[11px] lowercase text-slate-400">click to launch</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -397,18 +397,18 @@ export const NewTab: React.FC<NewTabProps> = ({
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.url)}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all text-left group shadow-sm hover:scale-[1.02] cursor-pointer"
+                className="flex items-center gap-3 p-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all text-left group shadow-xs hover:shadow-md hover:scale-[1.01] cursor-pointer"
               >
                 <div
-                  className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center text-white shrink-0 shadow-md group-hover:shadow-lg transition-all`}
+                  className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center text-white shrink-0 shadow-xs group-hover:shadow-md transition-all`}
                 >
                   {getIcon(item.icon)}
                 </div>
                 <div className="truncate">
-                  <div className="text-xs font-semibold text-slate-200 group-hover:text-white truncate">
+                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-600 truncate">
                     {item.title}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono truncate">
+                  <div className="text-[10px] text-slate-400 font-mono truncate">
                     {item.url.replace('https://', '')}
                   </div>
                 </div>
@@ -418,21 +418,21 @@ export const NewTab: React.FC<NewTabProps> = ({
         </div>
 
         {/* Bottom Feature Badges */}
-        <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
+        <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
             <span>AI Summarizer (4 Modes)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
             <span>Multi-Source Research Mode</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-rose-400" />
+            <FileText className="w-3.5 h-3.5 text-rose-600" />
             <span>AI PDF Analysis & Quizzes</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Scale className="w-3.5 h-3.5 text-pink-400" />
+            <Scale className="w-3.5 h-3.5 text-pink-600" />
             <span>Product Comparison Matrix</span>
           </div>
         </div>

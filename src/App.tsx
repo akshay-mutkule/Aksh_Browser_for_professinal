@@ -135,7 +135,7 @@ export function App() {
   const [downloads, setDownloads] = useState<DownloadItem[]>(INITIAL_DOWNLOADS);
   const [notes, setNotes] = useState<AINote[]>(INITIAL_NOTES);
   const [settings, setSettings] = useState<BrowserSettings>({
-    theme: 'dark',
+    theme: 'light',
     searchEngine: 'google',
     aiSummaryLength: 'detailed',
     autoAttachWebContext: true,
@@ -714,7 +714,7 @@ export function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans select-none antialiased">
+    <div className="flex flex-col h-screen w-screen bg-white text-slate-900 overflow-hidden font-sans select-none antialiased">
       {/* 1. TitleBar & Tab Strip */}
       <TitleBar
         tabs={tabs}
@@ -756,9 +756,9 @@ export function App() {
       />
 
       {/* 4. Main Body: Active Tab Viewport + Split-Screen + AI Sidebar */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative bg-white">
         {/* Content Viewport */}
-        <main className="flex-1 h-full overflow-hidden relative bg-slate-950">
+        <main className="flex-1 h-full overflow-hidden relative bg-white">
           {splitScreen.enabled ? (
             <SplitScreenContainer
               leftTab={tabs.find((t) => t.id === splitScreen.leftTabId) || activeTab}
