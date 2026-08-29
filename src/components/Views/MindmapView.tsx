@@ -71,19 +71,19 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'root':
-        return 'from-blue-600 to-indigo-600 border-blue-400 text-white shadow-blue-500/30';
+        return 'from-blue-600 to-indigo-600 border-blue-400 text-white shadow-md';
       case 'concept':
-        return 'from-purple-900/80 to-indigo-900/80 border-purple-500/50 text-purple-200 shadow-purple-500/20';
+        return 'from-purple-50 to-indigo-50 border-purple-200 text-purple-950 shadow-2xs hover:border-purple-300';
       case 'technology':
-        return 'from-cyan-900/80 to-blue-900/80 border-cyan-500/50 text-cyan-200 shadow-cyan-500/20';
+        return 'from-cyan-50 to-blue-50 border-cyan-200 text-cyan-950 shadow-2xs hover:border-cyan-300';
       case 'application':
-        return 'from-emerald-900/80 to-teal-900/80 border-emerald-500/50 text-emerald-200 shadow-emerald-500/20';
+        return 'from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950 shadow-2xs hover:border-emerald-300';
       case 'challenge':
-        return 'from-rose-900/80 to-pink-900/80 border-rose-500/50 text-rose-200 shadow-rose-500/20';
+        return 'from-rose-50 to-pink-50 border-rose-200 text-rose-950 shadow-2xs hover:border-rose-300';
       case 'future':
-        return 'from-amber-900/80 to-orange-900/80 border-amber-500/50 text-amber-200 shadow-amber-500/20';
+        return 'from-amber-50 to-orange-50 border-amber-200 text-amber-950 shadow-2xs hover:border-amber-300';
       default:
-        return 'from-slate-800 to-slate-900 border-slate-700 text-slate-200 shadow-black/40';
+        return 'from-slate-50 to-white border-slate-200 text-slate-900 shadow-2xs hover:border-slate-300';
     }
   };
 
@@ -115,21 +115,21 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
   const filteredNodes = graph?.nodes.filter((n) => activeFilter === 'all' || n.category === activeFilter) || [];
 
   return (
-    <div className="h-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none">
+    <div className="h-full bg-slate-50 text-slate-900 flex flex-col overflow-hidden select-none">
       {/* Top Controls Header */}
-      <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="p-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xs">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <div className="w-8 h-8 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600">
             <Network className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <span>AI Concept Mindmap & Knowledge Graph</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-200 font-semibold">
                 Gemini 3.7 Graph Engine
               </span>
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Interactive topological knowledge breakdown with contextual relationships
             </p>
           </div>
@@ -144,13 +144,13 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="Enter topic (e.g. Transformer Attention, Quantum ML)..."
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 placeholder-slate-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-600 placeholder-slate-400"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/20 transition-all cursor-pointer shrink-0"
+            className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0"
           >
             {isLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>Generate</span>
@@ -164,30 +164,30 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
             disabled={!graph}
             className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
               savedSuccess
-                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
-                : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-800'
             }`}
           >
-            {savedSuccess ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <StickyNote className="w-3.5 h-3.5 text-yellow-400" />}
+            {savedSuccess ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <StickyNote className="w-3.5 h-3.5 text-amber-600" />}
             <span>{savedSuccess ? 'Saved to Notes!' : 'Save as Note'}</span>
           </button>
         </div>
       </div>
 
       {/* Category Filter Pills */}
-      <div className="px-4 py-2 bg-slate-900/40 border-b border-slate-800/60 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0">
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-2 flex items-center gap-1">
-          <Layers className="w-3 h-3 text-slate-400" />
+      <div className="px-4 py-2 bg-slate-100/70 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-2 flex items-center gap-1">
+          <Layers className="w-3 h-3 text-slate-500" />
           <span>Filters:</span>
         </span>
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveFilter(cat)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-all cursor-pointer border ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer border ${
               activeFilter === cat
-                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300 shadow-sm'
-                : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                ? 'bg-white border-cyan-400 text-cyan-800 shadow-2xs'
+                : 'bg-white/70 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-white'
             }`}
           >
             {cat}
@@ -198,11 +198,11 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
       {/* Main Canvas + Side Inspection Drawer */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Interactive Mindmap Visual Grid Canvas */}
-        <div className="flex-1 overflow-auto p-6 relative flex flex-col items-center justify-start bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]">
+        <div className="flex-1 overflow-auto p-6 relative flex flex-col items-center justify-start bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] bg-slate-50">
           {isLoading ? (
             <div className="my-auto text-center space-y-3">
-              <div className="w-10 h-10 rounded-full border-3 border-cyan-500 border-t-transparent animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-cyan-300">
+              <div className="w-10 h-10 rounded-full border-3 border-cyan-600 border-t-transparent animate-spin mx-auto" />
+              <p className="text-sm font-semibold text-cyan-900">
                 Aksh AI is synthesizing concept graph nodes & topological links...
               </p>
               <p className="text-xs text-slate-500">
@@ -220,9 +220,9 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
                     const r = graph.nodes.find((n) => n.category === 'root') || graph.nodes[0];
                     setSelectedNode(r);
                   }}
-                  className="px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 border-2 border-cyan-300/40 text-white shadow-xl shadow-cyan-500/20 cursor-pointer hover:scale-105 transition-all text-center max-w-md"
+                  className="px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 border-2 border-white text-white shadow-xl cursor-pointer hover:scale-105 transition-all text-center max-w-md"
                 >
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-200 font-bold mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-100 font-bold mb-1">
                     Central Knowledge Root
                   </div>
                   <h3 className="text-lg font-extrabold tracking-tight">{graph.root}</h3>
@@ -241,18 +241,18 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
                       onClick={() => setSelectedNode(node)}
                       className={`p-4 rounded-2xl border bg-gradient-to-b ${getCategoryColor(
                         node.category
-                      )} cursor-pointer transition-all hover:scale-[1.02] relative shadow-lg ${
-                        isSelected ? 'ring-2 ring-cyan-400 scale-[1.03]' : ''
+                      )} cursor-pointer transition-all hover:scale-[1.02] relative shadow-xs ${
+                        isSelected ? 'ring-2 ring-cyan-500 scale-[1.03]' : ''
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-black/40 border border-white/10 font-bold">
+                        <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/80 border border-slate-200 font-bold text-slate-800">
                           {node.category}
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+                        <ChevronRight className="w-3.5 h-3.5 opacity-60 text-slate-600" />
                       </div>
-                      <h4 className="text-sm font-bold mb-1 text-slate-100">{node.label}</h4>
-                      <p className="text-xs text-slate-300/90 line-clamp-2 leading-relaxed">
+                      <h4 className="text-sm font-bold mb-1 text-slate-900">{node.label}</h4>
+                      <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed">
                         {node.description}
                       </p>
                     </motion.div>
@@ -262,9 +262,9 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
 
               {/* Visual Relationships List */}
               {graph.edges && graph.edges.length > 0 && (
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 shadow-xs">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-cyan-600" />
                     <span>Topological Linkages & Semantic Flow</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -274,13 +274,13 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
                       return (
                         <div
                           key={idx}
-                          className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2 text-slate-300"
+                          className="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2 text-slate-700"
                         >
-                          <span className="font-semibold text-cyan-300 truncate">{fromNode}</span>
-                          <span className="text-[10px] text-slate-500 font-mono italic shrink-0">
+                          <span className="font-bold text-cyan-800 truncate">{fromNode}</span>
+                          <span className="text-[10px] text-slate-400 font-mono italic shrink-0">
                             —[{edge.label}]→
                           </span>
-                          <span className="font-semibold text-slate-200 truncate">{toNode}</span>
+                          <span className="font-semibold text-slate-800 truncate">{toNode}</span>
                         </div>
                       );
                     })}
@@ -290,31 +290,31 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
             </div>
           ) : (
             <div className="my-auto text-center space-y-3">
-              <Network className="w-12 h-12 text-slate-600 mx-auto" />
-              <p className="text-sm text-slate-400">Enter any topic above to generate a concept mindmap</p>
+              <Network className="w-12 h-12 text-slate-400 mx-auto" />
+              <p className="text-sm text-slate-600">Enter any topic above to generate a concept mindmap</p>
             </div>
           )}
         </div>
 
         {/* Selected Node Deep-Dive Inspector Panel */}
         {selectedNode && (
-          <div className="w-80 border-l border-slate-800 bg-slate-900/90 p-4 flex flex-col justify-between shrink-0 select-text overflow-y-auto">
+          <div className="w-80 border-l border-slate-200 bg-white p-4 flex flex-col justify-between shrink-0 select-text overflow-y-auto shadow-md">
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-200">
                   {selectedNode.category} Node
                 </span>
-                <span className="text-xs text-slate-500 font-mono">ID: #{selectedNode.id}</span>
+                <span className="text-xs text-slate-400 font-mono">ID: #{selectedNode.id}</span>
               </div>
 
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-white">{selectedNode.label}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{selectedNode.description}</p>
+                <h3 className="text-base font-bold text-slate-900">{selectedNode.label}</h3>
+                <p className="text-xs text-slate-700 leading-relaxed">{selectedNode.description}</p>
               </div>
 
               {/* Action shortcuts for this concept node */}
-              <div className="space-y-2 pt-4 border-t border-slate-800">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <div className="space-y-2 pt-4 border-t border-slate-200">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Deep Dive Actions
                 </div>
 
@@ -322,10 +322,10 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
                   onClick={() => {
                     onNavigateUrl(`aksh://research?q=${encodeURIComponent(selectedNode.label)}`);
                   }}
-                  className="w-full p-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-200 text-xs font-medium flex items-center justify-between transition-all cursor-pointer"
+                  className="w-full p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <Zap className="w-3.5 h-3.5 text-amber-600" />
                     <span>Deep Research this Concept</span>
                   </div>
                   <ArrowRight className="w-3 h-3" />
@@ -335,10 +335,10 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
                   onClick={() => {
                     onNavigateUrl(`https://www.google.com/search?q=${encodeURIComponent(selectedNode.label)}`);
                   }}
-                  className="w-full p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium flex items-center justify-between transition-all cursor-pointer"
+                  className="w-full p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Search className="w-3.5 h-3.5 text-blue-400" />
+                    <Search className="w-3.5 h-3.5 text-blue-600" />
                     <span>Search Web for "{selectedNode.label}"</span>
                   </div>
                   <ExternalLink className="w-3 h-3" />
@@ -346,7 +346,7 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800/80 text-[11px] text-slate-500 font-mono">
+            <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400 font-mono">
               Aksh AI Knowledge Taxonomy
             </div>
           </div>

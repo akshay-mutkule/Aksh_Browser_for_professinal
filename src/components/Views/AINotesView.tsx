@@ -46,22 +46,22 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-slate-950 text-slate-100 overflow-hidden select-text">
+    <div className="h-full flex flex-col md:flex-row bg-slate-50 text-slate-900 overflow-hidden select-text">
       {/* Left List of Notes */}
-      <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-900/60">
-        <div className="p-4 border-b border-slate-800 space-y-3">
+      <div className="w-full md:w-80 border-r border-slate-200 flex flex-col bg-white">
+        <div className="p-4 border-b border-slate-200 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-yellow-50 text-yellow-600 border border-yellow-200 flex items-center justify-center">
                 <StickyNote className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-white">AI Knowledge Notes</h2>
+              <h2 className="text-sm font-bold text-slate-900">AI Knowledge Notes</h2>
             </div>
 
             <button
               onClick={handleExportAll}
               disabled={notes.length === 0}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               title="Export all notes to Markdown"
             >
               <Download className="w-4 h-4" />
@@ -75,7 +75,7 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search notes..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-yellow-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-yellow-500"
             />
           </div>
         </div>
@@ -88,18 +88,18 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
               onClick={() => setSelectedNote(note)}
               className={`p-3 rounded-xl cursor-pointer transition-all border text-xs ${
                 selectedNote?.id === note.id
-                  ? 'bg-slate-800 border-yellow-500/50 text-white shadow-md'
-                  : 'bg-slate-900/40 hover:bg-slate-800/60 border-slate-800/80 text-slate-300'
+                  ? 'bg-yellow-50/70 border-yellow-400 text-slate-900 shadow-2xs'
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
               }`}
             >
-              <div className="font-semibold text-xs truncate text-slate-200 mb-1">{note.title}</div>
-              <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+              <div className="font-bold text-xs truncate text-slate-900 mb-1">{note.title}</div>
+              <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
                 {note.content.replace(/[#*`]/g, '')}
               </p>
               <div className="flex items-center justify-between text-[10px] text-slate-500 mt-2">
                 <span>{note.createdAt}</span>
                 {note.tags && note.tags[0] && (
-                  <span className="px-1.5 py-0.2 rounded bg-slate-800 text-yellow-400/80">
+                  <span className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">
                     #{note.tags[0]}
                   </span>
                 )}
@@ -116,13 +116,13 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
       </div>
 
       {/* Right Note Detail Viewer */}
-      <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
         {selectedNote ? (
           <>
             {/* Note Top Bar */}
-            <div className="h-12 px-6 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between text-xs">
+            <div className="h-12 px-6 bg-white border-b border-slate-200 flex items-center justify-between text-xs shadow-2xs">
               <div className="flex items-center gap-3 truncate">
-                <span className="font-bold text-sm text-slate-100 truncate max-w-md">
+                <span className="font-bold text-sm text-slate-900 truncate max-w-md">
                   {selectedNote.title}
                 </span>
                 <span className="text-[11px] text-slate-500 font-mono">
@@ -134,7 +134,7 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
                 {selectedNote.sourceUrl && onNavigateUrl && (
                   <button
                     onClick={() => onNavigateUrl(selectedNote.sourceUrl!)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-300 text-xs flex items-center gap-1.5 transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-blue-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Open Source</span>
@@ -143,10 +143,10 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
 
                 <button
                   onClick={handleCopy}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
                   title="Copy Note"
                 >
-                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 </button>
 
                 <button
@@ -154,7 +154,7 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
                     onDeleteNote(selectedNote.id);
                     setSelectedNote(null);
                   }}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-400 transition-colors"
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 border border-slate-200 transition-colors cursor-pointer"
                   title="Delete Note"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -164,15 +164,17 @@ export const AINotesView: React.FC<AINotesViewProps> = ({
 
             {/* Note Content Body */}
             <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-4">
-              <div className="markdown-body prose prose-invert max-w-none text-slate-200 text-sm leading-relaxed">
-                <Markdown>{selectedNote.content}</Markdown>
+              <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-md">
+                <div className="markdown-body max-w-none text-slate-800 text-sm leading-relaxed">
+                  <Markdown>{selectedNote.content}</Markdown>
+                </div>
               </div>
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-3">
-            <StickyNote className="w-12 h-12 text-slate-600" />
-            <h3 className="text-base font-semibold text-slate-300">Select or Create a Note</h3>
+            <StickyNote className="w-12 h-12 text-slate-400" />
+            <h3 className="text-base font-semibold text-slate-800">Select or Create a Note</h3>
             <p className="text-xs text-slate-500 max-w-sm">
               Use Aksh AI to summarize articles, research complex topics, or save study guides directly to this knowledge base.
             </p>

@@ -213,3 +213,37 @@ export async function inspectCode(
   }
   return await res.json();
 }
+
+export async function executeAgentTask(
+  taskGoal: string,
+  webpageContext?: { url?: string; title?: string; textContent?: string }
+): Promise<{ result: string }> {
+  const res = await fetch('/api/ai/agent-task', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taskGoal, webpageContext }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to execute agent task`);
+  }
+  return await res.json();
+}
+
+export async function extractStructuredData(
+  content: string,
+  title: string,
+  url: string,
+  format: string = 'table'
+): Promise<{ data: string }> {
+  const res = await fetch('/api/ai/extract-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, title, url, format }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to extract data`);
+  }
+  return await res.json();
+}

@@ -113,14 +113,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-slate-950 text-slate-200 overflow-hidden select-text">
+    <div className="h-full flex flex-col md:flex-row bg-slate-50 text-slate-900 overflow-hidden select-text">
       {/* Left Panel: PDF Document Paper View */}
-      <div className="flex-1 flex flex-col border-r border-slate-800 bg-slate-950 overflow-hidden">
+      <div className="flex-1 flex flex-col border-r border-slate-200 bg-slate-100 overflow-hidden">
         {/* PDF Top Toolbar */}
-        <div className="h-10 px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300">
+        <div className="h-10 px-4 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
           <div className="flex items-center gap-2 truncate">
-            <FileText className="w-4 h-4 text-rose-400 shrink-0" />
-            <span className="font-semibold truncate max-w-[200px]">{currentPdf.filename}</span>
+            <FileText className="w-4 h-4 text-rose-600 shrink-0" />
+            <span className="font-bold text-slate-900 truncate max-w-[200px]">{currentPdf.filename}</span>
             <span className="text-[11px] text-slate-500 font-mono">
               ({currentPdf.pageCount} pages)
             </span>
@@ -128,18 +128,18 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
           <div className="flex items-center gap-2">
             {/* Zoom Controls */}
-            <div className="flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-lg text-slate-300">
+            <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-lg text-slate-700 border border-slate-200">
               <button
                 onClick={() => setZoomLevel((z) => Math.max(75, z - 10))}
-                className="hover:text-white"
+                className="hover:text-slate-900 cursor-pointer"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[11px] font-mono px-1">{zoomLevel}%</span>
+              <span className="text-[11px] font-mono font-medium px-1">{zoomLevel}%</span>
               <button
                 onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
-                className="hover:text-white"
+                className="hover:text-slate-900 cursor-pointer"
                 title="Zoom In"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
@@ -147,8 +147,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             </div>
 
             {/* Upload Custom PDF / File */}
-            <label className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer transition-colors">
-              <Upload className="w-3.5 h-3.5 text-blue-400" />
+            <label className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-medium cursor-pointer transition-colors">
+              <Upload className="w-3.5 h-3.5 text-blue-600" />
               <span>Upload PDF</span>
               <input
                 type="file"
@@ -161,18 +161,18 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
 
         {/* Sample Switcher Pills */}
-        <div className="px-4 py-2 bg-slate-900/60 border-b border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
-          <span className="text-[11px] text-slate-500 font-semibold uppercase shrink-0">
+        <div className="px-4 py-2 bg-white/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
+          <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider shrink-0">
             Sample PDFs:
           </span>
           {SAMPLE_PDFS.map((sample) => (
             <button
               key={sample.id}
               onClick={() => handleSelectSample(sample)}
-              className={`px-2.5 py-1 rounded-lg shrink-0 transition-colors ${
+              className={`px-2.5 py-1 rounded-lg shrink-0 transition-colors font-medium cursor-pointer ${
                 currentPdf.filename === sample.filename
-                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-medium'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200'
+                  ? 'bg-rose-50 text-rose-700 border border-rose-300 font-semibold'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200'
               }`}
             >
               {sample.title}
@@ -181,10 +181,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
 
         {/* PDF Paper Sheet */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 flex justify-center bg-slate-950">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 flex justify-center bg-slate-100">
           <div
             style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-            className="w-full max-w-2xl bg-white text-slate-900 rounded-xl shadow-2xl p-8 md:p-12 font-serif-reading transition-transform duration-150 space-y-6 select-text min-h-[600px]"
+            className="w-full max-w-2xl bg-white text-slate-900 rounded-xl shadow-lg border border-slate-200 p-8 md:p-12 font-serif-reading transition-transform duration-150 space-y-6 select-text min-h-[600px]"
           >
             <div className="text-center pb-6 border-b border-slate-200 space-y-2">
               <div className="text-xs uppercase tracking-widest text-slate-500 font-sans font-bold">
@@ -203,84 +203,84 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       </div>
 
       {/* Right Panel: AI PDF Intelligence Co-Pilot */}
-      <div className="w-full md:w-[460px] h-full bg-slate-900 flex flex-col shadow-xl z-10 select-text">
-        <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+      <div className="w-full md:w-[460px] h-full bg-white flex flex-col shadow-lg z-10 select-text border-l border-slate-200">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-rose-600/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-100">AI PDF Intelligence</h3>
-              <p className="text-[11px] text-slate-400">Deep document synthesis & testing</p>
+              <h3 className="text-sm font-bold text-slate-900">AI PDF Intelligence</h3>
+              <p className="text-[11px] text-slate-500">Deep document synthesis & testing</p>
             </div>
           </div>
         </div>
 
         {/* Action Buttons Grid */}
-        <div className="p-3 border-b border-slate-800 grid grid-cols-2 gap-2 text-xs">
+        <div className="p-3 border-b border-slate-200 grid grid-cols-2 gap-2 text-xs bg-slate-50/50">
           <button
             onClick={() => handleRunAiAction('summarize')}
-            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
+            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
               activeAction === 'summarize'
-                ? 'bg-blue-600/20 border-blue-500 text-blue-300'
-                : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-2xs font-semibold'
+                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
-            <BookOpen className="w-4 h-4 text-blue-400 shrink-0" />
+            <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
             <div>
-              <div className="font-semibold">Summarize PDF</div>
-              <div className="text-[10px] text-slate-400">Core findings & methodology</div>
+              <div className="font-semibold text-slate-900">Summarize PDF</div>
+              <div className="text-[10px] text-slate-500">Core findings & methodology</div>
             </div>
           </button>
 
           <button
             onClick={() => handleRunAiAction('notes')}
-            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
+            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
               activeAction === 'notes'
-                ? 'bg-amber-600/20 border-amber-500 text-amber-300'
-                : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-2xs font-semibold'
+                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
-            <GraduationCap className="w-4 h-4 text-amber-400 shrink-0" />
+            <GraduationCap className="w-4 h-4 text-amber-600 shrink-0" />
             <div>
-              <div className="font-semibold">Study Notes</div>
-              <div className="text-[10px] text-slate-400">Cornell-style breakdown</div>
+              <div className="font-semibold text-slate-900">Study Notes</div>
+              <div className="text-[10px] text-slate-500">Cornell-style breakdown</div>
             </div>
           </button>
 
           <button
             onClick={() => handleRunAiAction('mcq')}
-            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
+            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
               activeAction === 'mcq'
-                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
-                : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-2xs font-semibold'
+                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <div>
-              <div className="font-semibold">Generate 5 MCQs</div>
-              <div className="text-[10px] text-slate-400">Practice quiz with solutions</div>
+              <div className="font-semibold text-slate-900">Generate 5 MCQs</div>
+              <div className="text-[10px] text-slate-500">Practice quiz with solutions</div>
             </div>
           </button>
 
           <button
             onClick={() => handleRunAiAction('interview')}
-            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
+            className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
               activeAction === 'interview'
-                ? 'bg-purple-600/20 border-purple-500 text-purple-300'
-                : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                ? 'bg-purple-50 border-purple-400 text-purple-900 shadow-2xs font-semibold'
+                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
-            <Briefcase className="w-4 h-4 text-purple-400 shrink-0" />
+            <Briefcase className="w-4 h-4 text-purple-600 shrink-0" />
             <div>
-              <div className="font-semibold">Interview Q&A</div>
-              <div className="text-[10px] text-slate-400">Top technical questions</div>
+              <div className="font-semibold text-slate-900">Interview Q&A</div>
+              <div className="text-[10px] text-slate-500">Top technical questions</div>
             </div>
           </button>
         </div>
 
         {/* Custom PDF Question Input */}
-        <div className="p-3 border-b border-slate-800">
+        <div className="p-3 border-b border-slate-200 bg-white">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -293,12 +293,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               value={customQuestion}
               onChange={(e) => setCustomQuestion(e.target.value)}
               placeholder="Ask anything about this PDF (e.g. 'Explain equation 1')..."
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500"
+              className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-600"
             />
             <button
               type="submit"
               disabled={!customQuestion.trim() || isLoading}
-              className="p-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white transition-colors"
+              className="p-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white transition-colors cursor-pointer"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -306,11 +306,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
 
         {/* AI Results Output Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
           {isLoading && (
             <div className="py-12 text-center space-y-3">
-              <div className="w-8 h-8 rounded-full border-2 border-rose-400 border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-rose-300 font-medium">
+              <div className="w-8 h-8 rounded-full border-2 border-rose-600 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-rose-700 font-medium">
                 Gemini 3.7 is analyzing document tokens & synthesizing insights...
               </p>
             </div>
@@ -318,37 +318,37 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
           {!isLoading && aiOutput && (
             <div className="space-y-4 animate-in fade-in">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
-                <span className="font-semibold text-rose-400 uppercase tracking-wider text-[11px]">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs">
+                <span className="font-bold text-rose-700 uppercase tracking-wider text-[11px]">
                   Analysis Output
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handleSaveToNotes}
-                    className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1 text-[11px]"
+                    className="p-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
                   >
                     {saved ? (
-                      <span className="text-emerald-400 flex items-center gap-0.5">
+                      <span className="text-emerald-600 flex items-center gap-0.5">
                         <Check className="w-3 h-3" /> Saved
                       </span>
                     ) : (
                       <>
-                        <BookmarkPlus className="w-3.5 h-3.5" />
+                        <BookmarkPlus className="w-3.5 h-3.5 text-amber-600" />
                         <span>Save Note</span>
                       </>
                     )}
                   </button>
                   <button
                     onClick={handleCopyResult}
-                    className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1 text-[11px]"
+                    className="p-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 text-[11px] font-medium cursor-pointer"
                   >
                     {copied ? (
-                      <span className="text-emerald-400 flex items-center gap-0.5">
+                      <span className="text-emerald-600 flex items-center gap-0.5">
                         <Check className="w-3 h-3" /> Copied
                       </span>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5 text-blue-600" />
                         <span>Copy</span>
                       </>
                     )}
@@ -356,17 +356,17 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 </div>
               </div>
 
-              <div className="markdown-body text-slate-200 text-xs leading-relaxed">
+              <div className="markdown-body text-slate-800 text-xs leading-relaxed">
                 <Markdown>{aiOutput}</Markdown>
               </div>
             </div>
           )}
 
           {!isLoading && !aiOutput && (
-            <div className="py-16 text-center space-y-2 text-slate-500 text-xs">
-              <Sparkles className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="font-medium text-slate-400">Ready to examine document</p>
-              <p className="max-w-xs mx-auto">
+            <div className="py-16 text-center space-y-2 text-slate-400 text-xs">
+              <Sparkles className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="font-semibold text-slate-700">Ready to examine document</p>
+              <p className="max-w-xs mx-auto text-slate-500">
                 Click any action above to generate a summary, Cornell study notes, or practice MCQs.
               </p>
             </div>
