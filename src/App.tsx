@@ -23,9 +23,10 @@ import { SplitScreenContainer } from './components/Browser/SplitScreenContainer'
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
-import { scrapeWebpage } from './services/api';
+import { scrapeWebpage, organizeTabsSmartly } from './services/api';
 
 export function App() {
+  const [isClustering, setIsClustering] = useState<boolean>(false);
   // Initial preloaded tabs for an instant, rich portfolio showcase
   const [tabs, setTabs] = useState<Tab[]>([
     {
@@ -514,6 +515,52 @@ export function App() {
     }
   };
 
+  // Auto Cluster Tabs with Gemini Smart Tab Organizer
+  const handleAutoClusterTabs = async () => {
+    if (tabs.length <= 1) return;
+    setIsClustering(true);
+    try {
+      const tabsPayload = tabs.map((t) => ({
+        id: t.id,
+        title: t.title,
+        url: t.url,
+        extractedSnippet: (t.extractedText || t.metaDescription || '').slice(0, 300),
+      }));
+
+      const res = await organizeTabsSmartly(tabsPayload);
+      if (res && res.groups && res.groups.length > 0) {
+        // Map group names and colors back to tabs
+        const tabToGroupMap = new Map<string, { name: string; color: string }>();
+        res.groups.forEach((g: any) => {
+          g.tabIds.forEach((id: string) => {
+            tabToGroupMap.set(id, { name: g.groupName, color: g.color || '#3b82f6' });
+          });
+        });
+
+        setTabs((prev) => {
+          const updated = prev.map((t) => {
+            const group = tabToGroupMap.get(t.id);
+            if (group) {
+              return { ...t, groupName: group.name, groupColor: group.color };
+            }
+            return t;
+          });
+
+          // Sort tabs so grouped tabs sit contiguously
+          return [...updated].sort((a, b) => {
+            const groupA = a.groupName || '';
+            const groupB = b.groupName || '';
+            return groupA.localeCompare(groupB);
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Error clustering tabs:', err);
+    } finally {
+      setIsClustering(false);
+    }
+  };
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -725,6 +772,8 @@ export function App() {
         onPinTab={handlePinTab}
         isAiSidebarOpen={isAiSidebarOpen}
         onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
+        onAutoClusterTabs={handleAutoClusterTabs}
+        isClustering={isClustering}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -852,6 +901,7 @@ export function App() {
         onOpenInternalView={(view) => {
           navigateTab(activeTabId, `aksh://${view}`);
         }}
+        onAutoClusterTabs={handleAutoClusterTabs}
       />
 
       {/* Keyboard Shortcuts Cheat Sheet Modal */}

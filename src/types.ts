@@ -29,6 +29,8 @@ export interface Tab {
   metaDescription?: string;
   headings?: string[];
   isReaderMode?: boolean;
+  groupName?: string;
+  groupColor?: string;
   pdfData?: {
     filename: string;
     text: string;

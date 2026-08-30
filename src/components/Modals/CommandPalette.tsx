@@ -19,7 +19,11 @@ import {
   Network,
   Maximize2,
   Trash2,
-  Cpu
+  Cpu,
+  Layers,
+  Radio,
+  Table,
+  Bot
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -36,6 +40,7 @@ interface CommandPaletteProps {
   onToggleReaderMode: () => void;
   onTriggerSpeech: () => void;
   onOpenInternalView: (view: PageContentType) => void;
+  onAutoClusterTabs?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -51,6 +56,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onToggleReaderMode,
   onTriggerSpeech,
   onOpenInternalView,
+  onAutoClusterTabs,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -68,14 +74,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Define commands
   const allCommands = [
-    // AI Actions
+    // AI Tools
     {
       id: 'ai-sidebar',
       title: 'Open Aksh AI Co-Pilot',
       subtitle: 'Context-aware chat and synthesis with Gemini 3.7 Flash',
-      category: 'AI Tools',
+      category: 'AI Intelligence',
       icon: Sparkles,
-      iconColor: 'text-indigo-400',
+      iconColor: 'text-indigo-600',
       action: () => {
         onOpenAiSidebar();
         onClose();
@@ -85,9 +91,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       id: 'ai-research',
       title: 'Launch AI Deep Research Mode',
       subtitle: 'Multi-source autonomous query synthesis with live web citations',
-      category: 'AI Tools',
+      category: 'AI Intelligence',
       icon: Zap,
-      iconColor: 'text-amber-400',
+      iconColor: 'text-amber-600',
       action: () => {
         onOpenNewTab('aksh://research');
         onClose();
@@ -97,9 +103,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       id: 'ai-mindmap',
       title: 'Generate Concept Mindmap & Knowledge Graph',
       subtitle: 'Convert current topic into an interactive visual graph',
-      category: 'AI Tools',
+      category: 'AI Intelligence',
       icon: Network,
-      iconColor: 'text-cyan-400',
+      iconColor: 'text-cyan-600',
       action: () => {
         const topic = activeTab?.title || 'Artificial Intelligence 2026';
         onOpenNewTab(`aksh://mindmap?topic=${encodeURIComponent(topic)}`);
@@ -107,12 +113,38 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     {
+      id: 'ai-devtools-agent',
+      title: 'Launch Autonomous Web Agent & DOM Inspector',
+      subtitle: 'AI DOM exploration, goal execution & security audit in DevTools',
+      category: 'Developer',
+      icon: Bot,
+      iconColor: 'text-purple-600',
+      action: () => {
+        onOpenNewTab('aksh://devtools');
+        onClose();
+      },
+    },
+    {
+      id: 'ai-organize-tabs',
+      title: 'AI Smart Tab Workspaces & Auto-Grouping',
+      subtitle: 'Cluster open tabs into semantic workspaces with custom labels',
+      category: 'Workspace',
+      icon: Layers,
+      iconColor: 'text-blue-600',
+      action: () => {
+        if (onAutoClusterTabs) {
+          onAutoClusterTabs();
+        }
+        onClose();
+      },
+    },
+    {
       id: 'ai-tts',
       title: 'Read Aloud Webpage (Text-to-Speech)',
       subtitle: 'Listen to the active page content with speech synthesis',
-      category: 'AI Tools',
+      category: 'Audio & Accessibility',
       icon: Volume2,
-      iconColor: 'text-emerald-400',
+      iconColor: 'text-emerald-600',
       action: () => {
         onTriggerSpeech();
         onClose();
@@ -124,7 +156,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Live network requests, DOM tree, security audit & code intelligence',
       category: 'Developer',
       icon: Code2,
-      iconColor: 'text-blue-400',
+      iconColor: 'text-blue-600',
       action: () => {
         onOpenNewTab('aksh://devtools');
         onClose();
@@ -133,10 +165,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'split-screen',
       title: 'Toggle Split-Screen Multitasking (Dual-Pane)',
-      subtitle: 'Browse two tabs or notes side-by-side in one window',
+      subtitle: 'Browse two tabs side-by-side with cross-tab AI comparison',
       category: 'Workspace',
       icon: Columns,
-      iconColor: 'text-purple-400',
+      iconColor: 'text-purple-600',
       action: () => {
         onToggleSplitScreen();
         onClose();
@@ -148,7 +180,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Clean article layout stripping ads and clutter',
       category: 'Browser',
       icon: FileText,
-      iconColor: 'text-slate-300',
+      iconColor: 'text-slate-600',
       action: () => {
         onToggleReaderMode();
         onClose();
@@ -158,9 +190,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       id: 'product-compare',
       title: 'AI Product Comparison & Decision Matrix',
       subtitle: 'Compare hardware specifications & benchmark ratings',
-      category: 'AI Tools',
+      category: 'AI Intelligence',
       icon: Scale,
-      iconColor: 'text-pink-400',
+      iconColor: 'text-pink-600',
       action: () => {
         onOpenNewTab('aksh://comparison');
         onClose();
@@ -172,7 +204,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Cornell notes, saved dossiers & markdown exporter',
       category: 'Knowledge',
       icon: StickyNote,
-      iconColor: 'text-yellow-400',
+      iconColor: 'text-amber-600',
       action: () => {
         onOpenNewTab('aksh://notes');
         onClose();
@@ -184,7 +216,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Organized folders, tags and saved links',
       category: 'Browser',
       icon: Bookmark,
-      iconColor: 'text-amber-400',
+      iconColor: 'text-amber-600',
       action: () => {
         onOpenNewTab('aksh://bookmarks');
         onClose();
@@ -196,7 +228,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Chronological timeline of visited URLs',
       category: 'Browser',
       icon: History,
-      iconColor: 'text-blue-400',
+      iconColor: 'text-blue-600',
       action: () => {
         onOpenNewTab('aksh://history');
         onClose();
@@ -208,7 +240,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Active and completed file downloads',
       category: 'Browser',
       icon: Download,
-      iconColor: 'text-emerald-400',
+      iconColor: 'text-emerald-600',
       action: () => {
         onOpenNewTab('aksh://downloads');
         onClose();
@@ -220,7 +252,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       subtitle: 'Customize AI preferences, themes & search engines',
       category: 'System',
       icon: Settings,
-      iconColor: 'text-slate-400',
+      iconColor: 'text-slate-600',
       action: () => {
         onOpenNewTab('aksh://settings');
         onClose();
@@ -235,7 +267,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     subtitle: t.url,
     category: 'Open Tabs',
     icon: Globe,
-    iconColor: 'text-blue-400',
+    iconColor: 'text-blue-600',
     action: () => {
       onSelectTab(t.id);
       onClose();
@@ -282,7 +314,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-start justify-center pt-20 px-4"
+      className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center pt-20 px-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <motion.div
@@ -291,11 +323,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         exit={{ opacity: 0, scale: 0.96, y: -10 }}
         transition={{ duration: 0.15 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]"
+        className="w-full max-w-2xl bg-white border border-slate-300 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh] shadow-slate-900/20"
       >
         {/* Search Header */}
-        <div className="p-3 border-b border-slate-800 flex items-center gap-3 bg-slate-950/60">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+        <div className="p-3.5 border-b border-slate-200 flex items-center gap-3 bg-slate-50/70">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
             <Sparkles className="w-4 h-4 animate-pulse" />
           </div>
           <input
@@ -308,9 +340,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a command, search open tabs, or ask Aksh AI..."
-            className="w-full bg-transparent text-slate-100 placeholder-slate-500 text-sm focus:outline-none"
+            className="w-full bg-transparent text-slate-900 placeholder-slate-400 text-sm font-medium focus:outline-none"
           />
-          <kbd className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-400 font-mono">
+          <kbd className="px-2 py-0.5 rounded-lg bg-slate-200 border border-slate-300 text-[10px] text-slate-600 font-mono font-bold">
             ESC
           </kbd>
         </div>
@@ -319,10 +351,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="flex-1 overflow-y-auto p-2 space-y-1 select-none">
           {filteredItems.length === 0 ? (
             <div className="p-8 text-center space-y-2">
-              <Search className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-sm font-semibold text-slate-300">No matching commands found</p>
+              <Search className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-sm font-bold text-slate-800">No matching commands found</p>
               <p className="text-xs text-slate-500">
-                Press <kbd className="px-1.5 py-0.5 bg-slate-800 rounded font-mono text-slate-400">Enter</kbd> to search Google or navigate to "{query}"
+                Press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-slate-600 font-bold">Enter</kbd> to search Google or navigate to "{query}"
               </p>
             </div>
           ) : (
@@ -336,32 +368,32 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   onClick={item.action}
                   className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-all ${
                     isSelected
-                      ? 'bg-blue-600/20 border border-blue-500/40 text-white'
-                      : 'hover:bg-slate-800/60 border border-transparent text-slate-300'
+                      ? 'bg-blue-50 border border-blue-200 text-slate-900 shadow-2xs'
+                      : 'hover:bg-slate-50 border border-transparent text-slate-700'
                   }`}
                 >
                   <div className="flex items-center gap-3 truncate">
                     <div
-                      className={`w-7 h-7 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-center shrink-0 ${item.iconColor}`}
+                      className={`w-7 h-7 rounded-lg bg-white border border-slate-200 shadow-2xs flex items-center justify-center shrink-0 ${item.iconColor}`}
                     >
                       <ItemIcon className="w-3.5 h-3.5" />
                     </div>
                     <div className="truncate">
-                      <div className="text-xs font-semibold text-slate-200 truncate flex items-center gap-2">
+                      <div className="text-xs font-bold text-slate-900 truncate flex items-center gap-2">
                         <span>{item.title}</span>
                         {item.category && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono font-normal">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 font-mono font-medium border border-slate-200">
                             {item.category}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-400 truncate">{item.subtitle}</div>
+                      <div className="text-[11px] text-slate-500 truncate font-normal">{item.subtitle}</div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 pl-3">
                     {isSelected && (
-                      <span className="text-[11px] font-medium text-blue-400 flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-blue-600 flex items-center gap-1">
                         <span>Execute</span>
                         <ArrowRight className="w-3 h-3" />
                       </span>
@@ -374,21 +406,22 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-3 py-2 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="px-3.5 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 bg-slate-800 rounded text-slate-400 font-mono">↑↓</kbd> to navigate
+              <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-700 font-mono font-bold">↑↓</kbd> to navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 bg-slate-800 rounded text-slate-400 font-mono">↵</kbd> to select
+              <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-700 font-mono font-bold">↵</kbd> to select
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 bg-slate-800 rounded text-slate-400 font-mono">esc</kbd> to dismiss
+              <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-700 font-mono font-bold">esc</kbd> to dismiss
             </span>
           </div>
-          <div className="font-mono text-slate-400">Aksh Spotlight Engine</div>
+          <div className="font-mono text-slate-600 font-semibold">Aksh Spotlight Engine</div>
         </div>
       </motion.div>
     </div>
   );
 };
+

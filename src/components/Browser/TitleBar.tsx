@@ -12,6 +12,8 @@ interface TitleBarProps {
   onPinTab: (id: string) => void;
   isAiSidebarOpen: boolean;
   onToggleAiSidebar: () => void;
+  onAutoClusterTabs?: () => void;
+  isClustering?: boolean;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -23,6 +25,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onPinTab,
   isAiSidebarOpen,
   onToggleAiSidebar,
+  onAutoClusterTabs,
+  isClustering,
 }) => {
   return (
     <div className="h-10 bg-slate-100/90 flex items-center justify-between select-none border-b border-slate-200 relative z-20">
@@ -50,6 +54,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         onCloseTab={onCloseTab}
         onNewTab={onNewTab}
         onPinTab={onPinTab}
+        onAutoClusterTabs={onAutoClusterTabs}
+        isClustering={isClustering}
       />
 
       {/* Right Controls & AI Side Panel Toggle */}

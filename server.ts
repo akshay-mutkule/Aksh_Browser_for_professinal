@@ -836,6 +836,261 @@ ${(content || "").slice(0, 10000)}
   }
 });
 
+// AI Cross-Tab & Split-Screen Comparative Synthesis
+app.post("/api/ai/cross-tab-synthesis", async (req: Request, res: Response) => {
+  try {
+    const { tabs, focus = "comparison" } = req.body;
+    const ai = getGeminiClient();
+
+    if (!Array.isArray(tabs) || tabs.length < 2) {
+      res.status(400).json({ error: "At least 2 tabs required for cross-tab synthesis" });
+      return;
+    }
+
+    if (!ai) {
+      res.json({
+        synthesis: `### ⚖️ Cross-Tab Comparative Synthesis\n\n**Comparing:**\n- **Tab A:** ${tabs[0]?.title || "First Document"}\n- **Tab B:** ${tabs[1]?.title || "Second Document"}\n\n#### 🎯 Key Commonalities\nBoth sources focus on foundational principles and technological advancements in modern software and computing architectures.\n\n#### ⚡ Core Distinctions & Trade-offs\n- **Source 1 Emphasis:** Practical application, ergonomics, and rapid execution.\n- **Source 2 Emphasis:** Theoretical rigor, performance scaling, and hardware integration.\n\n#### 💡 Actionable Recommendation\nAdopt Source 1 for immediate prototyping, while benchmarking against Source 2 specifications for production resilience.`,
+      });
+      return;
+    }
+
+    const tabDescriptions = tabs
+      .map(
+        (t: any, idx: number) =>
+          `[Tab ${idx + 1}: "${t.title || "Untitled"}"] (URL: ${t.url || "N/A"})\nContent Excerpt:\n"""\n${(t.textContent || t.extractedText || t.description || "").slice(0, 4000)}\n"""`
+      )
+      .join("\n\n---\n\n");
+
+    const prompt = `You are the Aksh AI Browser High-Throughput Synthesis Engine. 
+Perform a deep comparative synthesis and intelligence briefing comparing the following ${tabs.length} open web pages:
+
+${tabDescriptions}
+
+Structure your response in crisp, clean, high-density Markdown:
+1. 🌐 **Executive Cross-Source Synthesis** (2-3 sentences summarizing the overarching relationship between these pages)
+2. 📊 **Key Comparison Matrix** (Markdown table comparing Core Topic, Key Claims, Methodology/Tone, Target Audience, and Strengths)
+3. ⚔️ **Key Trade-offs & Contradictions** (Where do the sources diverge, disagree, or present conflicting perspectives?)
+4. 💎 **Actionable Takeaways & Verdict** (What is the bottom-line decision or synthesis the user should walk away with?)`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+      },
+    });
+
+    res.json({
+      synthesis: response.text || "No synthesis generated",
+    });
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/cross-tab-synthesis:", err);
+    const message = err instanceof Error ? err.message : "Error synthesizing tabs";
+    res.status(500).json({ error: message });
+  }
+});
+
+// AI Podcast & Conversational Audio Briefing Script Generator
+app.post("/api/ai/podcast-script", async (req: Request, res: Response) => {
+  try {
+    const { title, url, content, style = "conversational_hosts" } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      res.json({
+        script: `Alex: Welcome to today's Aksh AI Audio Briefing! Today we're breaking down ${title || "this article"}.\n\nSam: Absolutely. What stands out immediately is how clear the core arguments are. Let's look at the three biggest takeaways...`,
+        spokenText: `Welcome to the Aksh AI Audio Briefing on ${title || "this document"}. Here are the core insights you need to know today.`,
+      });
+      return;
+    }
+
+    const prompt = `You are a world-class tech podcast producer and narrator for Aksh AI Browser.
+Convert this webpage content into an ultra-engaging, dynamic 2-minute audio briefing script:
+Page Title: ${title}
+URL: ${url}
+
+Content:
+"""
+${(content || "").slice(0, 6000)}
+"""
+
+Produce two outputs in JSON format:
+1. "script": A dialogue script between two sharp hosts, "Alex" (the analyst) and "Sam" (the inquisitive explorer), breaking down the story with enthusiasm, natural banter, and concrete examples.
+2. "spokenText": A clean, continuous single-narrator script formatted specifically for Web Speech Synthesis Text-to-Speech (no stage directions, no speaker tags, easy to read aloud smoothly).
+
+Respond ONLY with valid JSON in this structure:
+{
+  "script": "Alex: ...\\n\\nSam: ...",
+  "spokenText": "..."
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch {
+      res.json({
+        script: response.text || "Script unavailable",
+        spokenText: (content || title || "").slice(0, 1000),
+      });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/podcast-script:", err);
+    const message = err instanceof Error ? err.message : "Error generating podcast";
+    res.status(500).json({ error: message });
+  }
+});
+
+// AI Smart Tab Workspace Clustering & Auto-Grouping Engine
+app.post("/api/ai/smart-tab-organizer", async (req: Request, res: Response) => {
+  try {
+    const { tabs } = req.body;
+    const ai = getGeminiClient();
+
+    if (!Array.isArray(tabs) || tabs.length === 0) {
+      res.json({ groups: [] });
+      return;
+    }
+
+    if (!ai) {
+      // Rule-based fallback clustering
+      const groups = [
+        {
+          name: "Research & AI",
+          color: "indigo",
+          tabIds: tabs.slice(0, Math.ceil(tabs.length / 2)).map((t: any) => t.id),
+        },
+        {
+          name: "General Browsing",
+          color: "blue",
+          tabIds: tabs.slice(Math.ceil(tabs.length / 2)).map((t: any) => t.id),
+        },
+      ];
+      res.json({ groups });
+      return;
+    }
+
+    const tabList = tabs.map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      url: t.url,
+      type: t.contentType,
+    }));
+
+    const prompt = `You are the Aksh AI Smart Workspace Tab Clustering Engine.
+Analyze this list of browser tabs and cluster them into 2 to 4 intuitive, semantic Workspace Groups (e.g., "AI & Machine Learning", "Engineering & DevTools", "News & Reading", "Shopping & Decisions", "Knowledge Base"):
+
+Tabs:
+${JSON.stringify(tabList, null, 2)}
+
+Return a JSON array of groups where each group has:
+- "name": Group title (concise, 2-4 words)
+- "color": One of ["indigo", "blue", "emerald", "amber", "rose", "purple", "cyan"]
+- "tabIds": Array of matching tab id strings
+
+Respond ONLY with valid JSON:
+{
+  "groups": [
+    { "name": "...", "color": "...", "tabIds": ["..."] }
+  ]
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.2,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch {
+      res.json({
+        groups: [
+          {
+            name: "Workspace Alpha",
+            color: "blue",
+            tabIds: tabs.map((t: any) => t.id),
+          },
+        ],
+      });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/smart-tab-organizer:", err);
+    const message = err instanceof Error ? err.message : "Error organizing tabs";
+    res.status(500).json({ error: message });
+  }
+});
+
+// AI Web Clipper & Structured Cornell Notes Generator
+app.post("/api/ai/web-clipper", async (req: Request, res: Response) => {
+  try {
+    const { title, url, content } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      res.json({
+        noteTitle: `Clipped: ${title || "Webpage Note"}`,
+        markdown: `## 📌 Source: [${title || url}](${url})\n\n### 📝 Summary\nCaptured from active webpage on ${new Date().toLocaleDateString()}.\n\n### 🔑 Key Takeaways\n- Captured key excerpt and insights.\n- Ready for synthesis.`,
+        tags: ["Web Clip", "Research"],
+      });
+      return;
+    }
+
+    const prompt = `You are the Aksh AI Web Clipper.
+Convert this webpage into a structured Cornell Note with high-value study/reference synthesis:
+Title: ${title}
+URL: ${url}
+
+Content:
+"""
+${(content || "").slice(0, 7000)}
+"""
+
+Format your response as a JSON object:
+{
+  "noteTitle": "Concise note title",
+  "markdown": "Complete Markdown with headers: ## 🎯 Core Concept\\n\\n### ❓ Key Cues & Questions\\n...\\n\\n### 📝 Detailed Notes & Architecture\\n...\\n\\n### 💡 Bottom-line Summary\\n...",
+  "tags": ["Tag1", "Tag2", "Tag3"]
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.3,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch {
+      res.json({
+        noteTitle: title || "Webpage Clip",
+        markdown: response.text || "No notes generated",
+        tags: ["Web Clip"],
+      });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/web-clipper:", err);
+    const message = err instanceof Error ? err.message : "Error clipping note";
+    res.status(500).json({ error: message });
+  }
+});
+
 // ---------------- VITE MIDDLEWARE / STATIC ASSETS ----------------
 
 async function startServer() {

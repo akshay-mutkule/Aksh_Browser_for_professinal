@@ -247,3 +247,69 @@ export async function extractStructuredData(
   }
   return await res.json();
 }
+
+export async function synthesizeCrossTabs(
+  tabs: Array<{ id: string; title: string; url: string; extractedText?: string; textContent?: string }>
+): Promise<{ synthesis: string }> {
+  const res = await fetch('/api/ai/cross-tab-synthesis', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tabs }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to synthesize tabs`);
+  }
+  return await res.json();
+}
+
+export async function generatePodcastScript(
+  title: string,
+  url: string,
+  content: string,
+  style: string = 'conversational_hosts'
+): Promise<{ script: string; spokenText: string }> {
+  const res = await fetch('/api/ai/podcast-script', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, url, content, style }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to generate podcast script`);
+  }
+  return await res.json();
+}
+
+export async function organizeTabsSmartly(
+  tabs: Array<{ id: string; title: string; url: string; contentType?: string }>
+): Promise<{ groups: Array<{ name: string; color: string; tabIds: string[] }> }> {
+  const res = await fetch('/api/ai/smart-tab-organizer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tabs }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to organize tabs`);
+  }
+  return await res.json();
+}
+
+export async function clipWebpageToNote(
+  title: string,
+  url: string,
+  content: string
+): Promise<{ noteTitle: string; markdown: string; tags: string[] }> {
+  const res = await fetch('/api/ai/web-clipper', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, url, content }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to clip webpage`);
+  }
+  return await res.json();
+}
+

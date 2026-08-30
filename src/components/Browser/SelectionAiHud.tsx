@@ -12,7 +12,11 @@ import {
   Search,
   ArrowRight,
   ShieldCheck,
-  Languages
+  Languages,
+  GraduationCap,
+  Share2,
+  Copy,
+  Check
 } from 'lucide-react';
 import { sendAIChat, translateText, factCheckClaim } from '../../services/api';
 
@@ -31,10 +35,11 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
   onSaveAsNote,
   onOpenAiSidebarWithMessage,
 }) => {
-  const [activeModal, setActiveModal] = useState<'explain' | 'translate' | 'factcheck' | null>(null);
+  const [activeModal, setActiveModal] = useState<'explain' | 'translate' | 'factcheck' | 'flashcard' | null>(null);
   const [resultText, setResultText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [targetLang, setTargetLang] = useState<string>('Spanish');
+  const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     setActiveModal(null);
@@ -87,6 +92,24 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
     }
   };
 
+  const handleGenerateFlashcard = async () => {
+    setActiveModal('flashcard');
+    setIsLoading(true);
+    try {
+      const res = await sendAIChat(
+        `Convert this excerpt into a crisp high-yield flashcard (Front Question & Back Answer):\n"${selectedText}"`,
+        [],
+        undefined,
+        'general'
+      );
+      setResultText(res.reply);
+    } catch (err) {
+      setResultText('Flashcard generation failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveSnippetToNotes = () => {
     onSaveAsNote(
       `Excerpt: ${selectedText.slice(0, 40)}...`,
@@ -96,8 +119,15 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
     onClose();
   };
 
+  const handleCopy = () => {
+    if (!resultText) return;
+    navigator.clipboard.writeText(resultText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // Keep HUD within bounds
-  const clampedX = Math.min(Math.max(coords.x - 120, 20), window.innerWidth - 320);
+  const clampedX = Math.min(Math.max(coords.x - 120, 20), window.innerWidth - 340);
   const clampedY = Math.max(coords.y - 50, 60);
 
   return (
@@ -111,53 +141,62 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
             initial={{ scale: 0.9, opacity: 0, y: 5 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-slate-900/95 border border-slate-700/80 backdrop-blur-xl rounded-xl shadow-2xl p-1 flex items-center gap-1 text-slate-200 text-xs"
+            className="bg-white/98 border border-slate-300 backdrop-blur-xl rounded-2xl shadow-2xl p-1.5 flex items-center gap-1 text-slate-800 text-xs shadow-slate-900/10"
           >
             {/* Explain */}
             <button
               onClick={handleExplain}
-              className="px-2.5 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer text-blue-300 font-medium"
-              title="Explain selected text with Gemini 3.7"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-blue-50 text-blue-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Explain selected text with Gemini"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               <span>Explain</span>
             </button>
 
             {/* Translate */}
             <button
               onClick={() => handleTranslate('Spanish')}
-              className="px-2.5 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer text-indigo-300 font-medium"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-indigo-50 text-indigo-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Translate selected text"
             >
-              <Languages className="w-3.5 h-3.5" />
+              <Languages className="w-3.5 h-3.5 text-indigo-600" />
               <span>Translate</span>
             </button>
 
             {/* Fact Check */}
             <button
               onClick={handleFactCheck}
-              className="px-2.5 py-1.5 rounded-lg hover:bg-emerald-600 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer text-emerald-300 font-medium"
+              className="px-2.5 py-1.5 rounded-xl hover:bg-emerald-50 text-emerald-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Fact check this assertion"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Fact Check</span>
+            </button>
+
+            {/* Flashcard */}
+            <button
+              onClick={handleGenerateFlashcard}
+              className="p-1.5 rounded-xl hover:bg-purple-50 text-purple-700 transition-colors cursor-pointer"
+              title="Generate study flashcard"
+            >
+              <GraduationCap className="w-4 h-4 text-purple-600" />
             </button>
 
             {/* Save Note */}
             <button
               onClick={handleSaveSnippetToNotes}
-              className="p-1.5 rounded-lg hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300 transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl hover:bg-amber-50 text-amber-600 transition-colors cursor-pointer"
               title="Save selection as Cornell Note"
             >
-              <StickyNote className="w-3.5 h-3.5" />
+              <StickyNote className="w-4 h-4 text-amber-600" />
             </button>
 
             {/* Dismiss */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </motion.div>
         ) : (
@@ -165,24 +204,33 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="w-80 bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl p-3.5 space-y-3 text-slate-100 text-xs"
+            className="w-84 bg-white border border-slate-300 rounded-2xl shadow-2xl p-4 space-y-3 text-slate-900 text-xs shadow-slate-900/15"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-1.5 font-bold text-slate-200 capitalize">
-                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                <span>{activeModal} Result</span>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-1.5 font-bold text-slate-900 capitalize">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <span>{activeModal} Insight</span>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleCopy}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 cursor-pointer"
+                  title="Copy result"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Language selectors if in translation mode */}
             {activeModal === 'translate' && (
-              <div className="flex items-center gap-1 overflow-x-auto text-[10px] font-medium">
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] font-medium scrollbar-none">
                 {['Spanish', 'French', 'German', 'Hindi', 'Japanese', 'Chinese'].map((lang) => (
                   <button
                     key={lang}
@@ -190,10 +238,10 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
                       setTargetLang(lang);
                       handleTranslate(lang);
                     }}
-                    className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                    className={`px-2 py-0.5 rounded-lg cursor-pointer transition-colors shrink-0 ${
                       targetLang === lang
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-indigo-600 text-white font-bold'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {lang}
@@ -203,11 +251,11 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
             )}
 
             {/* Content area */}
-            <div className="max-h-48 overflow-y-auto pr-1 text-slate-300 leading-relaxed font-sans text-xs select-text">
+            <div className="max-h-48 overflow-y-auto pr-1 text-slate-700 leading-relaxed font-sans text-xs select-text">
               {isLoading ? (
                 <div className="py-4 text-center space-y-2">
-                  <div className="w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mx-auto" />
-                  <p className="text-[11px] text-slate-400">Processing with Gemini 3.7...</p>
+                  <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto" />
+                  <p className="text-[11px] text-slate-500 font-medium">Processing with Gemini 3.7...</p>
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap">{resultText}</div>
@@ -215,15 +263,15 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
             </div>
 
             {/* Actions footer */}
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px]">
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
               <button
                 onClick={() => {
                   onSaveAsNote(`Insight: ${selectedText.slice(0, 30)}`, resultText);
                   onClose();
                 }}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <StickyNote className="w-3 h-3 text-yellow-400" />
+                <StickyNote className="w-3.5 h-3.5 text-amber-600" />
                 <span>Save to Notes</span>
               </button>
               <button
@@ -231,10 +279,10 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
                   onOpenAiSidebarWithMessage(`Regarding: "${selectedText}"\n${resultText}`);
                   onClose();
                 }}
-                className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 cursor-pointer"
+                className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 cursor-pointer"
               >
                 <span>Ask AI Co-Pilot</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </motion.div>
@@ -243,3 +291,4 @@ export const SelectionAiHud: React.FC<SelectionAiHudProps> = ({
     </div>
   );
 };
+

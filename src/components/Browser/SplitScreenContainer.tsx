@@ -10,9 +10,14 @@ import {
   Zap,
   Globe,
   FileText,
-  StickyNote
+  StickyNote,
+  Copy,
+  Check,
+  Scale,
+  ArrowRight
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
+import { synthesizeCrossTabs } from '../../services/api';
 
 interface SplitScreenContainerProps {
   leftTab: Tab | null;
@@ -23,6 +28,7 @@ interface SplitScreenContainerProps {
   onSelectRightTab: (tabId: string) => void;
   onCloseSplitScreen: () => void;
   renderTabContent: (tab: Tab | null) => React.ReactNode;
+  onSaveAsNote?: (title: string, content: string, sourceUrl?: string) => void;
 }
 
 export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
@@ -34,29 +40,67 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
   onSelectRightTab,
   onCloseSplitScreen,
   renderTabContent,
+  onSaveAsNote,
 }) => {
-  const [isSelectingTab, setIsSelectingTab] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [synthesisResult, setSynthesisResult] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCrossTabSynthesis = async () => {
+    if (!leftTab || !rightTab) return;
+    setIsSynthesizing(true);
+    setSynthesisResult(null);
+
+    try {
+      const res = await synthesizeCrossTabs([
+        {
+          id: leftTab.id,
+          title: leftTab.title,
+          url: leftTab.url,
+          extractedText: leftTab.extractedText || leftTab.pdfData?.text || leftTab.metaDescription,
+        },
+        {
+          id: rightTab.id,
+          title: rightTab.title,
+          url: rightTab.url,
+          extractedText: rightTab.extractedText || rightTab.pdfData?.text || rightTab.metaDescription,
+        },
+      ]);
+      setSynthesisResult(res.synthesis);
+    } catch (err: any) {
+      setSynthesisResult(`### ❌ Synthesis Error\nCould not perform comparative synthesis: ${err.message || 'Server error'}`);
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!synthesisResult) return;
+    navigator.clipboard.writeText(synthesisResult);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="h-full flex overflow-hidden bg-slate-950">
+    <div className="h-full flex overflow-hidden bg-slate-50 relative">
       {/* Left Viewport Pane */}
       <div
         style={{ width: `${ratio}%` }}
-        className="h-full border-r border-slate-800 flex flex-col overflow-hidden relative"
+        className="h-full border-r border-slate-200 flex flex-col overflow-hidden relative"
       >
-        <div className="h-7 px-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0">
-          <div className="flex items-center gap-1.5 truncate">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="font-bold text-slate-200 truncate">{leftTab?.title || 'Primary Pane'}</span>
+        <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
+          <div className="flex items-center gap-2 truncate">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+            <span className="font-bold text-slate-900 truncate">{leftTab?.title || 'Primary Pane'}</span>
           </div>
-          <span className="text-[10px] text-slate-500">Left ({ratio}%)</span>
+          <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Left ({ratio}%)</span>
         </div>
         <div className="flex-1 overflow-hidden">{renderTabContent(leftTab)}</div>
       </div>
 
       {/* Center Resizer & Controls Bar */}
-      <div className="w-1.5 hover:w-2 bg-slate-800 hover:bg-blue-600 transition-all flex flex-col items-center justify-center cursor-col-resize z-20 group">
-        <div className="w-1 h-8 rounded-full bg-slate-600 group-hover:bg-white" />
+      <div className="w-2 hover:w-2.5 bg-slate-200 hover:bg-blue-600 transition-all flex flex-col items-center justify-center cursor-col-resize z-20 group">
+        <div className="w-1 h-8 rounded-full bg-slate-400 group-hover:bg-white" />
       </div>
 
       {/* Right Viewport Pane */}
@@ -65,13 +109,13 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
         className="h-full flex flex-col overflow-hidden relative"
       >
         {/* Right Pane Control Header */}
-        <div className="h-7 px-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0">
+        <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
           <div className="flex items-center gap-2 truncate">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
             <select
               value={rightTab?.id || ''}
               onChange={(e) => onSelectRightTab(e.target.value)}
-              className="bg-slate-950 border border-slate-700/80 rounded px-2 py-0.5 text-[11px] text-slate-200 focus:outline-none cursor-pointer truncate max-w-xs font-sans"
+              className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer truncate max-w-xs font-medium shadow-2xs"
             >
               {allTabs
                 .filter((t) => t.id !== leftTab?.id)
@@ -83,37 +127,50 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            {/* AI Cross-Tab Comparative Synthesis Trigger */}
+            <button
+              onClick={handleCrossTabSynthesis}
+              disabled={isSynthesizing || !leftTab || !rightTab}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+              title="Compare and synthesize both tabs side-by-side using Gemini"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>{isSynthesizing ? 'Synthesizing...' : 'AI Compare'}</span>
+            </button>
+
             {/* Quick Ratio Toggles */}
-            <button
-              onClick={() => onRatioChange(30)}
-              className={`px-1.5 py-0.5 rounded text-[10px] ${ratio === 30 ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
-              title="30% Left / 70% Right"
-            >
-              30/70
-            </button>
-            <button
-              onClick={() => onRatioChange(50)}
-              className={`px-1.5 py-0.5 rounded text-[10px] ${ratio === 50 ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
-              title="50% / 50% Even Split"
-            >
-              50/50
-            </button>
-            <button
-              onClick={() => onRatioChange(70)}
-              className={`px-1.5 py-0.5 rounded text-[10px] ${ratio === 70 ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400'}`}
-              title="70% Left / 30% Right"
-            >
-              70/30
-            </button>
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <button
+                onClick={() => onRatioChange(30)}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 30 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                title="30% Left / 70% Right"
+              >
+                30/70
+              </button>
+              <button
+                onClick={() => onRatioChange(50)}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 50 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                title="50% / 50% Even Split"
+              >
+                50/50
+              </button>
+              <button
+                onClick={() => onRatioChange(70)}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 70 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                title="70% Left / 30% Right"
+              >
+                70/30
+              </button>
+            </div>
 
             {/* Close Split Screen */}
             <button
               onClick={onCloseSplitScreen}
-              className="p-1 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors ml-1"
+              className="p-1 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
               title="Exit Split-Screen Mode"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -121,6 +178,62 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
         {/* Right Pane Viewport */}
         <div className="flex-1 overflow-hidden">{renderTabContent(rightTab)}</div>
       </div>
+
+      {/* Floating AI Cross-Tab Comparative Synthesis Modal Overlay */}
+      {synthesisResult && (
+        <div className="absolute inset-x-8 bottom-6 top-16 bg-white/98 border border-slate-300 rounded-2xl shadow-2xl z-30 flex flex-col overflow-hidden backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold">
+                <Scale className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">AI Cross-Tab Comparative Synthesis</h3>
+                <p className="text-xs text-slate-500">Gemini 3.7 Flash dual-source intelligence analysis</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+
+              {onSaveAsNote && (
+                <button
+                  onClick={() => {
+                    onSaveAsNote(
+                      `Dual Synthesis: ${leftTab?.title} vs ${rightTab?.title}`,
+                      synthesisResult,
+                      leftTab?.url
+                    );
+                    setSynthesisResult(null);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-xs font-semibold shadow-2xs cursor-pointer"
+                >
+                  <StickyNote className="w-3.5 h-3.5" />
+                  <span>Save to Notes</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setSynthesisResult(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-800 space-y-4 select-text leading-relaxed whitespace-pre-wrap">
+            {synthesisResult}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
