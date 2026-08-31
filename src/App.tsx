@@ -16,6 +16,7 @@ import { SettingsView } from './components/Views/SettingsView';
 import { AINotesView } from './components/Views/AINotesView';
 import { MindmapView } from './components/Views/MindmapView';
 import { DevToolsView } from './components/Views/DevToolsView';
+import { ReadmeView } from './components/Views/ReadmeView';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
@@ -220,6 +221,9 @@ export function App() {
       } else if (normalizedUrl === 'aksh://notes') {
         resolvedType = 'notes';
         title = 'AI Notes';
+      } else if (normalizedUrl === 'aksh://readme' || normalizedUrl === 'aksh://docs') {
+        resolvedType = 'readme';
+        title = 'System Documentation & README';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -745,6 +749,12 @@ export function App() {
           <AINotesView
             notes={notes}
             onDeleteNote={(id) => setNotes((prev) => prev.filter((n) => n.id !== id))}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'readme' && (
+          <ReadmeView
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}

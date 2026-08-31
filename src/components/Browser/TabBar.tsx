@@ -14,7 +14,8 @@ import {
   Settings,
   StickyNote,
   Layers,
-  Bot
+  Bot,
+  BookOpen
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -49,6 +50,7 @@ export const TabBar: React.FC<TabBarProps> = ({
     if (tab.contentType === 'settings') return <Settings className="w-3.5 h-3.5 text-slate-500 shrink-0" />;
     if (tab.contentType === 'notes') return <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
     if (tab.contentType === 'devtools') return <Bot className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+    if (tab.contentType === 'readme') return <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

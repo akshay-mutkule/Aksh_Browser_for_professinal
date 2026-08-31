@@ -23,7 +23,8 @@ import {
   Layers,
   Radio,
   Table,
-  Bot
+  Bot,
+  BookOpen
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -255,6 +256,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-slate-600',
       action: () => {
         onOpenNewTab('aksh://settings');
+        onClose();
+      },
+    },
+    {
+      id: 'view-readme',
+      title: 'Open System Documentation & README',
+      subtitle: 'Interactive architectural manual, API specs & feature guide',
+      category: 'Help & Docs',
+      icon: BookOpen,
+      iconColor: 'text-blue-600',
+      action: () => {
+        onOpenNewTab('aksh://readme');
         onClose();
       },
     },

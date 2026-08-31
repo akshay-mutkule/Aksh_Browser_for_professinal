@@ -10,7 +10,8 @@ export type PageContentType =
   | 'settings'
   | 'notes'
   | 'mindmap'
-  | 'devtools';
+  | 'devtools'
+  | 'readme';
 
 export interface Tab {
   id: string;

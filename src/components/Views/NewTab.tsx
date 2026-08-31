@@ -435,6 +435,13 @@ export const NewTab: React.FC<NewTabProps> = ({
             <Scale className="w-3.5 h-3.5 text-pink-600" />
             <span>Product Comparison Matrix</span>
           </div>
+          <button
+            onClick={() => onNavigate('aksh://readme')}
+            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+            <span>System README & Specs</span>
+          </button>
         </div>
       </div>
     </div>
