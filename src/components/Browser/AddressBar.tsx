@@ -318,7 +318,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         )}
       </div>
 
-      {/* Advanced Power Toolbar */}
+      {/* Toolbar Controls */}
       <div className="flex items-center gap-1">
         {/* Split Screen Toggle */}
         <button
@@ -328,7 +328,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               ? 'bg-purple-100 text-purple-700 border border-purple-300'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
-          title="Toggle Split-Screen Multitasking (Side-by-Side Dual-Pane)"
+          title="Split-Screen View (Side-by-Side Dual Pane)"
         >
           <Columns className="w-4 h-4" />
         </button>
@@ -341,47 +341,28 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
-          title="Read Aloud Webpage with AI Voice (Speech Synthesis)"
+          title="Read Aloud Webpage with AI Voice"
         >
           <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
         </button>
-
-        {/* AI DevTools Inspector */}
-        <button
-          onClick={() => onOpenInternalView('devtools')}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-          title="Open AI DevTools & DOM Security Inspector"
-        >
-          <Code2 className="w-4 h-4 text-blue-600" />
-        </button>
-
-        {/* Concept Mindmap */}
-        <button
-          onClick={() => {
-            const topic = activeTab?.title || 'Artificial Intelligence 2026';
-            onNavigate(`aksh://mindmap?topic=${encodeURIComponent(topic)}`);
-          }}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-          title="Generate AI Concept Mindmap & Knowledge Graph"
-        >
-          <Network className="w-4 h-4 text-indigo-600" />
-        </button>
       </div>
 
-      {/* Quick Menu Dropdown */}
+      {/* Main Browser Menu */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          title="Aksh Browser Menu"
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+            showMenu ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+          title="Main Menu"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-full mt-2 w-60 bg-white border border-slate-200 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
-            <div className="px-3 py-1.5 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-              <span>Aksh AI Engine</span>
+          <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-1.5 z-50 text-xs">
+            <div className="px-3.5 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>AI Tools & Workflows</span>
               <Sparkles className="w-3 h-3 text-blue-600" />
             </div>
 
@@ -390,10 +371,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('research');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Zap className="w-4 h-4 text-amber-500" />
-              <span>AI Deep Research Mode</span>
+              <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">Deep Research</div>
+                <div className="text-[10px] text-slate-400">Autonomous multi-source research</div>
+              </div>
             </button>
 
             <button
@@ -401,10 +385,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('mindmap');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Network className="w-4 h-4 text-indigo-500" />
-              <span>AI Concept Mindmap Graph</span>
+              <Network className="w-4 h-4 text-indigo-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">Concept Mindmap</div>
+                <div className="text-[10px] text-slate-400">Visual knowledge graphs</div>
+              </div>
             </button>
 
             <button
@@ -412,10 +399,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('comparison');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Scale className="w-4 h-4 text-pink-500" />
-              <span>AI Product Comparison</span>
+              <Scale className="w-4 h-4 text-pink-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">Product Comparison</div>
+                <div className="text-[10px] text-slate-400">Side-by-side specs showdown</div>
+              </div>
             </button>
 
             <button
@@ -423,10 +413,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('pdf');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <FileText className="w-4 h-4 text-rose-500" />
-              <span>AI PDF Reader & Quiz</span>
+              <FileText className="w-4 h-4 text-rose-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">PDF Intelligence</div>
+                <div className="text-[10px] text-slate-400">Paper analysis & quizzes</div>
+              </div>
             </button>
 
             <button
@@ -434,10 +427,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('notes');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <StickyNote className="w-4 h-4 text-amber-500" />
-              <span>AI Notes & Knowledge Base</span>
+              <StickyNote className="w-4 h-4 text-emerald-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">Cornell Notes</div>
+                <div className="text-[10px] text-slate-400">Structured markdown notebook</div>
+              </div>
             </button>
 
             <button
@@ -445,14 +441,17 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 onOpenInternalView('devtools');
                 setShowMenu(false);
               }}
-              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Code2 className="w-4 h-4 text-blue-500" />
-              <span>AI DevTools & DOM Inspector</span>
+              <Code2 className="w-4 h-4 text-blue-500 shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold">AI DevTools</div>
+                <div className="text-[10px] text-slate-400">DOM inspector & web agent</div>
+              </div>
             </button>
 
             <div className="my-1 border-t border-slate-100" />
-            <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Browser Essentials
             </div>
 
@@ -463,7 +462,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               }}
               className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <BookmarkIcon className="w-4 h-4 text-amber-500" />
+              <BookmarkIcon className="w-4 h-4 text-amber-500 shrink-0" />
               <span>Bookmarks Manager</span>
             </button>
 
@@ -474,8 +473,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               }}
               className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <History className="w-4 h-4 text-blue-500" />
-              <span>History (Ctrl+H)</span>
+              <History className="w-4 h-4 text-blue-500 shrink-0" />
+              <span>History</span>
             </button>
 
             <button
@@ -485,8 +484,19 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               }}
               className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Download className="w-4 h-4 text-emerald-500" />
-              <span>Download Manager</span>
+              <Download className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Downloads</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onOpenInternalView('readme');
+                setShowMenu(false);
+              }}
+              className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>Documentation & Guide</span>
             </button>
 
             <button
@@ -496,7 +506,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               }}
               className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <Settings className="w-4 h-4 text-slate-500" />
+              <Settings className="w-4 h-4 text-slate-500 shrink-0" />
               <span>Settings</span>
             </button>
           </div>
