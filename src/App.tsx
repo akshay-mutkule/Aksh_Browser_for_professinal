@@ -21,6 +21,8 @@ import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
 import { SplitScreenContainer } from './components/Browser/SplitScreenContainer';
+import { VerticalTabBar } from './components/Browser/VerticalTabBar';
+import { CrossTabSynthesisModal } from './components/Modals/CrossTabSynthesisModal';
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -83,6 +85,9 @@ export function App() {
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState<boolean>(true);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [tabLayout, setTabLayout] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [isVerticalCollapsed, setIsVerticalCollapsed] = useState<boolean>(false);
+  const [isSynthesisModalOpen, setIsSynthesisModalOpen] = useState<boolean>(false);
 
   // Advanced Feature States: Split-Screen, Audio TTS, and Selection HUD
   const [splitScreen, setSplitScreen] = useState<{
@@ -784,6 +789,7 @@ export function App() {
         onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
         onAutoClusterTabs={handleAutoClusterTabs}
         isClustering={isClustering}
+        tabLayout={tabLayout}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -805,6 +811,9 @@ export function App() {
         isSplitScreen={splitScreen.enabled}
         onTriggerSpeech={handleTriggerSpeech}
         isSpeaking={audioNarration.isOpen}
+        onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
+        tabLayout={tabLayout}
+        onToggleTabLayout={() => setTabLayout((l) => (l === 'horizontal' ? 'vertical' : 'horizontal'))}
       />
 
       {/* 3. Bookmarks Quick Bar */}
@@ -814,8 +823,24 @@ export function App() {
         onOpenBookmarksManager={() => navigateTab(activeTabId, 'aksh://bookmarks')}
       />
 
-      {/* 4. Main Body: Active Tab Viewport + Split-Screen + AI Sidebar */}
+      {/* 4. Main Body: (Optional Vertical TabBar) + Active Tab Viewport + Split-Screen + AI Sidebar */}
       <div className="flex-1 flex overflow-hidden relative bg-white">
+        {/* Arc-Style Vertical Tab Bar */}
+        {tabLayout === 'vertical' && (
+          <VerticalTabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSelectTab={setActiveTabId}
+            onCloseTab={handleCloseTab}
+            onNewTab={() => handleNewTab('aksh://newtab')}
+            onPinTab={handlePinTab}
+            onAutoClusterTabs={handleAutoClusterTabs}
+            isClustering={isClustering}
+            onToggleCollapse={() => setIsVerticalCollapsed(!isVerticalCollapsed)}
+            isCollapsed={isVerticalCollapsed}
+          />
+        )}
+
         {/* Content Viewport */}
         <main className="flex-1 h-full overflow-hidden relative bg-white">
           {splitScreen.enabled ? (
@@ -912,6 +937,14 @@ export function App() {
           navigateTab(activeTabId, `aksh://${view}`);
         }}
         onAutoClusterTabs={handleAutoClusterTabs}
+      />
+
+      {/* Cross-Tab AI Synthesis Modal */}
+      <CrossTabSynthesisModal
+        isOpen={isSynthesisModalOpen}
+        onClose={() => setIsSynthesisModalOpen(false)}
+        tabs={tabs}
+        onSaveAsNote={handleSaveAsNote}
       />
 
       {/* Keyboard Shortcuts Cheat Sheet Modal */}

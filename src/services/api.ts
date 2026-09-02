@@ -263,6 +263,8 @@ export async function synthesizeCrossTabs(
   return await res.json();
 }
 
+export const synthesizeTabs = synthesizeCrossTabs;
+
 export async function generatePodcastScript(
   title: string,
   url: string,

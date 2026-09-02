@@ -13,7 +13,9 @@ import {
   Radio,
   FileText,
   Copy,
-  Check
+  Check,
+  Headphones,
+  Mic
 } from 'lucide-react';
 import { generatePodcastScript } from '../../services/api';
 
@@ -130,7 +132,7 @@ export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead
   };
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center max-w-xl w-full px-4">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center max-w-xl w-full px-4 select-none">
       {/* Podcast Dialogue Script Drawer */}
       {showScriptDrawer && podcastScript && (
         <motion.div
@@ -170,18 +172,27 @@ export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 50, opacity: 0 }}
-        className="w-full bg-white/95 border border-slate-300 backdrop-blur-xl rounded-2xl shadow-2xl px-4 py-2.5 flex items-center justify-between gap-3 text-slate-900 select-none"
+        className="w-full bg-white/95 border border-slate-300 backdrop-blur-xl rounded-2xl shadow-2xl px-4 py-2.5 flex items-center justify-between gap-3 text-slate-900"
       >
-        {/* Title & Pulse Indicator */}
+        {/* Title & Animated Equalizer Waves */}
         <div className="flex items-center gap-2.5 truncate max-w-[190px]">
           <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
-            <Volume2 className="w-4 h-4 animate-pulse" />
+            {isPlaying ? (
+              <div className="flex items-end gap-0.5 h-3.5">
+                <span className="w-0.5 bg-emerald-600 rounded-full animate-bounce h-2" />
+                <span className="w-0.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:0.15s] h-3.5" />
+                <span className="w-0.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:0.3s] h-2.5" />
+                <span className="w-0.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:0.1s] h-3" />
+              </div>
+            ) : (
+              <Volume2 className="w-4 h-4" />
+            )}
           </div>
           <div className="truncate">
             <div className="text-xs font-bold text-slate-900 truncate">{title || 'Audio Narration'}</div>
             <div className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              <span>{activeMode === 'podcast' ? 'AI Podcast Host' : 'Voice Synthesis'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`} />
+              <span>{activeMode === 'podcast' ? 'Alex & Sam AI Briefing' : 'Neural Voice Synthesis'}</span>
             </div>
           </div>
         </div>
@@ -218,7 +229,7 @@ export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead
 
         {/* Speed Rate Pills */}
         <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-[10px] font-mono">
-          {[0.75, 1.0, 1.25, 1.5].map((speed) => (
+          {[0.75, 1.0, 1.25, 1.5, 2.0].map((speed) => (
             <button
               key={speed}
               onClick={() => handleRateChange(speed)}
@@ -246,4 +257,3 @@ export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead
     </div>
   );
 };
-

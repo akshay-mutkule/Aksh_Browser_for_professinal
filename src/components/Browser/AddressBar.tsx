@@ -26,9 +26,14 @@ import {
   Code2,
   Volume2,
   Network,
-  Command
+  Command,
+  Layers,
+  PanelLeftClose,
+  PanelLeft,
+  Cpu
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
+import { SecurityShieldPopover } from './SecurityShieldPopover';
 
 interface AddressBarProps {
   activeTab: Tab | null;
@@ -48,6 +53,9 @@ interface AddressBarProps {
   isSplitScreen: boolean;
   onTriggerSpeech: () => void;
   isSpeaking: boolean;
+  onOpenCrossTabSynthesis?: () => void;
+  tabLayout?: 'horizontal' | 'vertical';
+  onToggleTabLayout?: () => void;
 }
 
 export const AddressBar: React.FC<AddressBarProps> = ({
@@ -68,26 +76,34 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   isSplitScreen,
   onTriggerSpeech,
   isSpeaking,
+  onOpenCrossTabSynthesis,
+  tabLayout = 'horizontal',
+  onToggleTabLayout,
 }) => {
-  const [urlInput, setUrlInput] = useState('');
+  const [urlInput, setUrlInput] = useState(activeTab?.url || '');
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showSecurityShield, setShowSecurityShield] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; url: string; type: string }>>([]);
-
   const menuRef = useRef<HTMLDivElement>(null);
+  const shieldRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync internal tab state to address bar input
   useEffect(() => {
-    if (activeTab) {
+    if (!isFocused && activeTab) {
       setUrlInput(activeTab.url);
     }
-  }, [activeTab?.url]);
+  }, [activeTab?.url, isFocused]);
 
-  // Handle outside click for menu
+  // Close menus on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowMenu(false);
+      }
+      if (shieldRef.current && !shieldRef.current.contains(e.target as Node)) {
+        setShowSecurityShield(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -99,10 +115,10 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     setUrlInput(val);
 
     if (val.trim().length > 1) {
-      // Dynamic suggestions
+      // Dynamic suggestions with Bang shortcuts
       const list = [
+        { title: `Ask Gemini 3.7: "${val}"`, url: `aksh://research?q=${encodeURIComponent(val)}`, type: 'ai' },
         { title: `Search Google for "${val}"`, url: `https://www.google.com/search?q=${encodeURIComponent(val)}`, type: 'search' },
-        { title: `AI Research: "${val}"`, url: `aksh://research?q=${encodeURIComponent(val)}`, type: 'ai' },
         { title: `AI Mindmap: "${val}"`, url: `aksh://mindmap?topic=${encodeURIComponent(val)}`, type: 'mindmap' },
         { title: 'Top 5 Python Courses 2026', url: 'https://learn.python.org/courses/2026-guide', type: 'site' },
         { title: 'MacBook Pro vs XPS 15 vs ThinkPad', url: 'https://tech-radar.io/laptops/flagship-comparison-2026', type: 'site' },
@@ -119,10 +135,27 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     if (!urlInput.trim()) return;
 
     let target = urlInput.trim();
-    if (target.startsWith('aksh://') || target.startsWith('nexus://')) {
+
+    // Bang shortcuts parsing
+    if (target.startsWith('!ai ') || target.startsWith('!gemini ')) {
+      const q = target.replace(/^!(ai|gemini)\s+/, '');
+      onNavigate(`aksh://research?q=${encodeURIComponent(q)}`);
+    } else if (target.startsWith('!mindmap ') || target.startsWith('!m ')) {
+      const q = target.replace(/^!(mindmap|m)\s+/, '');
+      onNavigate(`aksh://mindmap?topic=${encodeURIComponent(q)}`);
+    } else if (target.startsWith('!gh ')) {
+      const q = target.replace(/^!gh\s+/, '');
+      onNavigate(`https://github.com/search?q=${encodeURIComponent(q)}`);
+    } else if (target.startsWith('!wiki ')) {
+      const q = target.replace(/^!wiki\s+/, '');
+      onNavigate(`https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q)}`);
+    } else if (target.startsWith('!g ')) {
+      const q = target.replace(/^!g\s+/, '');
+      onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
+    } else if (target.startsWith('aksh://') || target.startsWith('nexus://')) {
       onNavigate(target);
     } else if (!target.includes('.') && !target.startsWith('http://') && !target.startsWith('https://')) {
-      // Treat as search query
+      // Search query
       target = `https://www.google.com/search?q=${encodeURIComponent(target)}`;
       onNavigate(target);
     } else if (!target.startsWith('http://') && !target.startsWith('https://')) {
@@ -144,11 +177,26 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   };
 
   const isSecure = activeTab?.url.startsWith('https://') || activeTab?.url.startsWith('aksh://') || activeTab?.url.startsWith('nexus://');
+  const isInternal = Boolean(activeTab?.url.startsWith('aksh://') || activeTab?.url.startsWith('nexus://'));
 
   return (
     <div className="h-11 bg-white border-b border-slate-200 px-3 flex items-center gap-2 relative z-10 select-none">
       {/* Navigation Buttons */}
       <div className="flex items-center gap-1">
+        {onToggleTabLayout && (
+          <button
+            onClick={onToggleTabLayout}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer hidden md:flex ${
+              tabLayout === 'vertical'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+            title={tabLayout === 'vertical' ? 'Switch to Horizontal Tabs' : 'Switch to Arc-Style Vertical Tabs'}
+          >
+            {tabLayout === 'vertical' ? <PanelLeft className="w-4 h-4 text-blue-600" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
+        )}
+
         <button
           onClick={onGoBack}
           disabled={!activeTab?.canGoBack}
@@ -195,20 +243,47 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 : 'bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800'
             }`}
           >
-            {/* Security Indicator */}
-            <div className="flex items-center text-slate-400 shrink-0">
-              {activeTab?.url.startsWith('aksh://') || activeTab?.url.startsWith('nexus://') ? (
-                <span title="Aksh Internal Protected View">
+            {/* Security Indicator & Popover Trigger */}
+            <div className="relative" ref={shieldRef}>
+              <button
+                type="button"
+                onClick={() => setShowSecurityShield(!showSecurityShield)}
+                className="flex items-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer shrink-0"
+                title="View Privacy & Security Shield (TLS, Trackers, RAM)"
+              >
+                {isInternal ? (
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                </span>
-              ) : isSecure ? (
-                <span title="Secure SSL Connection (HTTPS)">
+                ) : isSecure ? (
                   <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                </span>
-              ) : (
-                <Search className="w-3.5 h-3.5 text-slate-400" />
+                ) : (
+                  <Search className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </button>
+
+              {showSecurityShield && (
+                <SecurityShieldPopover
+                  url={activeTab?.url || 'https://google.com'}
+                  isInternal={isInternal}
+                  onClose={() => setShowSecurityShield(false)}
+                  onOpenDevTools={() => onOpenInternalView('devtools')}
+                />
               )}
             </div>
+
+            {/* Bang Shortcut Indicator */}
+            {urlInput.startsWith('!ai ') || urlInput.startsWith('!gemini ') ? (
+              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-bold shrink-0">
+                Gemini AI
+              </span>
+            ) : urlInput.startsWith('!gh ') ? (
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 text-[10px] font-bold shrink-0">
+                GitHub
+              </span>
+            ) : urlInput.startsWith('!m ') || urlInput.startsWith('!mindmap ') ? (
+              <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[10px] font-bold shrink-0">
+                Mindmap
+              </span>
+            ) : null}
 
             {/* URL Input */}
             <input
@@ -221,7 +296,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 inputRef.current?.select();
               }}
               onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-              placeholder="Search Google, ask Gemini 3.7, or type URL..."
+              placeholder="Search Google, ask Gemini (!ai), or type URL..."
               className="flex-1 bg-transparent focus:outline-none text-slate-900 placeholder-slate-400 font-mono text-xs"
             />
 
@@ -333,7 +408,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
           <Columns className="w-4 h-4" />
         </button>
 
-        {/* Read Aloud TTS */}
+        {/* Read Aloud TTS / Podcastifier */}
         <button
           onClick={onTriggerSpeech}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
@@ -341,7 +416,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
-          title="Read Aloud Webpage with AI Voice"
+          title="Read Aloud Webpage & AI Audio Podcast"
         >
           <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
         </button>
@@ -365,6 +440,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               <span>AI Tools & Workflows</span>
               <Sparkles className="w-3 h-3 text-blue-600" />
             </div>
+
+            {onOpenCrossTabSynthesis && (
+              <button
+                onClick={() => {
+                  onOpenCrossTabSynthesis();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Layers className="w-4 h-4 text-purple-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-purple-900">Cross-Tab Synthesis</div>
+                  <div className="text-[10px] text-slate-400">Synthesize multiple open tabs</div>
+                </div>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -455,6 +546,19 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               Browser Essentials
             </div>
 
+            {onToggleTabLayout && (
+              <button
+                onClick={() => {
+                  onToggleTabLayout();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Columns className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>{tabLayout === 'vertical' ? 'Switch to Top Tabs' : 'Switch to Vertical Tabs (Arc)'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 onOpenInternalView('bookmarks');
@@ -515,4 +619,3 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     </div>
   );
 };
-
