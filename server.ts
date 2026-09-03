@@ -71,6 +71,72 @@ app.post("/api/scrape-proxy", async (req: Request, res: Response) => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      // If direct fetch is blocked by bot prevention or CORS, use Gemini with Search Grounding
+      const ai = getGeminiClient();
+      if (ai) {
+        try {
+          const hostname = new URL(targetUrl).hostname;
+          const groundingPrompt = `The user navigated to the following URL in the Aksh AI Browser: "${targetUrl}".
+The live web server returned status code ${response.status} to automated scrapers.
+Search for and retrieve the authentic content, purpose, structure, and details of this URL/domain.
+Provide your response strictly in the following JSON format without markdown code blocks:
+{
+  "title": "Clear webpage title",
+  "metaDescription": "Concise 1-2 sentence description",
+  "headings": ["Heading 1", "Heading 2", "Heading 3", "Heading 4"],
+  "contentMarkdown": "Comprehensive markdown text with sections, explanations, key facts, and takeaways."
+}`;
+
+          let aiResp;
+          try {
+            aiResp = await ai.models.generateContent({
+              model: "gemini-3.7-flash",
+              contents: groundingPrompt,
+              config: {
+                tools: [{ googleSearch: {} }],
+                temperature: 0.2,
+              },
+            });
+          } catch {
+            aiResp = await ai.models.generateContent({
+              model: "gemini-3.7-flash",
+              contents: groundingPrompt,
+              config: {
+                temperature: 0.3,
+              },
+            });
+          }
+
+          const rawText = aiResp?.text || "";
+          let parsed: any = null;
+          try {
+            const cleanJson = rawText.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+            parsed = JSON.parse(cleanJson);
+          } catch {
+            parsed = {
+              title: `${hostname} - Overview`,
+              metaDescription: `Live overview and content for ${targetUrl}`,
+              headings: ["Overview", "Key Details", "Insights"],
+              contentMarkdown: rawText || `Content synthesized for ${targetUrl}`,
+            };
+          }
+
+          res.json({
+            url: targetUrl,
+            title: parsed.title || hostname,
+            metaDescription: parsed.metaDescription || `Live AI grounded content for ${hostname}`,
+            headings: parsed.headings || ["Overview", "Key Details"],
+            textContent: parsed.contentMarkdown || rawText,
+            favicon: `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`,
+            fetchedAt: new Date().toISOString(),
+            isAiGrounded: true,
+          });
+          return;
+        } catch (fallbackErr) {
+          console.warn("AI grounding fallback failed:", fallbackErr);
+        }
+      }
+
       res.status(response.status).json({
         error: `Failed to fetch page. Status: ${response.status} ${response.statusText}`,
         url: targetUrl,

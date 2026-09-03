@@ -14,6 +14,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
 
   const shortcuts = [
     { key: 'Ctrl + K', desc: 'Toggle Aksh AI Co-Pilot sidebar' },
+    { key: 'Ctrl + F', desc: 'Find in current page' },
     { key: 'Ctrl + T', desc: 'Open a new browser tab' },
     { key: 'Ctrl + W', desc: 'Close currently active tab' },
     { key: 'Ctrl + R', desc: 'Reload current web page' },

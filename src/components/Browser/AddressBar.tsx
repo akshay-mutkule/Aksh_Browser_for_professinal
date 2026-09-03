@@ -30,7 +30,9 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeft,
-  Cpu
+  Cpu,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -56,6 +58,7 @@ interface AddressBarProps {
   onOpenCrossTabSynthesis?: () => void;
   tabLayout?: 'horizontal' | 'vertical';
   onToggleTabLayout?: () => void;
+  onOpenFindInPage?: () => void;
 }
 
 export const AddressBar: React.FC<AddressBarProps> = ({
@@ -79,15 +82,25 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   onOpenCrossTabSynthesis,
   tabLayout = 'horizontal',
   onToggleTabLayout,
+  onOpenFindInPage,
 }) => {
   const [urlInput, setUrlInput] = useState(activeTab?.url || '');
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showSecurityShield, setShowSecurityShield] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; url: string; type: string }>>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const shieldRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopyUrl = () => {
+    if (activeTab?.url) {
+      navigator.clipboard.writeText(activeTab.url);
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2000);
+    }
+  };
 
   // Sync internal tab state to address bar input
   useEffect(() => {
@@ -312,6 +325,34 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 <Command className="w-3 h-3 text-slate-500" />
                 <span>K</span>
               </button>
+
+              {/* Copy URL Button */}
+              {activeTab && activeTab.url && (
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
+                  title={copiedUrl ? 'URL Copied!' : 'Copy URL to clipboard'}
+                >
+                  {copiedUrl ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+
+              {/* Find in Page Trigger */}
+              {onOpenFindInPage && (
+                <button
+                  type="button"
+                  onClick={onOpenFindInPage}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 transition-colors cursor-pointer"
+                  title="Find in page (Ctrl+F)"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+              )}
 
               {/* Reader Mode Toggle */}
               {activeTab && activeTab.contentType === 'web' && (
@@ -545,6 +586,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
             <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Browser Essentials
             </div>
+
+            {onOpenFindInPage && (
+              <button
+                onClick={() => {
+                  onOpenFindInPage();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>Find in Page</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">Ctrl+F</span>
+              </button>
+            )}
 
             {onToggleTabLayout && (
               <button

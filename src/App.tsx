@@ -22,6 +22,7 @@ import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
 import { SplitScreenContainer } from './components/Browser/SplitScreenContainer';
 import { VerticalTabBar } from './components/Browser/VerticalTabBar';
+import { FindInPageBar } from './components/Browser/FindInPageBar';
 import { CrossTabSynthesisModal } from './components/Modals/CrossTabSynthesisModal';
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
@@ -119,6 +120,23 @@ export function App() {
     selectedText: '',
     coords: null,
   });
+
+  // In-Page Find (Ctrl+F) State
+  const [isFindInPageOpen, setIsFindInPageOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findMatchIndex, setFindMatchIndex] = useState(0);
+  const [findMatchCount, setFindMatchCount] = useState(0);
+  const [findCaseSensitive, setFindCaseSensitive] = useState(false);
+
+  const handleFindNext = () => {
+    if (findMatchCount <= 0) return;
+    setFindMatchIndex((prev) => (prev + 1) % findMatchCount);
+  };
+
+  const handleFindPrev = () => {
+    if (findMatchCount <= 0) return;
+    setFindMatchIndex((prev) => (prev - 1 + findMatchCount) % findMatchCount);
+  };
 
   // Persistence / Browser State
   const [history, setHistory] = useState<HistoryItem[]>([
@@ -583,6 +601,11 @@ export function App() {
         e.preventDefault();
         setIsAiSidebarOpen((prev) => !prev);
       }
+      // Find in page: Ctrl+F or Cmd+F
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsFindInPageOpen(true);
+      }
       // New Tab: Ctrl+T or Cmd+T
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
         e.preventDefault();
@@ -664,6 +687,11 @@ export function App() {
             onNavigate={(url) => navigateTab(targetTab.id, url)}
             onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
             onSaveAsNote={(title, content) => handleSaveAsNote(title, content, targetTab.url)}
+            onTriggerSpeech={handleTriggerSpeech}
+            findQuery={isFindInPageOpen ? findQuery : ''}
+            matchIndex={findMatchIndex}
+            caseSensitive={findCaseSensitive}
+            onMatchesFound={setFindMatchCount}
           />
         )}
 
@@ -814,6 +842,7 @@ export function App() {
         onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
         tabLayout={tabLayout}
         onToggleTabLayout={() => setTabLayout((l) => (l === 'horizontal' ? 'vertical' : 'horizontal'))}
+        onOpenFindInPage={() => setIsFindInPageOpen(true)}
       />
 
       {/* 3. Bookmarks Quick Bar */}
@@ -843,6 +872,27 @@ export function App() {
 
         {/* Content Viewport */}
         <main className="flex-1 h-full overflow-hidden relative bg-white">
+          {/* Find In Page Floating Bar */}
+          <FindInPageBar
+            isOpen={isFindInPageOpen}
+            onClose={() => {
+              setIsFindInPageOpen(false);
+              setFindQuery('');
+              setFindMatchCount(0);
+            }}
+            query={findQuery}
+            onQueryChange={(q) => {
+              setFindQuery(q);
+              setFindMatchIndex(0);
+            }}
+            matchIndex={findMatchIndex}
+            matchCount={findMatchCount}
+            onNext={handleFindNext}
+            onPrev={handleFindPrev}
+            caseSensitive={findCaseSensitive}
+            onToggleCaseSensitive={() => setFindCaseSensitive((prev) => !prev)}
+          />
+
           {splitScreen.enabled ? (
             <SplitScreenContainer
               leftTab={tabs.find((t) => t.id === splitScreen.leftTabId) || activeTab}
