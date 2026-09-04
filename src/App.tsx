@@ -516,6 +516,218 @@ export function App() {
     setActiveTabId('tab-1');
   };
 
+  // Tab Context Actions
+  const handleDuplicateTab = (id: string) => {
+    const target = tabs.find((t) => t.id === id);
+    if (!target) return;
+    const newId = 'tab-' + Date.now();
+    const duplicated: Tab = {
+      ...target,
+      id: newId,
+      title: `${target.title} (Copy)`,
+      historyStack: [...target.historyStack],
+    };
+    setTabs((prev) => [...prev, duplicated]);
+    setActiveTabId(newId);
+  };
+
+  const handleReloadTab = (id: string) => {
+    const target = tabs.find((t) => t.id === id);
+    if (!target) return;
+    navigateTab(target.id, target.url);
+  };
+
+  const handleToggleMuteTab = (id: string) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, muted: !t.muted } : t))
+    );
+  };
+
+  const handleSplitTab = (id: string, position: 'left' | 'right' = 'right') => {
+    if (!splitScreen.enabled) {
+      if (position === 'right') {
+        setSplitScreen({
+          enabled: true,
+          leftTabId: activeTabId,
+          rightTabId: id,
+          ratio: 50,
+        });
+      } else {
+        setSplitScreen({
+          enabled: true,
+          leftTabId: id,
+          rightTabId: activeTabId,
+          ratio: 50,
+        });
+        setActiveTabId(id);
+      }
+    } else {
+      if (position === 'right') {
+        setSplitScreen((s) => ({ ...s, rightTabId: id }));
+      } else {
+        setSplitScreen((s) => ({ ...s, leftTabId: id }));
+      }
+    }
+  };
+
+  const handleAssignTabGroup = (id: string, groupName: string, groupColor: string) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, groupName, groupColor } : t))
+    );
+  };
+
+  const handleRemoveTabGroup = (id: string) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, groupName: undefined, groupColor: undefined } : t))
+    );
+  };
+
+  const handleCloseOtherTabs = (id: string) => {
+    const target = tabs.find((t) => t.id === id);
+    if (!target) return;
+    setTabs([target]);
+    setActiveTabId(target.id);
+  };
+
+  const handleCloseTabsToRight = (id: string) => {
+    const idx = tabs.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const kept = tabs.slice(0, idx + 1);
+    setTabs(kept);
+    if (!kept.some((t) => t.id === activeTabId)) {
+      setActiveTabId(id);
+    }
+  };
+
+  const handleBookmarkTab = (id: string) => {
+    const target = tabs.find((t) => t.id === id);
+    if (!target) return;
+    if (!bookmarks.some((b) => b.url === target.url)) {
+      const newBm: Bookmark = {
+        id: String(Date.now()),
+        url: target.url,
+        title: target.title,
+        folder: target.groupName || 'Quick Access',
+        createdAt: 'Today',
+      };
+      setBookmarks((prev) => [newBm, ...prev]);
+    }
+  };
+
+  // Note updates
+  const handleUpdateNote = (id: string, updated: Partial<AINote>) => {
+    setNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, ...updated } : n))
+    );
+  };
+
+  const handleCreateNoteDirect = (noteData: Omit<AINote, 'id' | 'createdAt'>) => {
+    const newNote: AINote = {
+      id: String(Date.now()),
+      title: noteData.title,
+      content: noteData.content,
+      tags: noteData.tags || [],
+      sourceUrl: noteData.sourceUrl,
+      createdAt: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+    setNotes((prev) => [newNote, ...prev]);
+  };
+
+  // Bookmark updates
+  const handleUpdateBookmark = (id: string, updated: Partial<Bookmark>) => {
+    setBookmarks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...updated } : b))
+    );
+  };
+
+  const handleImportBookmarks = (imported: Bookmark[]) => {
+    setBookmarks((prev) => {
+      const existingUrls = new Set(prev.map((b) => b.url));
+      const newItems = imported.filter((b) => !existingUrls.has(b.url));
+      return [...newItems, ...prev];
+    });
+  };
+
+  // Open in split view directly from Bookmarks / History
+  const handleOpenInSplit = (url: string, title?: string) => {
+    const newId = 'tab-' + Date.now();
+    const cleanUrl = url.replace(/^nexus:\/\//, 'aksh://');
+    let resolvedType: PageContentType = 'web';
+    if (cleanUrl.startsWith('aksh://')) {
+      const route = cleanUrl.replace('aksh://', '').split('?')[0];
+      resolvedType = (route as PageContentType) || 'newtab';
+    }
+
+    const newTab: Tab = {
+      id: newId,
+      title: title || 'Split Page',
+      url: cleanUrl,
+      contentType: resolvedType,
+      historyStack: [cleanUrl],
+      historyIndex: 0,
+      canGoBack: false,
+      canGoForward: false,
+      isLoading: false,
+      isReaderMode: false,
+    };
+    setTabs((prev) => [...prev, newTab]);
+    setSplitScreen({
+      enabled: true,
+      leftTabId: activeTabId,
+      rightTabId: newId,
+      ratio: 50,
+    });
+    navigateTab(newId, cleanUrl);
+  };
+
+  // Downloads manager actions
+  const handleAddDownload = (item: DownloadItem) => {
+    setDownloads((prev) => [item, ...prev]);
+    if (item.status === 'downloading') {
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += 20;
+        if (currentProgress >= 100) {
+          clearInterval(interval);
+          setDownloads((prev) =>
+            prev.map((d) =>
+              d.id === item.id
+                ? { ...d, progress: 100, status: 'completed', speed: undefined }
+                : d
+            )
+          );
+        } else {
+          setDownloads((prev) =>
+            prev.map((d) =>
+              d.id === item.id
+                ? { ...d, progress: currentProgress }
+                : d
+            )
+          );
+        }
+      }, 500);
+    }
+  };
+
+  const handleDeleteDownload = (id: string) => {
+    setDownloads((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const handleTogglePauseDownload = (id: string) => {
+    setDownloads((prev) =>
+      prev.map((d) => {
+        if (d.id !== id) return d;
+        const newStatus = d.status === 'downloading' ? 'paused' : 'downloading';
+        return { ...d, status: newStatus };
+      })
+    );
+  };
+
   // Trigger Speech Narration
   const handleTriggerSpeech = () => {
     if (!activeTab) return;
@@ -748,6 +960,22 @@ export function App() {
             onNavigate={(url) => navigateTab(targetTab.id, url)}
             onClearHistory={() => setHistory([])}
             onDeleteItem={(id) => setHistory((prev) => prev.filter((h) => h.id !== id))}
+            onOpenInNewTab={(url, title) => handleNewTab(url)}
+            onOpenInSplit={handleOpenInSplit}
+            onBookmarkItem={(title, url) => {
+              if (!bookmarks.some((b) => b.url === url)) {
+                setBookmarks((prev) => [
+                  {
+                    id: String(Date.now()),
+                    title,
+                    url,
+                    folder: 'History',
+                    createdAt: 'Today',
+                  },
+                  ...prev,
+                ]);
+              }
+            }}
           />
         )}
 
@@ -767,6 +995,10 @@ export function App() {
               };
               setBookmarks((prev) => [newBm, ...prev]);
             }}
+            onUpdateBookmark={handleUpdateBookmark}
+            onImportBookmarks={handleImportBookmarks}
+            onOpenInNewTab={(url) => handleNewTab(url)}
+            onOpenInSplit={handleOpenInSplit}
           />
         )}
 
@@ -775,6 +1007,9 @@ export function App() {
             downloads={downloads}
             onClearDownloads={() => setDownloads([])}
             onSimulateDownload={handleSimulateDownload}
+            onAddDownload={handleAddDownload}
+            onDeleteDownload={handleDeleteDownload}
+            onTogglePauseDownload={handleTogglePauseDownload}
           />
         )}
 
@@ -782,6 +1017,8 @@ export function App() {
           <AINotesView
             notes={notes}
             onDeleteNote={(id) => setNotes((prev) => prev.filter((n) => n.id !== id))}
+            onUpdateNote={handleUpdateNote}
+            onCreateNote={handleCreateNoteDirect}
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
@@ -818,6 +1055,15 @@ export function App() {
         onAutoClusterTabs={handleAutoClusterTabs}
         isClustering={isClustering}
         tabLayout={tabLayout}
+        onDuplicateTab={handleDuplicateTab}
+        onReloadTab={handleReloadTab}
+        onMuteTab={handleToggleMuteTab}
+        onSplitTab={handleSplitTab}
+        onAssignTabGroup={handleAssignTabGroup}
+        onRemoveTabGroup={handleRemoveTabGroup}
+        onBookmarkTab={handleBookmarkTab}
+        onCloseOtherTabs={handleCloseOtherTabs}
+        onCloseTabsToRight={handleCloseTabsToRight}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -867,6 +1113,15 @@ export function App() {
             isClustering={isClustering}
             onToggleCollapse={() => setIsVerticalCollapsed(!isVerticalCollapsed)}
             isCollapsed={isVerticalCollapsed}
+            onDuplicateTab={handleDuplicateTab}
+            onReloadTab={handleReloadTab}
+            onMuteTab={handleToggleMuteTab}
+            onSplitTab={handleSplitTab}
+            onAssignTabGroup={handleAssignTabGroup}
+            onRemoveTabGroup={handleRemoveTabGroup}
+            onBookmarkTab={handleBookmarkTab}
+            onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseTabsToRight={handleCloseTabsToRight}
           />
         )}
 

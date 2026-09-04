@@ -15,6 +15,15 @@ interface TitleBarProps {
   onAutoClusterTabs?: () => void;
   isClustering?: boolean;
   tabLayout?: 'horizontal' | 'vertical';
+  onDuplicateTab?: (id: string) => void;
+  onReloadTab?: (id: string) => void;
+  onMuteTab?: (id: string) => void;
+  onSplitTab?: (id: string, position: 'left' | 'right') => void;
+  onAssignTabGroup?: (id: string, groupName: string, groupColor: string) => void;
+  onRemoveTabGroup?: (id: string) => void;
+  onBookmarkTab?: (id: string) => void;
+  onCloseOtherTabs?: (id: string) => void;
+  onCloseTabsToRight?: (id: string) => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -29,6 +38,15 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onAutoClusterTabs,
   isClustering,
   tabLayout = 'horizontal',
+  onDuplicateTab,
+  onReloadTab,
+  onMuteTab,
+  onSplitTab,
+  onAssignTabGroup,
+  onRemoveTabGroup,
+  onBookmarkTab,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -61,6 +79,15 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           onPinTab={onPinTab}
           onAutoClusterTabs={onAutoClusterTabs}
           isClustering={isClustering}
+          onDuplicateTab={onDuplicateTab}
+          onReloadTab={onReloadTab}
+          onMuteTab={onMuteTab}
+          onSplitTab={onSplitTab}
+          onAssignTabGroup={onAssignTabGroup}
+          onRemoveTabGroup={onRemoveTabGroup}
+          onBookmarkTab={onBookmarkTab}
+          onCloseOtherTabs={onCloseOtherTabs}
+          onCloseTabsToRight={onCloseTabsToRight}
         />
       ) : (
         <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-600">

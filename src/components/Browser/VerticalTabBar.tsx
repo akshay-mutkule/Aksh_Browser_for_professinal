@@ -24,6 +24,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { Tab } from '../../types';
+import { TabContextMenu } from './TabContextMenu';
 
 interface VerticalTabBarProps {
   tabs: Tab[];
@@ -36,6 +37,15 @@ interface VerticalTabBarProps {
   isClustering?: boolean;
   onToggleCollapse?: () => void;
   isCollapsed?: boolean;
+  onDuplicateTab?: (id: string) => void;
+  onReloadTab?: (id: string) => void;
+  onMuteTab?: (id: string) => void;
+  onSplitTab?: (id: string, position: 'left' | 'right') => void;
+  onAssignTabGroup?: (id: string, groupName: string, groupColor: string) => void;
+  onRemoveTabGroup?: (id: string) => void;
+  onBookmarkTab?: (id: string) => void;
+  onCloseOtherTabs?: (id: string) => void;
+  onCloseTabsToRight?: (id: string) => void;
 }
 
 export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
@@ -49,9 +59,23 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
   isClustering = false,
   onToggleCollapse,
   isCollapsed = false,
+  onDuplicateTab,
+  onReloadTab,
+  onMuteTab,
+  onSplitTab,
+  onAssignTabGroup,
+  onRemoveTabGroup,
+  onBookmarkTab,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
 }) => {
   const [searchFilter, setSearchFilter] = useState('');
   const [activeWorkspace, setActiveWorkspace] = useState<'all' | 'research' | 'work'>('all');
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    tab: Tab;
+  } | null>(null);
 
   const getTabIcon = (tab: Tab) => {
     if (tab.contentType === 'pdf') return <FileText className="w-4 h-4 text-rose-500 shrink-0" />;
@@ -271,6 +295,11 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
             <div
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({ x: e.clientX, y: e.clientY, tab });
+              }}
               className={`group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border ${
                 isActive
                   ? 'bg-white text-slate-900 border-slate-300 shadow-xs'
@@ -343,6 +372,26 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
             <span>{isClustering ? 'Clustering Workspaces...' : 'AI Smart Group Tabs'}</span>
           </button>
         </div>
+      )}
+      {/* Tab Context Menu */}
+      {contextMenu && (
+        <TabContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          tab={contextMenu.tab}
+          onClose={() => setContextMenu(null)}
+          onReload={() => onReloadTab?.(contextMenu.tab.id)}
+          onDuplicate={() => onDuplicateTab?.(contextMenu.tab.id)}
+          onTogglePin={() => onPinTab(contextMenu.tab.id)}
+          onToggleMute={() => onMuteTab?.(contextMenu.tab.id)}
+          onSplit={(pos) => onSplitTab?.(contextMenu.tab.id, pos)}
+          onAssignGroup={(name, color) => onAssignTabGroup?.(contextMenu.tab.id, name, color)}
+          onRemoveFromGroup={() => onRemoveTabGroup?.(contextMenu.tab.id)}
+          onBookmark={() => onBookmarkTab?.(contextMenu.tab.id)}
+          onCloseTab={() => onCloseTab(contextMenu.tab.id)}
+          onCloseOtherTabs={() => onCloseOtherTabs?.(contextMenu.tab.id)}
+          onCloseTabsToRight={() => onCloseTabsToRight?.(contextMenu.tab.id)}
+        />
       )}
     </aside>
   );

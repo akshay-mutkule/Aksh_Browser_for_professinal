@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   X,
@@ -18,6 +18,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
+import { TabContextMenu } from './TabContextMenu';
 
 interface TabBarProps {
   tabs: Tab[];
@@ -28,6 +29,15 @@ interface TabBarProps {
   onPinTab: (id: string) => void;
   onAutoClusterTabs?: () => void;
   isClustering?: boolean;
+  onDuplicateTab?: (id: string) => void;
+  onReloadTab?: (id: string) => void;
+  onMuteTab?: (id: string) => void;
+  onSplitTab?: (id: string, position: 'left' | 'right') => void;
+  onAssignTabGroup?: (id: string, groupName: string, groupColor: string) => void;
+  onRemoveTabGroup?: (id: string) => void;
+  onBookmarkTab?: (id: string) => void;
+  onCloseOtherTabs?: (id: string) => void;
+  onCloseTabsToRight?: (id: string) => void;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -39,7 +49,21 @@ export const TabBar: React.FC<TabBarProps> = ({
   onPinTab,
   onAutoClusterTabs,
   isClustering = false,
+  onDuplicateTab,
+  onReloadTab,
+  onMuteTab,
+  onSplitTab,
+  onAssignTabGroup,
+  onRemoveTabGroup,
+  onBookmarkTab,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
 }) => {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    tab: Tab;
+  } | null>(null);
   const getTabIcon = (tab: Tab) => {
     if (tab.contentType === 'pdf') return <FileText className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
     if (tab.contentType === 'research') return <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
@@ -88,6 +112,11 @@ export const TabBar: React.FC<TabBarProps> = ({
             <div
               id={`tab-${tab.id}`}
               onClick={() => onSelectTab(tab.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({ x: e.clientX, y: e.clientY, tab });
+              }}
               className={`group relative flex items-center gap-2 h-9 px-3 min-w-[120px] max-w-[220px] rounded-t-xl text-xs font-medium cursor-pointer transition-all border-t border-x ${
                 isActive
                   ? 'bg-white text-slate-900 border-slate-300 shadow-xs'
@@ -160,6 +189,26 @@ export const TabBar: React.FC<TabBarProps> = ({
           <Layers className="w-3.5 h-3.5 text-blue-600" />
           <span className="hidden xl:inline">{isClustering ? 'Organizing...' : 'Smart Group'}</span>
         </button>
+      )}
+      {/* Tab Context Menu */}
+      {contextMenu && (
+        <TabContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          tab={contextMenu.tab}
+          onClose={() => setContextMenu(null)}
+          onReload={() => onReloadTab?.(contextMenu.tab.id)}
+          onDuplicate={() => onDuplicateTab?.(contextMenu.tab.id)}
+          onTogglePin={() => onPinTab(contextMenu.tab.id)}
+          onToggleMute={() => onMuteTab?.(contextMenu.tab.id)}
+          onSplit={(pos) => onSplitTab?.(contextMenu.tab.id, pos)}
+          onAssignGroup={(name, color) => onAssignTabGroup?.(contextMenu.tab.id, name, color)}
+          onRemoveFromGroup={() => onRemoveTabGroup?.(contextMenu.tab.id)}
+          onBookmark={() => onBookmarkTab?.(contextMenu.tab.id)}
+          onCloseTab={() => onCloseTab(contextMenu.tab.id)}
+          onCloseOtherTabs={() => onCloseOtherTabs?.(contextMenu.tab.id)}
+          onCloseTabsToRight={() => onCloseTabsToRight?.(contextMenu.tab.id)}
+        />
       )}
     </div>
   );
