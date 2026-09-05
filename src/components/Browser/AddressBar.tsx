@@ -32,7 +32,10 @@ import {
   PanelLeft,
   Cpu,
   Copy,
-  Check
+  Check,
+  Camera,
+  Activity,
+  HelpCircle
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -59,6 +62,11 @@ interface AddressBarProps {
   tabLayout?: 'horizontal' | 'vertical';
   onToggleTabLayout?: () => void;
   onOpenFindInPage?: () => void;
+  onOpenTour?: () => void;
+  onOpenSnapshot?: () => void;
+  onOpenPerformance?: () => void;
+  onMindmapPage?: () => void;
+  onExportMarkdown?: () => void;
 }
 
 export const AddressBar: React.FC<AddressBarProps> = ({
@@ -83,6 +91,11 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   tabLayout = 'horizontal',
   onToggleTabLayout,
   onOpenFindInPage,
+  onOpenTour,
+  onOpenSnapshot,
+  onOpenPerformance,
+  onMindmapPage,
+  onExportMarkdown,
 }) => {
   const [urlInput, setUrlInput] = useState(activeTab?.url || '');
   const [isFocused, setIsFocused] = useState(false);
@@ -436,6 +449,28 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
       {/* Toolbar Controls */}
       <div className="flex items-center gap-1">
+        {/* Page Snapshot & AI Vision */}
+        {onOpenSnapshot && (
+          <button
+            onClick={onOpenSnapshot}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Capture Page Snapshot & Gemini Vision Analysis"
+          >
+            <Camera className="w-4 h-4 text-slate-600 hover:text-emerald-600" />
+          </button>
+        )}
+
+        {/* Site Performance HUD */}
+        {onOpenPerformance && (
+          <button
+            onClick={onOpenPerformance}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Site Telemetry & Performance HUD (RAM, Latency, HTTP/3)"
+          >
+            <Activity className="w-4 h-4 text-slate-600 hover:text-amber-600" />
+          </button>
+        )}
+
         {/* Split Screen Toggle */}
         <button
           onClick={onToggleSplitScreen}
@@ -461,6 +496,18 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         >
           <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
         </button>
+
+        {/* Interactive Feature Tour & Guide */}
+        {onOpenTour && (
+          <button
+            onClick={onOpenTour}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer border border-blue-200 shadow-2xs"
+            title="Interactive Feature Guide & Tour"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Guide</span>
+          </button>
+        )}
       </div>
 
       {/* Main Browser Menu */}
@@ -494,6 +541,38 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 <div className="text-left">
                   <div className="font-semibold text-purple-900">Cross-Tab Synthesis</div>
                   <div className="text-[10px] text-slate-400">Synthesize multiple open tabs</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenSnapshot && (
+              <button
+                onClick={() => {
+                  onOpenSnapshot();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Camera className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-emerald-900">Page Snapshot & AI Vision</div>
+                  <div className="text-[10px] text-slate-400">Capture viewport & analyze diagrams</div>
+                </div>
+              </button>
+            )}
+
+            {onMindmapPage && (
+              <button
+                onClick={() => {
+                  onMindmapPage();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Network className="w-4 h-4 text-cyan-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-cyan-900">Mindmap This Page</div>
+                  <div className="text-[10px] text-slate-400">Convert active page to knowledge graph</div>
                 </div>
               </button>
             )}
@@ -586,6 +665,48 @@ export const AddressBar: React.FC<AddressBarProps> = ({
             <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Browser Essentials
             </div>
+
+            {onOpenTour && (
+              <button
+                onClick={() => {
+                  onOpenTour();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <HelpCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="font-semibold text-blue-900">Interactive User Guide & Tour</span>
+                </div>
+                <span className="text-[10px] text-blue-600 font-bold px-1.5 py-0.2 bg-blue-50 rounded">New</span>
+              </button>
+            )}
+
+            {onOpenPerformance && (
+              <button
+                onClick={() => {
+                  onOpenPerformance();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Activity className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>Site Telemetry & Performance HUD</span>
+              </button>
+            )}
+
+            {onExportMarkdown && (
+              <button
+                onClick={() => {
+                  onExportMarkdown();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Export Page as Markdown (.md)</span>
+              </button>
+            )}
 
             {onOpenFindInPage && (
               <button

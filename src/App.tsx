@@ -25,6 +25,9 @@ import { VerticalTabBar } from './components/Browser/VerticalTabBar';
 import { FindInPageBar } from './components/Browser/FindInPageBar';
 import { CrossTabSynthesisModal } from './components/Modals/CrossTabSynthesisModal';
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
+import { QuickTourModal } from './components/Modals/QuickTourModal';
+import { PageSnapshotModal } from './components/Modals/PageSnapshotModal';
+import { SitePerformanceModal } from './components/Modals/SitePerformanceModal';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
 import { scrapeWebpage, organizeTabsSmartly } from './services/api';
@@ -89,6 +92,9 @@ export function App() {
   const [tabLayout, setTabLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [isVerticalCollapsed, setIsVerticalCollapsed] = useState<boolean>(false);
   const [isSynthesisModalOpen, setIsSynthesisModalOpen] = useState<boolean>(false);
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
+  const [isSnapshotOpen, setIsSnapshotOpen] = useState<boolean>(false);
+  const [isPerformanceOpen, setIsPerformanceOpen] = useState<boolean>(false);
 
   // Advanced Feature States: Split-Screen, Audio TTS, and Selection HUD
   const [splitScreen, setSplitScreen] = useState<{
@@ -614,6 +620,26 @@ export function App() {
     }
   };
 
+  const handleMindmapPage = () => {
+    const topic = activeTab?.title || 'Web Research & Intelligence';
+    handleNewTab(`aksh://mindmap?topic=${encodeURIComponent(topic)}`);
+  };
+
+  const handleExportMarkdown = () => {
+    if (!activeTab) return;
+    const content = activeTab.extractedText || 'No page content extracted.';
+    const md = `# ${activeTab.title}\n\n**Source URL:** ${activeTab.url}\n**Date:** ${new Date().toLocaleString()}\n**Engine:** Aksh AI Gemini 3.7\n\n---\n\n## Webpage Content\n\n${content}\n\n---\n*Exported from Aksh AI Browser*`;
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(activeTab.title || 'webpage').slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Note updates
   const handleUpdateNote = (id: string, updated: Partial<AINote>) => {
     setNotes((prev) =>
@@ -890,6 +916,7 @@ export function App() {
             onOpenPdf={(pdfId) => {
               navigateTab(targetTab.id, `aksh://pdf/${pdfId}`);
             }}
+            onOpenTour={() => setIsTourOpen(true)}
           />
         )}
 
@@ -1064,6 +1091,7 @@ export function App() {
         onBookmarkTab={handleBookmarkTab}
         onCloseOtherTabs={handleCloseOtherTabs}
         onCloseTabsToRight={handleCloseTabsToRight}
+        onOpenTour={() => setIsTourOpen(true)}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -1089,6 +1117,11 @@ export function App() {
         tabLayout={tabLayout}
         onToggleTabLayout={() => setTabLayout((l) => (l === 'horizontal' ? 'vertical' : 'horizontal'))}
         onOpenFindInPage={() => setIsFindInPageOpen(true)}
+        onOpenTour={() => setIsTourOpen(true)}
+        onOpenSnapshot={() => setIsSnapshotOpen(true)}
+        onOpenPerformance={() => setIsPerformanceOpen(true)}
+        onMindmapPage={handleMindmapPage}
+        onExportMarkdown={handleExportMarkdown}
       />
 
       {/* 3. Bookmarks Quick Bar */}
@@ -1242,6 +1275,11 @@ export function App() {
           navigateTab(activeTabId, `aksh://${view}`);
         }}
         onAutoClusterTabs={handleAutoClusterTabs}
+        onOpenTour={() => setIsTourOpen(true)}
+        onOpenSnapshot={() => setIsSnapshotOpen(true)}
+        onOpenPerformance={() => setIsPerformanceOpen(true)}
+        onMindmapPage={handleMindmapPage}
+        onExportMarkdown={handleExportMarkdown}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -1256,6 +1294,33 @@ export function App() {
       <KeyboardShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* Interactive Quick Tour & Feature Guide Modal */}
+      <QuickTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+        onToggleSplitScreen={handleToggleSplitScreen}
+        onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
+        onTriggerSpeech={handleTriggerSpeech}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
+
+      {/* High-Fidelity Page Snapshot & AI Vision Inspector */}
+      <PageSnapshotModal
+        isOpen={isSnapshotOpen}
+        onClose={() => setIsSnapshotOpen(false)}
+        activeTab={activeTab}
+        onAnalyzeWithAiVision={(prompt) => setIsAiSidebarOpen(true)}
+      />
+
+      {/* Site Telemetry & Performance Optimization HUD */}
+      <SitePerformanceModal
+        isOpen={isPerformanceOpen}
+        onClose={() => setIsPerformanceOpen(false)}
+        activeTab={activeTab}
+        onOpenDevTools={() => navigateTab(activeTabId, 'aksh://devtools')}
       />
     </div>
   );

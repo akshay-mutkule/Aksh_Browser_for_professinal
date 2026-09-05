@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -24,6 +24,7 @@ interface TitleBarProps {
   onBookmarkTab?: (id: string) => void;
   onCloseOtherTabs?: (id: string) => void;
   onCloseTabsToRight?: (id: string) => void;
+  onOpenTour?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -47,6 +48,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onBookmarkTab,
   onCloseOtherTabs,
   onCloseTabsToRight,
+  onOpenTour,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -108,6 +110,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
       {/* Right Controls & AI Side Panel Toggle */}
       <div className="flex items-center gap-1.5 px-3 shrink-0">
+        {onOpenTour && (
+          <button
+            onClick={onOpenTour}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+            title="Open Interactive Guide & Feature Tour"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden sm:inline">Guide</span>
+          </button>
+        )}
+
         <button
           onClick={onToggleAiSidebar}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${

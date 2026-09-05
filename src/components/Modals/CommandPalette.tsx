@@ -24,7 +24,10 @@ import {
   Radio,
   Table,
   Bot,
-  BookOpen
+  BookOpen,
+  Camera,
+  Activity,
+  HelpCircle
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -42,6 +45,11 @@ interface CommandPaletteProps {
   onTriggerSpeech: () => void;
   onOpenInternalView: (view: PageContentType) => void;
   onAutoClusterTabs?: () => void;
+  onOpenTour?: () => void;
+  onOpenSnapshot?: () => void;
+  onOpenPerformance?: () => void;
+  onMindmapPage?: () => void;
+  onExportMarkdown?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -58,6 +66,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onTriggerSpeech,
   onOpenInternalView,
   onAutoClusterTabs,
+  onOpenTour,
+  onOpenSnapshot,
+  onOpenPerformance,
+  onMindmapPage,
+  onExportMarkdown,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -75,6 +88,73 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Define commands
   const allCommands = [
+    // Help & Discovery
+    {
+      id: 'browser-tour',
+      title: 'Interactive User Guide & Feature Tour',
+      subtitle: 'Learn how to master all AI tools, split screen, and research workflows',
+      category: 'Getting Started',
+      icon: HelpCircle,
+      iconColor: 'text-blue-600',
+      action: () => {
+        if (onOpenTour) onOpenTour();
+        onClose();
+      },
+    },
+    // Page Tools
+    {
+      id: 'page-snapshot',
+      title: 'Page Snapshot & Gemini AI Vision',
+      subtitle: 'Capture high-res viewport and analyze visual diagrams & layout',
+      category: 'Page Tools',
+      icon: Camera,
+      iconColor: 'text-emerald-600',
+      action: () => {
+        if (onOpenSnapshot) onOpenSnapshot();
+        onClose();
+      },
+    },
+    {
+      id: 'site-performance',
+      title: 'Site Telemetry & Performance HUD',
+      subtitle: 'Monitor tab memory, page latency, HTTP/3, and tracker blocks',
+      category: 'Developer',
+      icon: Activity,
+      iconColor: 'text-amber-600',
+      action: () => {
+        if (onOpenPerformance) onOpenPerformance();
+        onClose();
+      },
+    },
+    {
+      id: 'page-mindmap',
+      title: 'Convert Current Page to Visual Mindmap',
+      subtitle: 'Generate hierarchical concept graph nodes from active webpage text',
+      category: 'AI Intelligence',
+      icon: Network,
+      iconColor: 'text-cyan-600',
+      action: () => {
+        if (onMindmapPage) {
+          onMindmapPage();
+        } else {
+          const topic = activeTab?.title || 'Web Research';
+          onOpenNewTab(`aksh://mindmap?topic=${encodeURIComponent(topic)}`);
+        }
+        onClose();
+      },
+    },
+    {
+      id: 'page-markdown',
+      title: 'Export Active Page as Markdown Dossier',
+      subtitle: 'Download structured .md summary document with citations',
+      category: 'Productivity',
+      icon: FileText,
+      iconColor: 'text-rose-600',
+      action: () => {
+        if (onExportMarkdown) onExportMarkdown();
+        onClose();
+      },
+    },
     // AI Tools
     {
       id: 'ai-sidebar',

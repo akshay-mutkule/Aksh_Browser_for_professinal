@@ -23,7 +23,12 @@ import {
   Terminal,
   Sliders,
   ExternalLink,
-  Check
+  Check,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  Play,
+  CheckCircle2
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS, SAMPLE_PDFS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType } from '../../types';
@@ -33,6 +38,7 @@ interface NewTabProps {
   bookmarks: BookmarkType[];
   onOpenResearch: (query: string) => void;
   onOpenPdf: (pdfId: string) => void;
+  onOpenTour?: () => void;
 }
 
 export const NewTab: React.FC<NewTabProps> = ({
@@ -40,9 +46,11 @@ export const NewTab: React.FC<NewTabProps> = ({
   bookmarks,
   onOpenResearch,
   onOpenPdf,
+  onOpenTour,
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [isProMode, setIsProMode] = useState(false);
+  const [showGuideCheatsheet, setShowGuideCheatsheet] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState<'google' | 'gemini' | 'duckduckgo' | 'github' | 'arxiv'>('google');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -156,10 +164,21 @@ export const NewTab: React.FC<NewTabProps> = ({
     <div className="h-full overflow-y-auto bg-slate-50 select-none flex flex-col items-center justify-start p-6 md:p-10">
       <div className="w-full max-w-4xl space-y-6 my-auto">
         
-        {/* Top Header: Badge, Title & Pro Mode Switch */}
+        {/* Top Header: Badge, Title & Mode Switches */}
         <div className="flex flex-col items-center justify-center space-y-2 text-center relative">
-          {/* Pro Mode Toggle at Top Right */}
-          <div className="md:absolute right-0 top-0 mb-2 md:mb-0">
+          {/* Top Right Header Controls */}
+          <div className="md:absolute right-0 top-0 mb-2 md:mb-0 flex items-center gap-2">
+            {onOpenTour && (
+              <button
+                onClick={onOpenTour}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-slate-100 text-blue-600 border border-blue-200 shadow-2xs transition-all cursor-pointer"
+                title="Open Interactive User Guide & Tour"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>Feature Tour</span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsProMode(!isProMode)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
@@ -192,6 +211,98 @@ export const NewTab: React.FC<NewTabProps> = ({
               Search the web, parse documents, run autonomous research, or synthesize tabs.
             </p>
           </motion.div>
+        </div>
+
+        {/* Guided Quick-Start Cheatsheet Toggle Banner */}
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-purple-50/90 border border-blue-200/80 rounded-2xl p-3 sm:p-4 text-xs shadow-2xs">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <HelpCircle className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-900 flex items-center gap-2">
+                  <span>How to use Aksh AI Browser</span>
+                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 font-semibold border border-blue-200">
+                    Quick Guide
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Master Dual Split-Screen, Deep Research, Visual Mindmaps, and Omnibox Bangs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => setShowGuideCheatsheet(!showGuideCheatsheet)}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              >
+                <span>{showGuideCheatsheet ? 'Hide Cheatsheet' : 'View Cheatsheet'}</span>
+                {showGuideCheatsheet ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {onOpenTour && (
+                <button
+                  onClick={onOpenTour}
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <Play className="w-3 h-3 fill-white" />
+                  <span>Start Tour</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Expandable Cheatsheet Drawer */}
+          {showGuideCheatsheet && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 pt-3 border-t border-blue-200/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"
+            >
+              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>AI Co-Pilot</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Press <kbd className="font-mono font-bold text-slate-800 bg-slate-100 px-1 py-0.2 rounded border">Ctrl+K</kbd> to chat with any webpage, generate 4 summary modes, or fact-check claims.
+                </p>
+              </div>
+
+              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Deep Research</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Type <span className="font-mono text-amber-700 font-semibold">!ai &lt;query&gt;</span> in the address bar to dispatch multi-source autonomous research dossiers with verified citations.
+                </p>
+              </div>
+
+              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Network className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>Concept Mindmap</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Type <span className="font-mono text-cyan-700 font-semibold">!m &lt;topic&gt;</span> to generate interactive, draggable knowledge graphs and visual node trees.
+                </p>
+              </div>
+
+              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Split Screen & Tabs</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Right-click any tab or link to open in dual-pane split screen, or switch to Arc-style vertical tabs in the menu.
+                </p>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Pro Telemetry HUD (Only when Pro Mode is Active) */}
