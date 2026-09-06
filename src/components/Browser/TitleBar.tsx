@@ -54,20 +54,22 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
   return (
     <div className="h-10 bg-slate-100/90 flex items-center justify-between select-none border-b border-slate-200 relative z-20">
-      {/* Window Controls (macOS style dots) */}
-      <div className="flex items-center gap-2 px-3.5 shrink-0">
+      {/* Window Controls (macOS style dots - desktop only) */}
+      <div className="hidden sm:flex items-center gap-2 px-3 shrink-0">
         <div className="w-3 h-3 rounded-full bg-rose-500 hover:bg-rose-600 cursor-pointer shadow-xs" title="Close Window" />
         <div className="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 cursor-pointer shadow-xs" title="Minimize Window" />
         <div className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 cursor-pointer shadow-xs" title="Maximize Window" />
         <div className="h-3.5 w-px bg-slate-300 ml-1.5" />
-        <div className="flex items-center gap-1.5 pl-1">
-          <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-white text-[9px] font-black shadow-xs">
-            A
-          </div>
-          <span className="text-xs font-bold text-slate-800 tracking-tight hidden sm:inline">
-            Aksh
-          </span>
+      </div>
+
+      {/* Brand Icon (Always visible) */}
+      <div className="flex items-center gap-1.5 px-2.5 shrink-0">
+        <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-white text-[9px] font-black shadow-xs">
+          A
         </div>
+        <span className="text-xs font-bold text-slate-800 tracking-tight hidden sm:inline">
+          Aksh
+        </span>
       </div>
 
       {/* Tab Strip OR Active Tab Header in Vertical Mode */}
@@ -109,21 +111,21 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       )}
 
       {/* Right Controls & AI Side Panel Toggle */}
-      <div className="flex items-center gap-1.5 px-3 shrink-0">
+      <div className="flex items-center gap-1.5 px-2 sm:px-3 shrink-0">
         {onOpenTour && (
           <button
             onClick={onOpenTour}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
             title="Open Interactive Guide & Feature Tour"
           >
             <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
-            <span className="hidden sm:inline">Guide</span>
+            <span className="hidden md:inline">Guide</span>
           </button>
         )}
 
         <button
           onClick={onToggleAiSidebar}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${
             isAiSidebarOpen
               ? 'bg-blue-600 text-white shadow-blue-500/20'
               : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
@@ -134,7 +136,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <span className="hidden md:inline">Aksh AI</span>
         </button>
 
-        <div className="flex items-center text-slate-500 ml-1">
+        <div className="hidden sm:flex items-center text-slate-500 ml-1">
           <button className="p-1.5 hover:bg-slate-200/80 hover:text-slate-700 rounded transition-colors" title="Minimize">
             <Minus className="w-3.5 h-3.5" />
           </button>

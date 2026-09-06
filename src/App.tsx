@@ -23,6 +23,8 @@ import { SelectionAiHud } from './components/Browser/SelectionAiHud';
 import { SplitScreenContainer } from './components/Browser/SplitScreenContainer';
 import { VerticalTabBar } from './components/Browser/VerticalTabBar';
 import { FindInPageBar } from './components/Browser/FindInPageBar';
+import { MobileBottomNav } from './components/Browser/MobileBottomNav';
+import { MobileTabsSheet } from './components/Browser/MobileTabsSheet';
 import { CrossTabSynthesisModal } from './components/Modals/CrossTabSynthesisModal';
 import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsModal';
 import { QuickTourModal } from './components/Modals/QuickTourModal';
@@ -95,6 +97,14 @@ export function App() {
   const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState<boolean>(false);
   const [isPerformanceOpen, setIsPerformanceOpen] = useState<boolean>(false);
+  const [isMobileTabsOpen, setIsMobileTabsOpen] = useState<boolean>(false);
+
+  // Auto-detect mobile screen on mount to collapse sidebar
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsAiSidebarOpen(false);
+    }
+  }, []);
 
   // Advanced Feature States: Split-Screen, Audio TTS, and Selection HUD
   const [splitScreen, setSplitScreen] = useState<{
@@ -1159,7 +1169,7 @@ export function App() {
         )}
 
         {/* Content Viewport */}
-        <main className="flex-1 h-full overflow-hidden relative bg-white">
+        <main className="flex-1 h-full overflow-hidden relative bg-white pb-14 md:pb-0">
           {/* Find In Page Floating Bar */}
           <FindInPageBar
             isOpen={isFindInPageOpen}
@@ -1233,6 +1243,51 @@ export function App() {
           }}
         />
       </div>
+
+      {/* Mobile Bottom Navigation Bar (< md) */}
+      <MobileBottomNav
+        tabs={tabs}
+        activeTab={activeTab}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        onReload={handleReload}
+        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
+        onNewTab={() => handleNewTab('aksh://newtab')}
+        onOpenTabsSheet={() => setIsMobileTabsOpen(true)}
+        onToggleAiSidebar={() => setIsAiSidebarOpen((prev) => !prev)}
+        isAiSidebarOpen={isAiSidebarOpen}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onToggleReaderMode={handleToggleReaderMode}
+        onTriggerSpeech={handleTriggerSpeech}
+        isSpeaking={audioNarration.isOpen}
+        onOpenSnapshot={() => setIsSnapshotOpen(true)}
+        onOpenPerformance={() => setIsPerformanceOpen(true)}
+        onOpenTour={() => setIsTourOpen(true)}
+        onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+        onToggleSplitScreen={handleToggleSplitScreen}
+        isSplitScreen={splitScreen.enabled}
+        onMindmapPage={handleMindmapPage}
+        onExportMarkdown={handleExportMarkdown}
+      />
+
+      {/* Mobile Tab Management Sheet (< md) */}
+      <MobileTabsSheet
+        isOpen={isMobileTabsOpen}
+        onClose={() => setIsMobileTabsOpen(false)}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSelectTab={(id) => {
+          setActiveTabId(id);
+          setIsMobileTabsOpen(false);
+        }}
+        onCloseTab={handleCloseTab}
+        onNewTab={() => {
+          handleNewTab('aksh://newtab');
+          setIsMobileTabsOpen(false);
+        }}
+        onAutoClusterTabs={handleAutoClusterTabs}
+        isClustering={isClustering}
+      />
 
       {/* Floating Audio Narration Player */}
       <AnimatePresence>

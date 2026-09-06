@@ -46,6 +46,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const [saved, setSaved] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [customQuestion, setCustomQuestion] = useState('');
+  const [mobileViewMode, setMobileViewMode] = useState<'doc' | 'ai'>('doc');
 
   const handleSelectSample = (sample: (typeof SAMPLE_PDFS)[0]) => {
     onUpdateTabPdfData({
@@ -114,8 +115,39 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
   return (
     <div className="h-full flex flex-col md:flex-row bg-slate-50 text-slate-900 overflow-hidden select-text">
+      {/* Mobile Toggle: Document vs AI Analysis (< md) */}
+      <div className="md:hidden h-10 px-3 bg-white border-b border-slate-200 flex items-center justify-between text-xs shrink-0 shadow-2xs z-20">
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+          <button
+            onClick={() => setMobileViewMode('doc')}
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              mobileViewMode === 'doc'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            PDF Document
+          </button>
+          <button
+            onClick={() => setMobileViewMode('ai')}
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              mobileViewMode === 'ai'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            AI Intelligence
+          </button>
+        </div>
+        <span className="text-[11px] font-mono text-slate-500 truncate max-w-[120px]">
+          {currentPdf.filename}
+        </span>
+      </div>
+
       {/* Left Panel: PDF Document Paper View */}
-      <div className="flex-1 flex flex-col border-r border-slate-200 bg-slate-100 overflow-hidden">
+      <div className={`flex-1 flex-col border-r border-slate-200 bg-slate-100 overflow-hidden ${
+        mobileViewMode === 'doc' ? 'flex' : 'hidden md:flex'
+      }`}>
         {/* PDF Top Toolbar */}
         <div className="h-10 px-4 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
           <div className="flex items-center gap-2 truncate">
@@ -203,7 +235,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       </div>
 
       {/* Right Panel: AI PDF Intelligence Co-Pilot */}
-      <div className="w-full md:w-[460px] h-full bg-white flex flex-col shadow-lg z-10 select-text border-l border-slate-200">
+      <div className={`w-full md:w-[460px] h-full bg-white flex-col shadow-lg z-10 select-text border-l border-slate-200 overflow-hidden ${
+        mobileViewMode === 'ai' ? 'flex flex-1 md:flex-initial' : 'hidden md:flex'
+      }`}>
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">

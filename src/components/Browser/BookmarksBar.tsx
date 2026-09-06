@@ -14,7 +14,7 @@ export const BookmarksBar: React.FC<BookmarksBarProps> = ({
   onOpenBookmarksManager,
 }) => {
   return (
-    <div className="h-7 bg-slate-50 border-b border-slate-200 px-3 flex items-center gap-2 overflow-x-auto scrollbar-none text-[11px] select-none text-slate-700">
+    <div className="hidden sm:flex h-7 bg-slate-50 border-b border-slate-200 px-3 items-center gap-2 overflow-x-auto scrollbar-none text-[11px] select-none text-slate-700">
       {bookmarks.slice(0, 10).map((b) => (
         <button
           key={b.id}

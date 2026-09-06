@@ -45,6 +45,7 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesisResult, setSynthesisResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mobileActivePane, setMobileActivePane] = useState<'left' | 'right'>('left');
 
   const handleCrossTabSynthesis = async () => {
     if (!leftTab || !rightTab) return;
@@ -82,101 +83,155 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
   };
 
   return (
-    <div className="h-full flex overflow-hidden bg-slate-50 relative">
-      {/* Left Viewport Pane */}
-      <div
-        style={{ width: `${ratio}%` }}
-        className="h-full border-r border-slate-200 flex flex-col overflow-hidden relative"
-      >
-        <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
-          <div className="flex items-center gap-2 truncate">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-            <span className="font-bold text-slate-900 truncate">{leftTab?.title || 'Primary Pane'}</span>
-          </div>
-          <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Left ({ratio}%)</span>
+    <div className="h-full flex flex-col overflow-hidden bg-slate-50 relative">
+      {/* Mobile Header Switcher (Visible only on screens < md) */}
+      <div className="md:hidden h-10 px-3 bg-white border-b border-slate-200 flex items-center justify-between text-xs shrink-0 shadow-2xs z-20">
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+          <button
+            onClick={() => setMobileActivePane('left')}
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              mobileActivePane === 'left'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Pane 1: {leftTab?.title?.slice(0, 10) || 'Left'}
+          </button>
+          <button
+            onClick={() => setMobileActivePane('right')}
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              mobileActivePane === 'right'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Pane 2: {rightTab?.title?.slice(0, 10) || 'Right'}
+          </button>
         </div>
-        <div className="flex-1 overflow-hidden">{renderTabContent(leftTab)}</div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleCrossTabSynthesis}
+            disabled={isSynthesizing || !leftTab || !rightTab}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Compare and synthesize both tabs side-by-side using Gemini"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-[11px]">{isSynthesizing ? '...' : 'AI Compare'}</span>
+          </button>
+
+          <button
+            onClick={onCloseSplitScreen}
+            className="p-1 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
+            title="Exit Split-Screen Mode"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Center Resizer & Controls Bar */}
-      <div className="w-2 hover:w-2.5 bg-slate-200 hover:bg-blue-600 transition-all flex flex-col items-center justify-center cursor-col-resize z-20 group">
-        <div className="w-1 h-8 rounded-full bg-slate-400 group-hover:bg-white" />
+      {/* Mobile Active Pane Content (< md) */}
+      <div className="flex-1 md:hidden flex flex-col overflow-hidden">
+        {renderTabContent(mobileActivePane === 'left' ? leftTab : rightTab)}
       </div>
 
-      {/* Right Viewport Pane */}
-      <div
-        style={{ width: `${100 - ratio}%` }}
-        className="h-full flex flex-col overflow-hidden relative"
-      >
-        {/* Right Pane Control Header */}
-        <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
-          <div className="flex items-center gap-2 truncate">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
-            <select
-              value={rightTab?.id || ''}
-              onChange={(e) => onSelectRightTab(e.target.value)}
-              className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer truncate max-w-xs font-medium shadow-2xs"
-            >
-              {allTabs
-                .filter((t) => t.id !== leftTab?.id)
-                .map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title} ({t.contentType.toUpperCase()})
-                  </option>
-                ))}
-            </select>
+      {/* Desktop Side-by-Side Dual Pane Container (Hidden on < md, flex on md+) */}
+      <div className="hidden md:flex flex-1 h-full overflow-hidden">
+        {/* Left Viewport Pane */}
+        <div
+          style={{ width: `${ratio}%` }}
+          className="h-full border-r border-slate-200 flex flex-col overflow-hidden relative"
+        >
+          <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
+            <div className="flex items-center gap-2 truncate">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+              <span className="font-bold text-slate-900 truncate">{leftTab?.title || 'Primary Pane'}</span>
+            </div>
+            <span className="text-[11px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Left ({ratio}%)</span>
           </div>
+          <div className="flex-1 overflow-hidden">{renderTabContent(leftTab)}</div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {/* AI Cross-Tab Comparative Synthesis Trigger */}
-            <button
-              onClick={handleCrossTabSynthesis}
-              disabled={isSynthesizing || !leftTab || !rightTab}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-              title="Compare and synthesize both tabs side-by-side using Gemini"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>{isSynthesizing ? 'Synthesizing...' : 'AI Compare'}</span>
-            </button>
+        {/* Center Resizer & Controls Bar */}
+        <div className="w-2 hover:w-2.5 bg-slate-200 hover:bg-blue-600 transition-all flex flex-col items-center justify-center cursor-col-resize z-20 group">
+          <div className="w-1 h-8 rounded-full bg-slate-400 group-hover:bg-white" />
+        </div>
 
-            {/* Quick Ratio Toggles */}
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-              <button
-                onClick={() => onRatioChange(30)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 30 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                title="30% Left / 70% Right"
+        {/* Right Viewport Pane */}
+        <div
+          style={{ width: `${100 - ratio}%` }}
+          className="h-full flex flex-col overflow-hidden relative"
+        >
+          {/* Right Pane Control Header */}
+          <div className="h-8 px-3.5 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shrink-0 shadow-2xs">
+            <div className="flex items-center gap-2 truncate">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+              <select
+                value={rightTab?.id || ''}
+                onChange={(e) => onSelectRightTab(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer truncate max-w-xs font-medium shadow-2xs"
               >
-                30/70
-              </button>
-              <button
-                onClick={() => onRatioChange(50)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 50 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                title="50% / 50% Even Split"
-              >
-                50/50
-              </button>
-              <button
-                onClick={() => onRatioChange(70)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 70 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                title="70% Left / 30% Right"
-              >
-                70/30
-              </button>
+                {allTabs
+                  .filter((t) => t.id !== leftTab?.id)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title} ({t.contentType.toUpperCase()})
+                    </option>
+                  ))}
+              </select>
             </div>
 
-            {/* Close Split Screen */}
-            <button
-              onClick={onCloseSplitScreen}
-              className="p-1 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-              title="Exit Split-Screen Mode"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+            <div className="flex items-center gap-2">
+              {/* AI Cross-Tab Comparative Synthesis Trigger */}
+              <button
+                onClick={handleCrossTabSynthesis}
+                disabled={isSynthesizing || !leftTab || !rightTab}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                title="Compare and synthesize both tabs side-by-side using Gemini"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>{isSynthesizing ? 'Synthesizing...' : 'AI Compare'}</span>
+              </button>
 
-        {/* Right Pane Viewport */}
-        <div className="flex-1 overflow-hidden">{renderTabContent(rightTab)}</div>
+              {/* Quick Ratio Toggles */}
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                <button
+                  onClick={() => onRatioChange(30)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 30 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  title="30% Left / 70% Right"
+                >
+                  30/70
+                </button>
+                <button
+                  onClick={() => onRatioChange(50)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 50 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  title="50% / 50% Even Split"
+                >
+                  50/50
+                </button>
+                <button
+                  onClick={() => onRatioChange(70)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${ratio === 70 ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                  title="70% Left / 30% Right"
+                >
+                  70/30
+                </button>
+              </div>
+
+              {/* Close Split Screen */}
+              <button
+                onClick={onCloseSplitScreen}
+                className="p-1 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                title="Exit Split-Screen Mode"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Pane Viewport */}
+          <div className="flex-1 overflow-hidden">{renderTabContent(rightTab)}</div>
+        </div>
       </div>
 
       {/* Floating AI Cross-Tab Comparative Synthesis Modal Overlay */}

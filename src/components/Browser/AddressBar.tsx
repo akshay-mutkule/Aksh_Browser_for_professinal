@@ -447,8 +447,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         )}
       </div>
 
-      {/* Toolbar Controls */}
-      <div className="flex items-center gap-1">
+      {/* Toolbar Controls (Hidden on small mobile screens to prevent omnibox squishing) */}
+      <div className="hidden md:flex items-center gap-1 shrink-0">
         {/* Page Snapshot & AI Vision */}
         {onOpenSnapshot && (
           <button

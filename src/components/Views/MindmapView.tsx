@@ -18,7 +18,8 @@ import {
   Bookmark,
   CheckCircle2,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { generateMindmap } from '../../services/api';
 import { MindmapGraph, MindmapNode } from '../../types';
@@ -196,7 +197,7 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
       </div>
 
       {/* Main Canvas + Side Inspection Drawer */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         {/* Interactive Mindmap Visual Grid Canvas */}
         <div className="flex-1 overflow-auto p-6 relative flex flex-col items-center justify-start bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] bg-slate-50">
           {isLoading ? (
@@ -298,13 +299,22 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
 
         {/* Selected Node Deep-Dive Inspector Panel */}
         {selectedNode && (
-          <div className="w-80 border-l border-slate-200 bg-white p-4 flex flex-col justify-between shrink-0 select-text overflow-y-auto shadow-md">
+          <div className="fixed inset-x-0 bottom-0 z-30 max-h-[55vh] md:relative md:inset-auto md:max-h-none md:w-80 border-t md:border-t-0 md:border-l border-slate-200 bg-white p-4 flex flex-col justify-between shrink-0 select-text overflow-y-auto shadow-2xl md:shadow-md animate-in slide-in-from-bottom duration-200">
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-200">
-                  {selectedNode.category} Node
-                </span>
-                <span className="text-xs text-slate-400 font-mono">ID: #{selectedNode.id}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-200">
+                    {selectedNode.category} Node
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">ID: #{selectedNode.id}</span>
+                </div>
+                <button
+                  onClick={() => setSelectedNode(null)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  title="Close Inspector"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="space-y-1.5">

@@ -370,10 +370,18 @@ export const AISidebar: React.FC<AISidebarProps> = ({
   if (!isOpen) return null;
 
   return (
-    <aside
-      id="aksh-ai-sidebar"
-      className="w-96 md:w-[420px] h-full bg-white border-l border-slate-200 flex flex-col z-30 shadow-xl relative select-text"
-    >
+    <>
+      {/* Mobile Drawer Backdrop */}
+      <div
+        className="md:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <aside
+        id="aksh-ai-sidebar"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-md md:relative md:inset-auto md:z-30 md:w-[400px] lg:w-[420px] h-full bg-white border-l border-slate-200 flex flex-col shadow-2xl md:shadow-xl select-text animate-in slide-in-from-right duration-200"
+      >
       {/* Sidebar Header */}
       <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 backdrop-blur-md flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -634,5 +642,6 @@ export const AISidebar: React.FC<AISidebarProps> = ({
         </p>
       </div>
     </aside>
+    </>
   );
 };
