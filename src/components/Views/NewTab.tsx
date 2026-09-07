@@ -4,33 +4,16 @@ import {
   Search,
   Sparkles,
   Zap,
-  BookOpen,
-  Code,
-  Laptop,
+  Network,
   FileText,
   Scale,
   ArrowRight,
-  Globe,
-  Compass,
-  Network,
-  StickyNote,
-  GraduationCap,
-  Command,
-  Cpu,
-  Shield,
-  Activity,
-  Layers,
-  Terminal,
-  Sliders,
-  ExternalLink,
-  Check,
+  Code,
+  Laptop,
+  BookOpen,
   HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Play,
-  CheckCircle2
 } from 'lucide-react';
-import { SPEED_DIAL_SHORTCUTS, SAMPLE_PDFS } from '../../data/mockWebsites';
+import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType } from '../../types';
 
 interface NewTabProps {
@@ -43,587 +26,240 @@ interface NewTabProps {
 
 export const NewTab: React.FC<NewTabProps> = ({
   onNavigate,
-  bookmarks,
-  onOpenResearch,
-  onOpenPdf,
   onOpenTour,
 }) => {
   const [searchInput, setSearchInput] = useState('');
-  const [isProMode, setIsProMode] = useState(false);
-  const [showGuideCheatsheet, setShowGuideCheatsheet] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<'google' | 'gemini' | 'duckduckgo' | 'github' | 'arxiv'>('google');
+  const [isAiMode, setIsAiMode] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchInput.trim()) return;
-
     const q = searchInput.trim();
+    if (!q) return;
 
-    // Check for Bang shortcuts first
-    if (q.startsWith('!ai ') || q.startsWith('!gemini ')) {
-      onNavigate(`aksh://research?q=${encodeURIComponent(q.replace(/^!(ai|gemini)\s+/, ''))}`);
+    // AI Mode enabled or AI query prefixes
+    if (isAiMode || q.startsWith('!ai ') || q.startsWith('!gemini ')) {
+      const cleanQ = q.replace(/^!(ai|gemini)\s+/, '');
+      onNavigate(`aksh://research?q=${encodeURIComponent(cleanQ)}`);
       return;
     }
+
     if (q.startsWith('!mindmap ') || q.startsWith('!m ')) {
       onNavigate(`aksh://mindmap?topic=${encodeURIComponent(q.replace(/^!(mindmap|m)\s+/, ''))}`);
       return;
     }
-    if (q.startsWith('!gh ')) {
-      onNavigate(`https://github.com/search?q=${encodeURIComponent(q.replace(/^!gh\s+/, ''))}`);
-      return;
-    }
-    if (q.startsWith('!wiki ')) {
-      onNavigate(`https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q.replace(/^!wiki\s+/, ''))}`);
-      return;
-    }
 
-    if (q.startsWith('http://') || q.startsWith('https://') || q.startsWith('aksh://') || q.startsWith('nexus://')) {
+    // Direct URLs
+    if (
+      q.startsWith('http://') ||
+      q.startsWith('https://') ||
+      q.startsWith('aksh://') ||
+      q.startsWith('nexus://')
+    ) {
       onNavigate(q);
       return;
     }
 
-    // Engine-specific routing
-    if (selectedEngine === 'gemini') {
-      onNavigate(`aksh://research?q=${encodeURIComponent(q)}`);
-    } else if (selectedEngine === 'duckduckgo') {
-      onNavigate(`https://duckduckgo.com/?q=${encodeURIComponent(q)}`);
-    } else if (selectedEngine === 'github') {
-      onNavigate(`https://github.com/search?q=${encodeURIComponent(q)}`);
-    } else if (selectedEngine === 'arxiv') {
-      onNavigate(`https://arxiv.org/search/?query=${encodeURIComponent(q)}&searchtype=all`);
-    } else {
-      onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
-    }
+    // Default Web Search
+    onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
   };
 
-  const getIcon = (iconName: string) => {
+  const getShortcutIcon = (iconName: string) => {
     switch (iconName) {
       case 'Code':
-        return <Code className="w-4 h-4" />;
+        return <Code className="w-5 h-5 text-emerald-600" />;
       case 'Laptop':
-        return <Laptop className="w-4 h-4" />;
+        return <Laptop className="w-5 h-5 text-indigo-600" />;
       case 'FileText':
-        return <FileText className="w-4 h-4" />;
+        return <FileText className="w-5 h-5 text-rose-600" />;
       case 'BookOpen':
-        return <BookOpen className="w-4 h-4" />;
+        return <BookOpen className="w-5 h-5 text-amber-600" />;
       case 'Zap':
-        return <Zap className="w-4 h-4" />;
+        return <Zap className="w-5 h-5 text-purple-600" />;
       case 'Sparkles':
-        return <Sparkles className="w-4 h-4" />;
+        return <Sparkles className="w-5 h-5 text-blue-600" />;
       case 'Scale':
-        return <Scale className="w-4 h-4" />;
+        return <Scale className="w-5 h-5 text-pink-600" />;
       default:
-        return <Search className="w-4 h-4" />;
+        return <Search className="w-5 h-5 text-blue-600" />;
     }
   };
 
-  const AI_SUPERPOWERS = [
+  const AI_TOOLS = [
     {
       id: 'research',
-      title: 'Deep Research Agent',
-      subtitle: 'Multi-source autonomous AI investigation with live citations & deep web queries',
+      title: 'Deep Research',
+      desc: 'Deep web search & cited answers',
       icon: Zap,
-      color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/70',
-      iconBg: 'bg-amber-500 text-white',
-      action: () => onNavigate('aksh://research?q=Best%20AI%20trends%202026'),
-      badge: 'Autonomous',
+      iconColor: 'text-amber-600 bg-amber-50 border-amber-200',
+      action: () => onNavigate('aksh://research'),
     },
     {
       id: 'mindmap',
-      title: 'Visual Mindmap & Knowledge Graph',
-      subtitle: 'Dynamic hierarchical graph synthesis for complex systems and concepts',
+      title: 'Mindmap',
+      desc: 'Visual concept knowledge graph',
       icon: Network,
-      color: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100/70',
-      iconBg: 'bg-indigo-500 text-white',
-      action: () => onNavigate('aksh://mindmap?topic=Artificial%20Intelligence%202026'),
-      badge: 'Visual Graph',
+      iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+      action: () => onNavigate('aksh://mindmap'),
     },
     {
       id: 'pdf',
-      title: 'PDF Intelligence & Study Engine',
-      subtitle: 'Parse papers, extract citations, generate Cornell notes and dynamic quizzes',
+      title: 'PDF Reader',
+      desc: 'AI document study & summaries',
       icon: FileText,
-      color: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100/70',
-      iconBg: 'bg-rose-500 text-white',
-      action: () => onOpenPdf('transformer-paper'),
-      badge: 'Study Mode',
+      iconColor: 'text-rose-600 bg-rose-50 border-rose-200',
+      action: () => onNavigate('aksh://pdf/transformer-paper'),
     },
     {
       id: 'compare',
-      title: 'Product Comparison & Decision Matrix',
-      subtitle: 'Side-by-side spec showdowns with AI scoring, pros/cons, and final verdicts',
+      title: 'Comparison',
+      desc: 'Side-by-side product showdown',
       icon: Scale,
-      color: 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100/70',
-      iconBg: 'bg-pink-500 text-white',
+      iconColor: 'text-pink-600 bg-pink-50 border-pink-200',
       action: () => onNavigate('aksh://comparison'),
-      badge: 'Decision Matrix',
     },
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 select-none flex flex-col items-center justify-start p-6 md:p-10">
-      <div className="w-full max-w-4xl space-y-6 my-auto">
+    <div className="h-full overflow-y-auto bg-slate-50/50 flex flex-col items-center justify-center px-4 py-8 select-none">
+      <div className="w-full max-w-2xl flex flex-col items-center space-y-7 my-auto">
         
-        {/* Top Header: Badge, Title & Mode Switches */}
-        <div className="flex flex-col items-center justify-center space-y-2 text-center relative">
-          {/* Top Right Header Controls */}
-          <div className="md:absolute right-0 top-0 mb-2 md:mb-0 flex items-center gap-2">
-            {onOpenTour && (
-              <button
-                onClick={onOpenTour}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-slate-100 text-blue-600 border border-blue-200 shadow-2xs transition-all cursor-pointer"
-                title="Open Interactive User Guide & Tour"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Feature Tour</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setIsProMode(!isProMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                isProMode
-                  ? 'bg-blue-600 text-white border-blue-700 shadow-sm ring-2 ring-blue-500/20'
-                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
-              }`}
-              title="Toggle Advanced Pro Telemetry & Developer HUD"
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>{isProMode ? 'Pro Mode Active' : 'Enable Pro Mode'}</span>
-            </button>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-2"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
-              <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              <span>Aksh AI Browser • Gemini 3.7 Intelligence</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
-              What would you like to explore?
-            </h1>
-            <p className="text-sm text-slate-500 max-w-lg mx-auto">
-              Search the web, parse documents, run autonomous research, or synthesize tabs.
-            </p>
-          </motion.div>
-        </div>
-
-        {/* Guided Quick-Start Cheatsheet Toggle Banner */}
-        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-purple-50/90 border border-blue-200/80 rounded-2xl p-3 sm:p-4 text-xs shadow-2xs">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <HelpCircle className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-900 flex items-center gap-2">
-                  <span>How to use Aksh AI Browser</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 font-semibold border border-blue-200">
-                    Quick Guide
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-600">
-                  Master Dual Split-Screen, Deep Research, Visual Mindmaps, and Omnibox Bangs.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <button
-                onClick={() => setShowGuideCheatsheet(!showGuideCheatsheet)}
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              >
-                <span>{showGuideCheatsheet ? 'Hide Cheatsheet' : 'View Cheatsheet'}</span>
-                {showGuideCheatsheet ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {onOpenTour && (
-                <button
-                  onClick={onOpenTour}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                >
-                  <Play className="w-3 h-3 fill-white" />
-                  <span>Start Tour</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Expandable Cheatsheet Drawer */}
-          {showGuideCheatsheet && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 pt-3 border-t border-blue-200/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"
-            >
-              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
-                <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>AI Co-Pilot</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Press <kbd className="font-mono font-bold text-slate-800 bg-slate-100 px-1 py-0.2 rounded border">Ctrl+K</kbd> to chat with any webpage, generate 4 summary modes, or fact-check claims.
-                </p>
-              </div>
-
-              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
-                <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Deep Research</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Type <span className="font-mono text-amber-700 font-semibold">!ai &lt;query&gt;</span> in the address bar to dispatch multi-source autonomous research dossiers with verified citations.
-                </p>
-              </div>
-
-              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
-                <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <Network className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>Concept Mindmap</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Type <span className="font-mono text-cyan-700 font-semibold">!m &lt;topic&gt;</span> to generate interactive, draggable knowledge graphs and visual node trees.
-                </p>
-              </div>
-
-              <div className="bg-white/80 p-3 rounded-xl border border-blue-100 space-y-1">
-                <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Split Screen & Tabs</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Right-click any tab or link to open in dual-pane split screen, or switch to Arc-style vertical tabs in the menu.
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Pro Telemetry HUD (Only when Pro Mode is Active) */}
-        {isProMode && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white border border-blue-200/80 rounded-2xl p-4 shadow-sm space-y-3"
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-blue-600" />
-                <span>Engine Telemetry & System Status</span>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-mono font-bold">
-                OPTIMAL • MEMORY SAVER ON
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1 mb-1">
-                  <Cpu className="w-3 h-3 text-blue-500" />
-                  <span>Active Memory</span>
-                </div>
-                <div className="font-bold text-slate-900 text-sm">248 MB</div>
-                <div className="text-[10px] text-emerald-600">Saved: 1.2 GB (12 tabs)</div>
-              </div>
-
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1 mb-1">
-                  <Shield className="w-3 h-3 text-emerald-500" />
-                  <span>Privacy Shield</span>
-                </div>
-                <div className="font-bold text-slate-900 text-sm">18 Blocked</div>
-                <div className="text-[10px] text-slate-500">Trackers & Telemetry</div>
-              </div>
-
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1 mb-1">
-                  <Activity className="w-3 h-3 text-amber-500" />
-                  <span>Engine Latency</span>
-                </div>
-                <div className="font-bold text-slate-900 text-sm">22 ms</div>
-                <div className="text-[10px] text-slate-500">TLS 1.3 Handshake</div>
-              </div>
-
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                <div className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1 mb-1">
-                  <Sparkles className="w-3 h-3 text-purple-500" />
-                  <span>AI Architecture</span>
-                </div>
-                <div className="font-bold text-slate-900 text-sm">Gemini 3.7</div>
-                <div className="text-[10px] text-purple-600 font-medium">Multimodal Thinking</div>
-              </div>
-            </div>
-
-            {/* Bang Shortcuts Reference */}
-            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-              <span className="font-semibold text-slate-700">Bang Shortcuts:</span>
-              <span className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">!ai &lt;query&gt;</span>
-              <span className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">!m &lt;mindmap&gt;</span>
-              <span className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">!gh &lt;repo&gt;</span>
-              <span className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-800">!wiki &lt;topic&gt;</span>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Search Engine Selector (When in Pro Mode) */}
-        {isProMode && (
-          <div className="flex items-center justify-center gap-1.5 text-xs font-semibold">
-            <span className="text-slate-400 text-[11px] mr-1">Search via:</span>
-            <button
-              onClick={() => setSelectedEngine('google')}
-              className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                selectedEngine === 'google'
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              Google
-            </button>
-            <button
-              onClick={() => setSelectedEngine('gemini')}
-              className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
-                selectedEngine === 'gemini'
-                  ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-purple-400" />
-              <span>Gemini AI</span>
-            </button>
-            <button
-              onClick={() => setSelectedEngine('github')}
-              className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                selectedEngine === 'github'
-                  ? 'bg-slate-800 text-white border-slate-800 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              GitHub
-            </button>
-            <button
-              onClick={() => setSelectedEngine('arxiv')}
-              className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                selectedEngine === 'arxiv'
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              ArXiv Papers
-            </button>
-            <button
-              onClick={() => setSelectedEngine('duckduckgo')}
-              className={`px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                selectedEngine === 'duckduckgo'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              DuckDuckGo
-            </button>
-          </div>
-        )}
-
-        {/* Clean Omnibox Search Box */}
-        <motion.form
-          initial={{ opacity: 0, y: 8 }}
+        {/* Brand Logo & Name */}
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          onSubmit={handleSearch}
+          transition={{ duration: 0.25 }}
+          className="flex flex-col items-center space-y-2 text-center"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-blue-500/15">
+              A
+            </div>
+            <span className="text-3xl font-bold text-slate-800 tracking-tight">
+              Aksh
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Clean, Focused Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.05 }}
           className="w-full"
         >
-          <div className="relative flex items-center bg-white border border-slate-300 hover:border-slate-400 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-2xl p-2 shadow-md transition-all">
-            <div className="pl-3 pr-2 text-slate-400">
+          <form
+            onSubmit={handleSearch}
+            className="w-full relative flex items-center bg-white border border-slate-200 hover:border-slate-300 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-2xl p-1.5 shadow-sm transition-all"
+          >
+            <div className="pl-3.5 pr-2 text-slate-400 shrink-0">
               <Search className="w-5 h-5" />
             </div>
+
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder={
-                selectedEngine === 'gemini'
-                  ? 'Ask Gemini 3.7 to research, code, or synthesize anything...'
-                  : selectedEngine === 'github'
-                  ? 'Search GitHub repositories, code, and developer docs...'
-                  : selectedEngine === 'arxiv'
-                  ? 'Search ArXiv academic papers and machine learning research...'
-                  : 'Search Google, ask Gemini (!ai), or type any URL...'
-              }
-              className="w-full bg-transparent text-slate-900 placeholder-slate-400 text-sm focus:outline-none py-1.5"
+              placeholder={isAiMode ? "Ask AI anything..." : "Search Google or type a URL"}
+              className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-base focus:outline-none py-2 px-1"
+              autoFocus
             />
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer"
-            >
-              <span>Explore</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
 
-          {/* Quick Action Chips under search bar */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-3 text-xs text-slate-600">
-            <span className="text-[11px] text-slate-400 font-medium">Quick tools:</span>
-            <button
-              type="button"
-              onClick={() => onNavigate('aksh://research?q=Best%20Python%20courses%202026')}
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Zap className="w-3 h-3 text-amber-500" />
-              <span>Deep Research</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('aksh://mindmap?topic=Machine%20Learning')}
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Network className="w-3 h-3 text-indigo-500" />
-              <span>Concept Mindmap</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenPdf('transformer-paper')}
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <FileText className="w-3 h-3 text-rose-500" />
-              <span>Study PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('aksh://comparison')}
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Scale className="w-3 h-3 text-pink-500" />
-              <span>Compare Specs</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('aksh://notes')}
-              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <StickyNote className="w-3 h-3 text-emerald-500" />
-              <span>AI Notes</span>
-            </button>
-          </div>
-        </motion.form>
+            <div className="flex items-center gap-1.5 pr-1 shrink-0">
+              {/* AI Mode Quick Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsAiMode(!isAiMode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  isAiMode
+                    ? 'bg-purple-600 text-white shadow-xs shadow-purple-500/20'
+                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
+                }`}
+                title="Toggle AI Search Mode"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ask AI</span>
+              </button>
 
-        {/* Speed Dial / Popular Websites */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="space-y-3"
-        >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">
-            <div className="flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-blue-600" />
-              <span>Popular & Pinned Sites</span>
+              <button
+                type="submit"
+                className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                title="Search"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-            <span className="text-[11px] font-normal lowercase text-slate-400">click to open</span>
-          </div>
+          </form>
+        </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {SPEED_DIAL_SHORTCUTS.map((item) => (
+        {/* Favorite & Popular Shortcuts (Clean Icon Grid) */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.1 }}
+          className="w-full"
+        >
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 justify-items-center">
+            {SPEED_DIAL_SHORTCUTS.slice(0, 8).map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.url)}
-                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white hover:bg-slate-100/80 border border-slate-200 hover:border-slate-300 transition-all text-left group shadow-2xs hover:shadow-sm cursor-pointer"
+                className="flex flex-col items-center gap-2 group w-16 cursor-pointer"
+                title={item.title}
               >
-                <div
-                  className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center text-white shrink-0 shadow-2xs group-hover:scale-105 transition-transform`}
-                >
-                  {getIcon(item.icon)}
+                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
+                  {getShortcutIcon(item.icon)}
                 </div>
-                <div className="truncate min-w-0">
-                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-600 truncate">
-                    {item.title}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono truncate">
-                    {item.url.replace('https://', '').replace('http://', '')}
-                  </div>
-                </div>
+                <span className="text-xs text-slate-600 group-hover:text-slate-900 truncate w-full text-center font-medium">
+                  {item.title.split(' ')[0]}
+                </span>
               </button>
             ))}
           </div>
         </motion.div>
 
-        {/* AI Features Grid */}
+        {/* Simplified AI Tools (4 Clean Cards) */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-          className="space-y-3"
+          transition={{ duration: 0.25, delay: 0.15 }}
+          className="w-full pt-2"
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Autonomous AI Workflows</span>
-            </div>
-            <span className="text-[11px] font-normal lowercase text-slate-400">1-click intelligence</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {AI_SUPERPOWERS.map((power) => {
-              const Icon = power.icon;
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {AI_TOOLS.map((tool) => {
+              const Icon = tool.icon;
               return (
                 <button
-                  key={power.id}
-                  onClick={power.action}
-                  className="p-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-left transition-all group shadow-2xs hover:shadow-sm flex items-start gap-3 cursor-pointer"
+                  key={tool.id}
+                  onClick={tool.action}
+                  className="p-3 rounded-2xl bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-slate-300 text-left transition-all shadow-2xs hover:shadow-xs group cursor-pointer flex flex-col justify-between"
                 >
-                  <div className={`w-9 h-9 rounded-lg ${power.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${tool.iconColor} mb-2.5`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600">
-                        {power.title}
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium shrink-0">
-                        {power.badge}
-                      </span>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                      {tool.title}
                     </div>
-                    <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
-                      {power.subtitle}
+                    <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                      {tool.desc}
                     </p>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
                 </button>
               );
             })}
           </div>
         </motion.div>
 
-        {/* Clean Footer Bar */}
-        <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] border border-slate-200">
-              Ctrl + K
-            </span>
-            <span className="text-[11px] text-slate-500">Quick Command Palette</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => onNavigate('aksh://devtools')}
-              className="text-[11px] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-            >
-              AI DevTools & DOM Inspector
-            </button>
-            <button
-              onClick={() => onNavigate('aksh://readme')}
-              className="text-[11px] text-blue-600 hover:text-blue-800 font-medium transition-colors cursor-pointer flex items-center gap-1"
-            >
-              <BookOpen className="w-3 h-3 text-blue-600" />
-              <span>Documentation</span>
-            </button>
-          </div>
-        </div>
+        {/* Discreet Tour Button */}
+        {onOpenTour && (
+          <button
+            onClick={onOpenTour}
+            className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors cursor-pointer pt-2"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Browser Guide</span>
+          </button>
+        )}
 
       </div>
     </div>
