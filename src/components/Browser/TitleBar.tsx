@@ -25,6 +25,7 @@ interface TitleBarProps {
   onCloseOtherTabs?: (id: string) => void;
   onCloseTabsToRight?: (id: string) => void;
   onOpenTour?: () => void;
+  onGoHome?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -49,6 +50,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onCloseOtherTabs,
   onCloseTabsToRight,
   onOpenTour,
+  onGoHome,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -62,15 +64,19 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <div className="h-3.5 w-px bg-slate-300 ml-1.5" />
       </div>
 
-      {/* Brand Icon (Always visible) */}
-      <div className="flex items-center gap-1.5 px-2.5 shrink-0">
-        <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center text-white text-[9px] font-black shadow-xs">
+      {/* Brand Icon (Always visible - Click to go Home) */}
+      <button
+        onClick={onGoHome}
+        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-200/80 transition-colors shrink-0 cursor-pointer group"
+        title="Aksh AI Browser - Go to Home Page (New Tab)"
+      >
+        <div className="w-4 h-4 rounded bg-blue-600 group-hover:bg-blue-700 flex items-center justify-center text-white text-[9px] font-black shadow-xs transition-colors">
           A
         </div>
-        <span className="text-xs font-bold text-slate-800 tracking-tight hidden sm:inline">
+        <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 tracking-tight hidden sm:inline transition-colors">
           Aksh
         </span>
-      </div>
+      </button>
 
       {/* Tab Strip OR Active Tab Header in Vertical Mode */}
       {tabLayout === 'horizontal' ? (

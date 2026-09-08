@@ -32,12 +32,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onSaveAsNote,
   onUpdateTabPdfData,
 }) => {
-  const currentPdf = tab.pdfData || {
-    filename: SAMPLE_PDFS[0].filename,
-    text: SAMPLE_PDFS[0].text,
-    pageCount: SAMPLE_PDFS[0].pageCount,
-    currentPage: 1,
-  };
+  const currentPdf = tab.pdfData || null;
 
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [aiOutput, setAiOutput] = useState<string | null>(null);
@@ -76,6 +71,49 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     };
     reader.readAsText(file);
   };
+
+  if (!currentPdf) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-slate-50 p-6 select-none">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-xs">
+            <FileText className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Document & PDF Reader</h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Upload any PDF, TXT, or Markdown document to analyze with Gemini, generate study summaries, extract key concepts, and ask questions.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <label className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-medium cursor-pointer shadow-xs transition-colors text-sm">
+              <Upload className="w-4 h-4" />
+              <span>Choose Document</span>
+              <input
+                type="file"
+                accept=".pdf,.txt,.md"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+
+            <button
+              onClick={() => handleSelectSample(SAMPLE_PDFS[0])}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors text-sm cursor-pointer border border-slate-200"
+            >
+              Try Sample Paper
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-400">
+            Supports PDF, TXT, and Markdown files
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleRunAiAction = async (action: 'summarize' | 'notes' | 'mcq' | 'interview' | 'explain_simple' | 'ask') => {
     setActiveAction(action);
@@ -190,26 +228,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               />
             </label>
           </div>
-        </div>
-
-        {/* Sample Switcher Pills */}
-        <div className="px-4 py-2 bg-white/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
-          <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider shrink-0">
-            Sample PDFs:
-          </span>
-          {SAMPLE_PDFS.map((sample) => (
-            <button
-              key={sample.id}
-              onClick={() => handleSelectSample(sample)}
-              className={`px-2.5 py-1 rounded-lg shrink-0 transition-colors font-medium cursor-pointer ${
-                currentPdf.filename === sample.filename
-                  ? 'bg-rose-50 text-rose-700 border border-rose-300 font-semibold'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              {sample.title}
-            </button>
-          ))}
         </div>
 
         {/* PDF Paper Sheet */}

@@ -36,7 +36,7 @@ import { scrapeWebpage, organizeTabsSmartly } from './services/api';
 
 export function App() {
   const [isClustering, setIsClustering] = useState<boolean>(false);
-  // Initial preloaded tabs for an instant, rich portfolio showcase
+  // Initial clean tab
   const [tabs, setTabs] = useState<Tab[]>([
     {
       id: 'tab-1',
@@ -50,40 +50,6 @@ export function App() {
       isLoading: false,
       isReaderMode: false,
       favicon: '',
-    },
-    {
-      id: 'tab-2',
-      title: 'Top 5 Python Courses (2026 Guide)',
-      url: 'https://learn.python.org/courses/2026-guide',
-      contentType: 'web',
-      extractedText: SAMPLE_WEBSITES['https://learn.python.org/courses/2026-guide'].extractedText,
-      headings: ['1. Harvard CS50P', '2. Python for Everybody', '3. Automate the Boring Stuff', '4. FastAPI & Async Mastery', '5. Deep Learning with PyTorch'],
-      metaDescription: 'Discover the top 5 Python programming courses in 2026 from beginner fundamentals to neural networks.',
-      historyStack: ['https://learn.python.org/courses/2026-guide'],
-      historyIndex: 0,
-      canGoBack: false,
-      canGoForward: false,
-      isLoading: false,
-      isReaderMode: false,
-      favicon: 'https://www.python.org/static/favicon.ico',
-    },
-    {
-      id: 'tab-3',
-      title: 'Attention Is All You Need (Transformer Paper)',
-      url: 'aksh://pdf/transformer-paper',
-      contentType: 'pdf',
-      pdfData: {
-        filename: SAMPLE_PDFS[0].filename,
-        text: SAMPLE_PDFS[0].text,
-        pageCount: SAMPLE_PDFS[0].pageCount,
-        currentPage: 1,
-      },
-      historyStack: ['aksh://pdf/transformer-paper'],
-      historyIndex: 0,
-      canGoBack: false,
-      canGoForward: false,
-      isLoading: false,
-      isReaderMode: false,
     },
   ]);
 
@@ -115,7 +81,7 @@ export function App() {
   }>({
     enabled: false,
     leftTabId: 'tab-1',
-    rightTabId: 'tab-2',
+    rightTabId: 'tab-1',
     ratio: 50,
   });
 
@@ -155,22 +121,7 @@ export function App() {
   };
 
   // Persistence / Browser State
-  const [history, setHistory] = useState<HistoryItem[]>([
-    {
-      id: 'hist-1',
-      url: 'https://learn.python.org/courses/2026-guide',
-      title: 'Top 5 Python Courses for 2026 (Beginner to Advanced)',
-      visitedAt: 'Today at 10:45 AM',
-      timestamp: Date.now() - 3600000,
-    },
-    {
-      id: 'hist-2',
-      url: 'https://tech-radar.io/laptops/flagship-comparison-2026',
-      title: 'Flagship Laptop Comparison 2026: MacBook Pro vs XPS 15 vs ThinkPad',
-      visitedAt: 'Today at 09:30 AM',
-      timestamp: Date.now() - 7200000,
-    },
-  ]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(INITIAL_BOOKMARKS);
   const [downloads, setDownloads] = useState<DownloadItem[]>(INITIAL_DOWNLOADS);
@@ -239,12 +190,14 @@ export function App() {
       } else if (normalizedUrl.startsWith('aksh://pdf')) {
         resolvedType = 'pdf';
         title = 'PDF Document Reader';
-        pdfData = {
-          filename: SAMPLE_PDFS[0].filename,
-          text: SAMPLE_PDFS[0].text,
-          pageCount: SAMPLE_PDFS[0].pageCount,
-          currentPage: 1,
-        };
+        if (normalizedUrl.includes('transformer-paper')) {
+          pdfData = {
+            filename: SAMPLE_PDFS[0].filename,
+            text: SAMPLE_PDFS[0].text,
+            pageCount: SAMPLE_PDFS[0].pageCount,
+            currentPage: 1,
+          };
+        }
       } else if (normalizedUrl === 'aksh://history') {
         resolvedType = 'history';
         title = 'Browsing History';
@@ -1102,6 +1055,7 @@ export function App() {
         onCloseOtherTabs={handleCloseOtherTabs}
         onCloseTabsToRight={handleCloseTabsToRight}
         onOpenTour={() => setIsTourOpen(true)}
+        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
       />
 
       {/* 2. Address Bar / Omnibox */}

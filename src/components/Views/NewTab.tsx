@@ -12,6 +12,13 @@ import {
   Laptop,
   BookOpen,
   HelpCircle,
+  Play,
+  Globe,
+  StickyNote,
+  Bookmark,
+  History,
+  Download,
+  Settings,
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType } from '../../types';
@@ -48,6 +55,53 @@ export const NewTab: React.FC<NewTabProps> = ({
       return;
     }
 
+    const lower = q.toLowerCase();
+    // Connect keyword directly to internal application according to app icon
+    if (lower === 'research' || lower === 'deep research') {
+      onNavigate('aksh://research');
+      return;
+    }
+    if (lower === 'mindmap' || lower === 'concept mindmap') {
+      onNavigate('aksh://mindmap');
+      return;
+    }
+    if (lower === 'pdf' || lower === 'pdf reader') {
+      onNavigate('aksh://pdf');
+      return;
+    }
+    if (lower === 'compare' || lower === 'comparison') {
+      onNavigate('aksh://comparison');
+      return;
+    }
+    if (lower === 'notes' || lower === 'ai notes') {
+      onNavigate('aksh://notes');
+      return;
+    }
+    if (lower === 'bookmarks') {
+      onNavigate('aksh://bookmarks');
+      return;
+    }
+    if (lower === 'history') {
+      onNavigate('aksh://history');
+      return;
+    }
+    if (lower === 'downloads') {
+      onNavigate('aksh://downloads');
+      return;
+    }
+    if (lower === 'settings') {
+      onNavigate('aksh://settings');
+      return;
+    }
+    if (lower === 'devtools' || lower === 'inspect') {
+      onNavigate('aksh://devtools');
+      return;
+    }
+    if (lower === 'home' || lower === 'new tab') {
+      onNavigate('aksh://newtab');
+      return;
+    }
+
     // Direct URLs
     if (
       q.startsWith('http://') ||
@@ -65,79 +119,64 @@ export const NewTab: React.FC<NewTabProps> = ({
 
   const getShortcutIcon = (iconName: string) => {
     switch (iconName) {
-      case 'Code':
-        return <Code className="w-5 h-5 text-emerald-600" />;
-      case 'Laptop':
-        return <Laptop className="w-5 h-5 text-indigo-600" />;
+      case 'Zap':
+        return <Zap className="w-5 h-5 text-amber-600 fill-amber-600/20" />;
+      case 'Network':
+        return <Network className="w-5 h-5 text-indigo-600" />;
       case 'FileText':
         return <FileText className="w-5 h-5 text-rose-600" />;
-      case 'BookOpen':
-        return <BookOpen className="w-5 h-5 text-amber-600" />;
-      case 'Zap':
-        return <Zap className="w-5 h-5 text-purple-600" />;
-      case 'Sparkles':
-        return <Sparkles className="w-5 h-5 text-blue-600" />;
       case 'Scale':
         return <Scale className="w-5 h-5 text-pink-600" />;
+      case 'StickyNote':
+        return <StickyNote className="w-5 h-5 text-emerald-600" />;
+      case 'Bookmark':
+        return <Bookmark className="w-5 h-5 text-cyan-600 fill-cyan-600/20" />;
+      case 'History':
+        return <History className="w-5 h-5 text-purple-600" />;
+      case 'Download':
+        return <Download className="w-5 h-5 text-teal-600" />;
+      case 'Settings':
+        return <Settings className="w-5 h-5 text-slate-600" />;
+      case 'Play':
+        return <Play className="w-5 h-5 text-red-600 fill-red-600" />;
+      case 'Globe':
+        return <Globe className="w-5 h-5 text-slate-700" />;
+      case 'Code':
+        return <Code className="w-5 h-5 text-slate-800" />;
+      case 'Laptop':
+        return <Laptop className="w-5 h-5 text-blue-600" />;
+      case 'BookOpen':
+        return <BookOpen className="w-5 h-5 text-amber-700" />;
+      case 'Sparkles':
+        return <Sparkles className="w-5 h-5 text-purple-600 fill-purple-600/20" />;
       default:
         return <Search className="w-5 h-5 text-blue-600" />;
     }
   };
 
-  const AI_TOOLS = [
-    {
-      id: 'research',
-      title: 'Deep Research',
-      desc: 'Deep web search & cited answers',
-      icon: Zap,
-      iconColor: 'text-amber-600 bg-amber-50 border-amber-200',
-      action: () => onNavigate('aksh://research'),
-    },
-    {
-      id: 'mindmap',
-      title: 'Mindmap',
-      desc: 'Visual concept knowledge graph',
-      icon: Network,
-      iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-200',
-      action: () => onNavigate('aksh://mindmap'),
-    },
-    {
-      id: 'pdf',
-      title: 'PDF Reader',
-      desc: 'AI document study & summaries',
-      icon: FileText,
-      iconColor: 'text-rose-600 bg-rose-50 border-rose-200',
-      action: () => onNavigate('aksh://pdf/transformer-paper'),
-    },
-    {
-      id: 'compare',
-      title: 'Comparison',
-      desc: 'Side-by-side product showdown',
-      icon: Scale,
-      iconColor: 'text-pink-600 bg-pink-50 border-pink-200',
-      action: () => onNavigate('aksh://comparison'),
-    },
-  ];
-
   return (
     <div className="h-full overflow-y-auto bg-slate-50/50 flex flex-col items-center justify-center px-4 py-8 select-none">
       <div className="w-full max-w-2xl flex flex-col items-center space-y-7 my-auto">
         
-        {/* Brand Logo & Name */}
+        {/* Brand Logo & Name (Click to reset/navigate home) */}
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
           className="flex flex-col items-center space-y-2 text-center"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-blue-500/15">
+          <button
+            onClick={() => onNavigate('aksh://newtab')}
+            className="flex items-center gap-3 group cursor-pointer"
+            title="Aksh AI Browser Home"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-blue-500/15 group-hover:scale-105 transition-transform">
               A
             </div>
-            <span className="text-3xl font-bold text-slate-800 tracking-tight">
+            <span className="text-3xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
               Aksh
             </span>
-          </div>
+          </button>
         </motion.div>
 
         {/* Clean, Focused Search Bar */}
@@ -191,62 +230,29 @@ export const NewTab: React.FC<NewTabProps> = ({
           </form>
         </motion.div>
 
-        {/* Favorite & Popular Shortcuts (Clean Icon Grid) */}
+        {/* Application Shortcuts Grid (All connected according to app icon) */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
           className="w-full"
         >
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-4 justify-items-center">
-            {SPEED_DIAL_SHORTCUTS.slice(0, 8).map((item) => (
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3.5 sm:gap-4 justify-items-center">
+            {SPEED_DIAL_SHORTCUTS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.url)}
-                className="flex flex-col items-center gap-2 group w-16 cursor-pointer"
-                title={item.title}
+                className="flex flex-col items-center gap-2 group w-20 cursor-pointer"
+                title={`${item.title} (${item.url})`}
               >
                 <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
                   {getShortcutIcon(item.icon)}
                 </div>
-                <span className="text-xs text-slate-600 group-hover:text-slate-900 truncate w-full text-center font-medium">
-                  {item.title.split(' ')[0]}
+                <span className="text-xs text-slate-600 group-hover:text-blue-600 truncate w-full text-center font-medium transition-colors">
+                  {item.title}
                 </span>
               </button>
             ))}
-          </div>
-        </motion.div>
-
-        {/* Simplified AI Tools (4 Clean Cards) */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.15 }}
-          className="w-full pt-2"
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {AI_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <button
-                  key={tool.id}
-                  onClick={tool.action}
-                  className="p-3 rounded-2xl bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-slate-300 text-left transition-all shadow-2xs hover:shadow-xs group cursor-pointer flex flex-col justify-between"
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${tool.iconColor} mb-2.5`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                      {tool.title}
-                    </div>
-                    <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                      {tool.desc}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </motion.div>
 

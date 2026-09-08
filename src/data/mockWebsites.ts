@@ -26,6 +26,59 @@ export interface MockWebsite {
 }
 
 export const SAMPLE_WEBSITES: Record<string, MockWebsite> = {
+  'https://www.google.com': {
+    url: 'https://www.google.com',
+    domain: 'google.com',
+    title: 'Google Search',
+    favicon: 'https://www.google.com/s2/favicons?domain=google.com&sz=64',
+    category: 'docs',
+    description: "Search the world's information, including webpages, images, videos and more with Google.",
+    extractedText: `Google Web Search & AI Overview
+Search the world's information with Aksh AI Browser.
+Google Search is fully integrated with deep grounding, real-time query acceleration, and multi-source synthesis.
+
+Key Capabilities:
+- Instant search suggestions and fast web crawling
+- AI Deep Research integration via Aksh Research Engine
+- Distraction-free clean reader view for articles and papers
+- Cross-tab document comparison and Cornell note taking`,
+    content: {
+      author: 'Google Search',
+      publishedDate: '2026',
+      sections: [
+        {
+          heading: 'Aksh AI Web Search Hub',
+          body: 'Google Search is integrated with the Aksh omnibox. You can type any keyword directly into the search bar, toggle AI mode for autonomous multi-source synthesis, or navigate directly to any web destination.',
+          list: [
+            'Deep Research Autonomous Synthesis (Zap icon)',
+            'Interactive Concept Mindmapping (Network icon)',
+            'Native PDF Document Cognition (FileText icon)',
+            'Side-by-Side Product Comparison (Scale icon)',
+          ],
+        },
+      ],
+    },
+  },
+  'https://www.google.com/': {
+    url: 'https://www.google.com/',
+    domain: 'google.com',
+    title: 'Google Search',
+    favicon: 'https://www.google.com/s2/favicons?domain=google.com&sz=64',
+    category: 'docs',
+    description: "Search the world's information, including webpages, images, videos and more with Google.",
+    extractedText: `Google Web Search & AI Overview
+Search the world's information with Aksh AI Browser.`,
+    content: {
+      author: 'Google Search',
+      publishedDate: '2026',
+      sections: [
+        {
+          heading: 'Aksh AI Web Search Hub',
+          body: 'Google Search is integrated with the Aksh omnibox. You can type any keyword directly into the search bar.',
+        },
+      ],
+    },
+  },
   'https://learn.python.org/courses/2026-guide': {
     url: 'https://learn.python.org/courses/2026-guide',
     domain: 'learn.python.org',
@@ -374,88 +427,23 @@ Key quantum algorithms demonstrating computational speedup:
 ];
 
 export const SPEED_DIAL_SHORTCUTS = [
-  { id: '1', title: 'Google Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
-  { id: '2', title: 'Python 2026 Guide', url: 'https://learn.python.org/courses/2026-guide', icon: 'Code', color: 'bg-emerald-600' },
-  { id: '3', title: 'Laptop Comparison', url: 'https://tech-radar.io/laptops/flagship-comparison-2026', icon: 'Laptop', color: 'bg-indigo-600' },
-  { id: '4', title: 'Transformer Paper PDF', url: 'aksh://pdf/transformer-paper', icon: 'FileText', color: 'bg-rose-600' },
-  { id: '5', title: 'AI Wikipedia', url: 'https://en.wikipedia.org/wiki/Artificial_intelligence', icon: 'BookOpen', color: 'bg-amber-600' },
-  { id: '6', title: 'The Verge AI Revolution', url: 'https://theverge.com/tech/2026/future-of-ai-agents-browser-revolution', icon: 'Zap', color: 'bg-purple-600' },
-  { id: '7', title: 'AI Deep Research', url: 'aksh://research', icon: 'Sparkles', color: 'bg-gradient-to-r from-blue-500 to-indigo-600' },
-  { id: '8', title: 'Product Comparison', url: 'aksh://comparison', icon: 'Scale', color: 'bg-pink-600' },
+  { id: 'app-search', title: 'Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
+  { id: 'app-research', title: 'Deep Research', url: 'aksh://research', icon: 'Zap', color: 'bg-amber-600' },
+  { id: 'app-mindmap', title: 'Mindmap', url: 'aksh://mindmap', icon: 'Network', color: 'bg-indigo-600' },
+  { id: 'app-pdf', title: 'PDF Reader', url: 'aksh://pdf', icon: 'FileText', color: 'bg-rose-600' },
+  { id: 'app-compare', title: 'Comparison', url: 'aksh://comparison', icon: 'Scale', color: 'bg-pink-600' },
+  { id: 'app-notes', title: 'AI Notes', url: 'aksh://notes', icon: 'StickyNote', color: 'bg-emerald-600' },
+  { id: 'app-bookmarks', title: 'Bookmarks', url: 'aksh://bookmarks', icon: 'Bookmark', color: 'bg-cyan-600' },
+  { id: 'app-history', title: 'History', url: 'aksh://history', icon: 'History', color: 'bg-purple-600' },
+  { id: 'app-downloads', title: 'Downloads', url: 'aksh://downloads', icon: 'Download', color: 'bg-teal-600' },
+  { id: 'app-devtools', title: 'DevTools', url: 'aksh://devtools', icon: 'Code', color: 'bg-slate-800' },
+  { id: 'app-settings', title: 'Settings', url: 'aksh://settings', icon: 'Settings', color: 'bg-slate-700' },
+  { id: 'site-python', title: 'Python Guide', url: 'https://learn.python.org/courses/2026-guide', icon: 'Laptop', color: 'bg-blue-700' },
 ];
 
-export const INITIAL_BOOKMARKS = [
-  {
-    id: 'bm-1',
-    title: 'Top 5 Python Courses 2026',
-    url: 'https://learn.python.org/courses/2026-guide',
-    folder: 'Tech & Learning',
-    tags: ['python', 'coding'],
-    createdAt: 'Today',
-  },
-  {
-    id: 'bm-2',
-    title: 'Attention Is All You Need (Paper)',
-    url: 'aksh://pdf/transformer-paper',
-    folder: 'Research',
-    tags: ['ai', 'transformers'],
-    createdAt: 'Yesterday',
-  },
-  {
-    id: 'bm-3',
-    title: 'Flagship Laptop Comparison',
-    url: 'https://tech-radar.io/laptops/flagship-comparison-2026',
-    folder: 'Hardware',
-    tags: ['hardware', 'laptops'],
-    createdAt: '3 days ago',
-  },
-  {
-    id: 'bm-4',
-    title: 'Autonomous Research Mode',
-    url: 'aksh://research',
-    folder: 'Aksh AI',
-    tags: ['tools', 'ai'],
-    createdAt: 'Today',
-  },
-];
+export const INITIAL_BOOKMARKS: any[] = [];
 
-export const INITIAL_NOTES = [
-  {
-    id: 'note-1',
-    title: 'Transformer Multi-Head Attention Summary',
-    content: `### Key Takeaways from Attention Is All You Need:\n- Replaced recurrent LSTM/RNN bottlenecks with parallelizable self-attention.\n- Scaled Dot-Product: $\\text{Attention}(Q, K, V) = \\text{softmax}(QK^T / \\sqrt{d_k})V$\n- Multi-Head allows the model to jointly attend to different representation subspaces at once.\n- Trained on 8 GPUs for 3.5 days.`,
-    sourceUrl: 'aksh://pdf/transformer-paper',
-    tags: ['AI-Paper', 'DeepLearning'],
-    createdAt: 'Today at 10:15 AM',
-  },
-  {
-    id: 'note-2',
-    title: 'Best Python Course for Beginners Verdict',
-    content: `### Python 2026 Recommended Pathway:\n- **Beginners**: *Python Bootcamp 2026 (Angela Yu)* - Project-driven & gentle learning curve.\n- **CS Fundamentals**: *Harvard CS50P (Prof. David Malan)* - Free, rigorous, and deep memory/algorithm understanding.\n- **Data Science / AI**: *DataCamp Python Career Track* - Interactive browser REPL exercises.`,
-    sourceUrl: 'https://learn.python.org/courses/2026-guide',
-    tags: ['Coding', 'Python'],
-    createdAt: 'Yesterday at 4:30 PM',
-  },
-];
+export const INITIAL_NOTES: any[] = [];
 
-export const INITIAL_DOWNLOADS = [
-  {
-    id: 'dl-1',
-    filename: 'attention_is_all_you_need_2017.pdf',
-    size: '2.4 MB',
-    progress: 100,
-    status: 'completed' as const,
-    url: 'https://arxiv.org/pdf/1706.03762.pdf',
-    timestamp: 'Today at 11:20 AM',
-  },
-  {
-    id: 'dl-2',
-    filename: 'python_cheat_sheet_2026.pdf',
-    size: '850 KB',
-    progress: 100,
-    status: 'completed' as const,
-    url: 'https://learn.python.org/assets/cheat-sheet.pdf',
-    timestamp: 'Today at 09:15 AM',
-  },
-];
+export const INITIAL_DOWNLOADS: any[] = [];
 
