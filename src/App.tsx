@@ -1195,6 +1195,9 @@ export function App() {
           onOpenComparisonMode={() => {
             handleNewTab('aksh://comparison');
           }}
+          onOpenMindmap={handleMindmapPage}
+          onToggleSplitScreen={handleToggleSplitScreen}
+          onTriggerSpeech={handleTriggerSpeech}
         />
       </div>
 

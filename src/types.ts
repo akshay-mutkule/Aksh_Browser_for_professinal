@@ -25,6 +25,8 @@ export interface Tab {
   historyIndex: number;
   pinned?: boolean;
   muted?: boolean;
+  isSleeping?: boolean;
+  workspaceId?: string;
   contentType: PageContentType;
   extractedText?: string;
   metaDescription?: string;
@@ -149,4 +151,31 @@ export interface BrowserSettings {
   enableKeyboardShortcuts?: boolean;
   voiceSpeed?: number;
   preferredLanguage?: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  icon: 'Compass' | 'Zap' | 'Code' | 'BookOpen';
+  color: string;
+  badge: string;
+}
+
+export interface AgentTaskStep {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  detail?: string;
+}
+
+export interface AgentTaskRun {
+  id: string;
+  goal: string;
+  steps: AgentTaskStep[];
+  status: 'idle' | 'running' | 'completed' | 'error';
+  result?: {
+    summary: string;
+    actionItems: string[];
+    extractedInsights?: string[];
+  };
 }
