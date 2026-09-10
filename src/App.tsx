@@ -30,6 +30,9 @@ import { KeyboardShortcutsModal } from './components/Modals/KeyboardShortcutsMod
 import { QuickTourModal } from './components/Modals/QuickTourModal';
 import { PageSnapshotModal } from './components/Modals/PageSnapshotModal';
 import { SitePerformanceModal } from './components/Modals/SitePerformanceModal';
+import { DataExtractorModal } from './components/Modals/DataExtractorModal';
+import { SessionStashModal, SavedSession } from './components/Modals/SessionStashModal';
+import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
 import { scrapeWebpage, organizeTabsSmartly } from './services/api';
@@ -64,6 +67,60 @@ export function App() {
   const [isSnapshotOpen, setIsSnapshotOpen] = useState<boolean>(false);
   const [isPerformanceOpen, setIsPerformanceOpen] = useState<boolean>(false);
   const [isMobileTabsOpen, setIsMobileTabsOpen] = useState<boolean>(false);
+  const [isDataExtractorOpen, setIsDataExtractorOpen] = useState<boolean>(false);
+  const [isSessionStashOpen, setIsSessionStashOpen] = useState<boolean>(false);
+  const [ambientState, setAmbientState] = useState<{
+    isPlaying: boolean;
+    type: SoundscapeType;
+    volume: number;
+  }>({
+    isPlaying: false,
+    type: 'rain',
+    volume: 0.4,
+  });
+
+  const handleToggleAmbientSound = () => {
+    if (ambientState.isPlaying) {
+      ambientSound.stop();
+      setAmbientState((prev) => ({ ...prev, isPlaying: false }));
+    } else {
+      ambientSound.play(ambientState.type);
+      setAmbientState((prev) => ({ ...prev, isPlaying: true }));
+    }
+  };
+
+  const handleChangeAmbientType = (type: SoundscapeType) => {
+    ambientSound.play(type);
+    setAmbientState((prev) => ({ ...prev, type, isPlaying: true }));
+  };
+
+  const handleRestoreSession = (savedTabs: SavedSession['tabs'], mode: 'replace' | 'append') => {
+    const newTabs: Tab[] = savedTabs.map((st, idx) => ({
+      id: `tab-${Date.now()}-${idx}`,
+      title: st.title,
+      url: st.url,
+      contentType: (st.contentType as PageContentType) || 'web',
+      historyStack: [st.url],
+      historyIndex: 0,
+      canGoBack: false,
+      canGoForward: false,
+      isLoading: false,
+      isReaderMode: false,
+      favicon: st.favicon || '',
+    }));
+
+    if (mode === 'replace') {
+      setTabs(newTabs);
+      if (newTabs.length > 0) {
+        setActiveTabId(newTabs[0].id);
+      }
+    } else {
+      setTabs((prev) => [...prev, ...newTabs]);
+      if (newTabs.length > 0) {
+        setActiveTabId(newTabs[0].id);
+      }
+    }
+  };
 
   // Auto-detect mobile screen on mount to collapse sidebar
   useEffect(() => {
@@ -1086,6 +1143,10 @@ export function App() {
         onOpenPerformance={() => setIsPerformanceOpen(true)}
         onMindmapPage={handleMindmapPage}
         onExportMarkdown={handleExportMarkdown}
+        onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
+        onOpenSessionStash={() => setIsSessionStashOpen(true)}
+        onToggleAmbientSound={handleToggleAmbientSound}
+        isAmbientPlaying={ambientState.isPlaying}
       />
 
       {/* 3. Bookmarks Quick Bar */}
@@ -1292,6 +1353,9 @@ export function App() {
         onOpenPerformance={() => setIsPerformanceOpen(true)}
         onMindmapPage={handleMindmapPage}
         onExportMarkdown={handleExportMarkdown}
+        onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
+        onOpenSessionStash={() => setIsSessionStashOpen(true)}
+        onToggleAmbientSound={handleToggleAmbientSound}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -1334,6 +1398,84 @@ export function App() {
         activeTab={activeTab}
         onOpenDevTools={() => navigateTab(activeTabId, 'aksh://devtools')}
       />
+
+      {/* AI Web Scraper & Structured Data Extractor Modal */}
+      <DataExtractorModal
+        isOpen={isDataExtractorOpen}
+        onClose={() => setIsDataExtractorOpen(false)}
+        activeTab={activeTab}
+        onOpenUrlInTab={(url) => handleNewTab(url)}
+      />
+
+      {/* Session Stash & Workspace Snapshots Modal */}
+      <SessionStashModal
+        isOpen={isSessionStashOpen}
+        onClose={() => setIsSessionStashOpen(false)}
+        currentTabs={tabs}
+        onRestoreSession={handleRestoreSession}
+      />
+
+      {/* Floating Focus Ambient Soundscapes Player */}
+      <AnimatePresence>
+        {ambientState.isPlaying && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 text-white backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-2xl border border-slate-700/60 flex items-center gap-3 text-xs"
+          >
+            <div className="flex items-center gap-2 pr-2 border-r border-slate-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">Zen Focus</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {[
+                { id: 'rain', label: '🌧️ Rain' },
+                { id: 'waves', label: '🌊 Waves' },
+                { id: 'brown', label: '☕ Brown Noise' },
+                { id: 'binaural', label: '🧘 432Hz' },
+              ].map((sound) => (
+                <button
+                  key={sound.id}
+                  onClick={() => handleChangeAmbientType(sound.id as SoundscapeType)}
+                  className={`px-2 py-1 rounded-xl text-[11px] font-medium transition-all cursor-pointer ${
+                    ambientState.type === sound.id
+                      ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {sound.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-700">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={ambientState.volume}
+                onChange={(e) => {
+                  const vol = parseFloat(e.target.value);
+                  setAmbientState((prev) => ({ ...prev, volume: vol }));
+                  ambientSound.setVolume(vol);
+                }}
+                className="w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                title="Soundscape Volume"
+              />
+              <button
+                onClick={handleToggleAmbientSound}
+                className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Stop ambient audio"
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

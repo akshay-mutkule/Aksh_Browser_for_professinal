@@ -35,7 +35,11 @@ import {
   Check,
   Camera,
   Activity,
-  HelpCircle
+  HelpCircle,
+  Database,
+  Archive,
+  Headphones,
+  Calculator
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -67,7 +71,36 @@ interface AddressBarProps {
   onOpenPerformance?: () => void;
   onMindmapPage?: () => void;
   onExportMarkdown?: () => void;
+  onOpenDataExtractor?: () => void;
+  onOpenSessionStash?: () => void;
+  onToggleAmbientSound?: () => void;
+  isAmbientPlaying?: boolean;
 }
+
+const evaluateMathExpression = (expr: string): string | null => {
+  const clean = expr.trim();
+  const percentMatch = clean.match(/^([\d.]+)\s*%\s*(?:of|\*)\s*([\d.]+)$/i);
+  if (percentMatch) {
+    const p = parseFloat(percentMatch[1]);
+    const total = parseFloat(percentMatch[2]);
+    if (!isNaN(p) && !isNaN(total)) {
+      return String((p / 100) * total);
+    }
+  }
+
+  if (/^[\d\s+\-*/().^%]+$/.test(clean) && /[+\-*/^%]/.test(clean)) {
+    try {
+      const sanitized = clean.replace(/\^/g, '**');
+      const result = new Function(`"use strict"; return (${sanitized});`)();
+      if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+        return Number.isInteger(result) ? String(result) : String(Number(result.toFixed(4)));
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
 
 export const AddressBar: React.FC<AddressBarProps> = ({
   activeTab,
@@ -96,12 +129,17 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   onOpenPerformance,
   onMindmapPage,
   onExportMarkdown,
+  onOpenDataExtractor,
+  onOpenSessionStash,
+  onToggleAmbientSound,
+  isAmbientPlaying = false,
 }) => {
   const [urlInput, setUrlInput] = useState(activeTab?.url || '');
   const [isFocused, setIsFocused] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showSecurityShield, setShowSecurityShield] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [calcResult, setCalcResult] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; url: string; type: string }>>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const shieldRef = useRef<HTMLDivElement>(null);
@@ -140,6 +178,10 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     const val = e.target.value;
     setUrlInput(val);
 
+    // Live math calculation
+    const calc = evaluateMathExpression(val);
+    setCalcResult(calc);
+
     if (val.trim().length > 1) {
       // Dynamic suggestions with Bang shortcuts
       const list = [
@@ -162,8 +204,32 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
     let target = urlInput.trim();
 
+    // If there is an active calculation and user presses enter, copy and insert calculation
+    if (calcResult !== null) {
+      navigator.clipboard.writeText(calcResult);
+      setUrlInput(calcResult);
+      setIsFocused(false);
+      return;
+    }
+
     // Bang shortcuts parsing
-    if (target.startsWith('!ai ') || target.startsWith('!gemini ')) {
+    if (target.startsWith('!scrape') || target.startsWith('!extract')) {
+      onOpenDataExtractor?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!stash') || target.startsWith('!session')) {
+      onOpenSessionStash?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!sound') || target.startsWith('!ambient')) {
+      onToggleAmbientSound?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!zen') || target.startsWith('!focus')) {
+      onToggleReaderMode();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!ai ') || target.startsWith('!gemini ')) {
       const q = target.replace(/^!(ai|gemini)\s+/, '');
       onNavigate(`aksh://research?q=${encodeURIComponent(q)}`);
     } else if (target.startsWith('!mindmap ') || target.startsWith('!m ')) {
@@ -413,9 +479,33 @@ export const AddressBar: React.FC<AddressBarProps> = ({
           </div>
         </form>
 
-        {/* Autocomplete Suggestions Dropdown */}
-        {isFocused && suggestions.length > 0 && (
+        {/* Autocomplete Suggestions & Math Dropdown */}
+        {isFocused && (calcResult !== null || suggestions.length > 0) && (
           <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50 py-1">
+            {/* Live Calculation Preview */}
+            {calcResult !== null && (
+              <div
+                onMouseDown={() => {
+                  setUrlInput(calcResult);
+                  navigator.clipboard.writeText(calcResult);
+                }}
+                className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100/70 border-b border-emerald-100 flex items-center justify-between text-xs transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded-md bg-emerald-600 text-white">
+                    <Calculator className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-slate-600 font-mono">{urlInput} = </span>
+                    <span className="font-bold text-emerald-800 font-mono text-sm">{calcResult}</span>
+                  </div>
+                </div>
+                <span className="text-[10px] uppercase font-bold text-emerald-700 bg-white/80 px-2 py-0.5 rounded border border-emerald-200">
+                  Click to Copy
+                </span>
+              </div>
+            )}
+
             {suggestions.map((item, idx) => (
               <div
                 key={idx}
@@ -449,6 +539,43 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
       {/* Toolbar Controls (Hidden on small mobile screens to prevent omnibox squishing) */}
       <div className="hidden md:flex items-center gap-1 shrink-0">
+        {/* AI Web Scraper & Data Extractor */}
+        {onOpenDataExtractor && (
+          <button
+            onClick={onOpenDataExtractor}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+            title="AI Web Scraper & Structured Table Extractor"
+          >
+            <Database className="w-4 h-4 text-emerald-600" />
+          </button>
+        )}
+
+        {/* Session Stash & Snapshots */}
+        {onOpenSessionStash && (
+          <button
+            onClick={onOpenSessionStash}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
+            title="Session Stash & Tab Snapshots (Save / Restore Workspaces)"
+          >
+            <Archive className="w-4 h-4 text-amber-600" />
+          </button>
+        )}
+
+        {/* Focus Ambient Soundscapes */}
+        {onToggleAmbientSound && (
+          <button
+            onClick={onToggleAmbientSound}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              isAmbientPlaying
+                ? 'bg-indigo-100 text-indigo-700 border border-indigo-300 shadow-2xs'
+                : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-100'
+            }`}
+            title="Procedural Focus Soundscapes (Rain, Ocean Waves, Brown Noise, 432Hz)"
+          >
+            <Headphones className={`w-4 h-4 ${isAmbientPlaying ? 'animate-pulse text-indigo-600' : ''}`} />
+          </button>
+        )}
+
         {/* Page Snapshot & AI Vision */}
         {onOpenSnapshot && (
           <button
@@ -528,6 +655,54 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               <span>AI Tools & Workflows</span>
               <Sparkles className="w-3 h-3 text-blue-600" />
             </div>
+
+            {onOpenDataExtractor && (
+              <button
+                onClick={() => {
+                  onOpenDataExtractor();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Database className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-emerald-900">AI Data Scraper & Tables</div>
+                  <div className="text-[10px] text-slate-400">Extract tables, schema & links to CSV/JSON</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenSessionStash && (
+              <button
+                onClick={() => {
+                  onOpenSessionStash();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Archive className="w-4 h-4 text-amber-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-amber-900">Session Stash & Snapshots</div>
+                  <div className="text-[10px] text-slate-400">Save and restore workspace sessions</div>
+                </div>
+              </button>
+            )}
+
+            {onToggleAmbientSound && (
+              <button
+                onClick={() => {
+                  onToggleAmbientSound();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3.5 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 flex items-center gap-2.5 transition-colors cursor-pointer"
+              >
+                <Headphones className="w-4 h-4 text-indigo-600 shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold text-indigo-900">Focus Ambient Soundscape</div>
+                  <div className="text-[10px] text-slate-400">{isAmbientPlaying ? 'Pause ambient audio' : 'Play rain, waves or brown noise'}</div>
+                </div>
+              </button>
+            )}
 
             {onOpenCrossTabSynthesis && (
               <button

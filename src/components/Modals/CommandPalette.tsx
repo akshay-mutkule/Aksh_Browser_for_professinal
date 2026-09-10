@@ -27,7 +27,10 @@ import {
   BookOpen,
   Camera,
   Activity,
-  HelpCircle
+  HelpCircle,
+  Database,
+  Archive,
+  Headphones
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -50,6 +53,9 @@ interface CommandPaletteProps {
   onOpenPerformance?: () => void;
   onMindmapPage?: () => void;
   onExportMarkdown?: () => void;
+  onOpenDataExtractor?: () => void;
+  onOpenSessionStash?: () => void;
+  onToggleAmbientSound?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -71,6 +77,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenPerformance,
   onMindmapPage,
   onExportMarkdown,
+  onOpenDataExtractor,
+  onOpenSessionStash,
+  onToggleAmbientSound,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -98,6 +107,43 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-blue-600',
       action: () => {
         if (onOpenTour) onOpenTour();
+        onClose();
+      },
+    },
+    // Advanced Tools
+    {
+      id: 'ai-data-extractor',
+      title: 'AI Web Scraper & Structured Table Extractor',
+      subtitle: 'Extract data tables, resource links, and AI custom schemas to CSV/JSON',
+      category: 'Page Tools',
+      icon: Database,
+      iconColor: 'text-emerald-600',
+      action: () => {
+        if (onOpenDataExtractor) onOpenDataExtractor();
+        onClose();
+      },
+    },
+    {
+      id: 'session-stash',
+      title: 'Session Stash & Tab Snapshots',
+      subtitle: 'Save active tabs as named memory snapshots and restore complete workspaces',
+      category: 'Productivity',
+      icon: Archive,
+      iconColor: 'text-amber-600',
+      action: () => {
+        if (onOpenSessionStash) onOpenSessionStash();
+        onClose();
+      },
+    },
+    {
+      id: 'ambient-soundscapes',
+      title: 'Focus Ambient Soundscapes',
+      subtitle: 'Synthesize gentle rain, ocean waves, brown noise, or 432Hz alpha tones',
+      category: 'Productivity',
+      icon: Headphones,
+      iconColor: 'text-indigo-600',
+      action: () => {
+        if (onToggleAmbientSound) onToggleAmbientSound();
         onClose();
       },
     },
