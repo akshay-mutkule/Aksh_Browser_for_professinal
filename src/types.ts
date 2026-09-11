@@ -151,6 +151,10 @@ export interface BrowserSettings {
   enableKeyboardShortcuts?: boolean;
   voiceSpeed?: number;
   preferredLanguage?: string;
+  adBlockerEnabled?: boolean;
+  memorySaverEnabled?: boolean;
+  tabLayout?: 'horizontal' | 'vertical';
+  zoomLevel?: number;
 }
 
 export interface Workspace {

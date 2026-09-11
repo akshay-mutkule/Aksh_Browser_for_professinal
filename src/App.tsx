@@ -32,6 +32,7 @@ import { PageSnapshotModal } from './components/Modals/PageSnapshotModal';
 import { SitePerformanceModal } from './components/Modals/SitePerformanceModal';
 import { DataExtractorModal } from './components/Modals/DataExtractorModal';
 import { SessionStashModal, SavedSession } from './components/Modals/SessionStashModal';
+import { ClearBrowsingDataModal } from './components/Modals/ClearBrowsingDataModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -69,6 +70,8 @@ export function App() {
   const [isMobileTabsOpen, setIsMobileTabsOpen] = useState<boolean>(false);
   const [isDataExtractorOpen, setIsDataExtractorOpen] = useState<boolean>(false);
   const [isSessionStashOpen, setIsSessionStashOpen] = useState<boolean>(false);
+  const [isClearDataOpen, setIsClearDataOpen] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -188,6 +191,12 @@ export function App() {
     searchEngine: 'google',
     aiSummaryLength: 'detailed',
     autoAttachWebContext: true,
+    adBlockerEnabled: true,
+    memorySaverEnabled: true,
+    showBookmarksBar: true,
+    tabLayout: 'horizontal',
+    voiceSpeed: 1.0,
+    zoomLevel: 100,
   });
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0] || null;
@@ -540,6 +549,53 @@ export function App() {
       },
     ]);
     setActiveTabId('tab-1');
+  };
+
+  const handleUpdateSettings = (newSettings: Partial<BrowserSettings>) => {
+    setSettings((s) => {
+      const updated = { ...s, ...newSettings };
+      if (newSettings.tabLayout && newSettings.tabLayout !== tabLayout) {
+        setTabLayout(newSettings.tabLayout);
+      }
+      return updated;
+    });
+  };
+
+  const handleChangeZoom = (delta: number) => {
+    setZoomLevel((prev) => Math.min(200, Math.max(50, prev + delta)));
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(100);
+  };
+
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  const handlePrintPage = () => {
+    window.print();
+  };
+
+  const handleClearBrowsingData = (options: {
+    clearHistory: boolean;
+    clearDownloads: boolean;
+    clearNotes: boolean;
+    clearCache: boolean;
+    timeRange: 'hour' | 'day' | 'week' | 'all';
+  }) => {
+    if (options.clearHistory) setHistory([]);
+    if (options.clearDownloads) setDownloads([]);
+    if (options.clearNotes) setNotes([]);
+    if (options.clearCache) {
+      try {
+        localStorage.removeItem('aksh_browser_state');
+      } catch (e) {}
+    }
   };
 
   // Tab Context Actions
@@ -1136,7 +1192,11 @@ export function App() {
         isSpeaking={audioNarration.isOpen}
         onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
         tabLayout={tabLayout}
-        onToggleTabLayout={() => setTabLayout((l) => (l === 'horizontal' ? 'vertical' : 'horizontal'))}
+        onToggleTabLayout={() => {
+          const next = tabLayout === 'horizontal' ? 'vertical' : 'horizontal';
+          setTabLayout(next);
+          setSettings((s) => ({ ...s, tabLayout: next }));
+        }}
         onOpenFindInPage={() => setIsFindInPageOpen(true)}
         onOpenTour={() => setIsTourOpen(true)}
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
@@ -1147,14 +1207,45 @@ export function App() {
         onOpenSessionStash={() => setIsSessionStashOpen(true)}
         onToggleAmbientSound={handleToggleAmbientSound}
         isAmbientPlaying={ambientState.isPlaying}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        onClearBrowsingData={() => setIsClearDataOpen(true)}
+        zoomLevel={zoomLevel}
+        onChangeZoom={handleChangeZoom}
+        onResetZoom={handleResetZoom}
+        onToggleFullscreen={handleToggleFullscreen}
+        onPrintPage={handlePrintPage}
+        onNewTab={() => handleNewTab('aksh://newtab')}
+        onNewIncognitoTab={() => {
+          const newTabId = 'tab-' + Date.now();
+          const incognitoTab: Tab = {
+            id: newTabId,
+            title: 'Incognito New Tab',
+            url: 'aksh://newtab',
+            contentType: 'newtab',
+            historyStack: ['aksh://newtab'],
+            historyIndex: 0,
+            canGoBack: false,
+            canGoForward: false,
+            isLoading: false,
+            isReaderMode: false,
+            groupName: 'Incognito',
+            groupColor: '#334155',
+          };
+          setTabs((prev) => [...prev, incognitoTab]);
+          setActiveTabId(newTabId);
+        }}
       />
 
       {/* 3. Bookmarks Quick Bar */}
-      <BookmarksBar
-        bookmarks={bookmarks}
-        onNavigate={(url) => navigateTab(activeTabId, url)}
-        onOpenBookmarksManager={() => navigateTab(activeTabId, 'aksh://bookmarks')}
-      />
+      {settings.showBookmarksBar !== false && (
+        <BookmarksBar
+          bookmarks={bookmarks}
+          onNavigate={(url) => navigateTab(activeTabId, url)}
+          onOpenBookmarksManager={() => navigateTab(activeTabId, 'aksh://bookmarks')}
+        />
+      )}
 
       {/* 4. Main Body: (Optional Vertical TabBar) + Active Tab Viewport + Split-Screen + AI Sidebar */}
       <div className="flex-1 flex overflow-hidden relative bg-white">
@@ -1227,6 +1318,7 @@ export function App() {
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
                   className="w-full h-full"
+                  style={zoomLevel !== 100 ? { zoom: `${zoomLevel}%` } : undefined}
                 >
                   {renderTabContent(activeTab)}
                 </motion.div>
@@ -1413,6 +1505,18 @@ export function App() {
         onClose={() => setIsSessionStashOpen(false)}
         currentTabs={tabs}
         onRestoreSession={handleRestoreSession}
+      />
+
+      {/* Clear Browsing Data Dialog Modal */}
+      <ClearBrowsingDataModal
+        isOpen={isClearDataOpen}
+        onClose={() => setIsClearDataOpen(false)}
+        onClearData={handleClearBrowsingData}
+        counts={{
+          history: history.length,
+          downloads: downloads.length,
+          notes: notes.length,
+        }}
       />
 
       {/* Floating Focus Ambient Soundscapes Player */}
