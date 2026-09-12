@@ -17,6 +17,8 @@ import { AINotesView } from './components/Views/AINotesView';
 import { MindmapView } from './components/Views/MindmapView';
 import { DevToolsView } from './components/Views/DevToolsView';
 import { ReadmeView } from './components/Views/ReadmeView';
+import { ExtensionsView } from './components/Views/ExtensionsView';
+import { ReadingListView } from './components/Views/ReadingListView';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
@@ -33,9 +35,11 @@ import { SitePerformanceModal } from './components/Modals/SitePerformanceModal';
 import { DataExtractorModal } from './components/Modals/DataExtractorModal';
 import { SessionStashModal, SavedSession } from './components/Modals/SessionStashModal';
 import { ClearBrowsingDataModal } from './components/Modals/ClearBrowsingDataModal';
+import { ResponsiveDeviceModal } from './components/Modals/ResponsiveDeviceModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
-import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType } from './types';
+import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
+import { DEFAULT_EXTENSIONS, STORE_EXTENSIONS, INITIAL_READING_LIST, DEFAULT_WORKSPACES } from './data/extensionsAndSpaces';
 import { scrapeWebpage, organizeTabsSmartly } from './services/api';
 
 export function App() {
@@ -72,6 +76,12 @@ export function App() {
   const [isSessionStashOpen, setIsSessionStashOpen] = useState<boolean>(false);
   const [isClearDataOpen, setIsClearDataOpen] = useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(DEFAULT_WORKSPACES);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>('ws-general');
+  const [extensions, setExtensions] = useState<BrowserExtension[]>(DEFAULT_EXTENSIONS);
+  const [storeExtensions, setStoreExtensions] = useState<BrowserExtension[]>(STORE_EXTENSIONS);
+  const [readingList, setReadingList] = useState<ReadingListItem[]>(INITIAL_READING_LIST);
+  const [isResponsiveModalOpen, setIsResponsiveModalOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -81,6 +91,74 @@ export function App() {
     type: 'rain',
     volume: 0.4,
   });
+
+  const handleToggleExtension = (id: string) => {
+    setExtensions((prev) =>
+      prev.map((ext) => (ext.id === id ? { ...ext, enabled: !ext.enabled } : ext))
+    );
+  };
+
+  const handleInstallExtension = (ext: BrowserExtension) => {
+    if (!extensions.some((e) => e.id === ext.id)) {
+      setExtensions((prev) => [...prev, { ...ext, enabled: true }]);
+      setStoreExtensions((prev) => prev.filter((e) => e.id !== ext.id));
+    }
+  };
+
+  const handleUninstallExtension = (id: string) => {
+    const found = extensions.find((e) => e.id === id);
+    setExtensions((prev) => prev.filter((e) => e.id !== id));
+    if (found && !storeExtensions.some((e) => e.id === id)) {
+      setStoreExtensions((prev) => [...prev, { ...found, enabled: false }]);
+    }
+  };
+
+  const handleToggleReadReadingItem = (id: string) => {
+    setReadingList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, isRead: !item.isRead } : item))
+    );
+  };
+
+  const handleDeleteReadingItem = (id: string) => {
+    setReadingList((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleToggleCurrentReadingList = () => {
+    if (!activeTab) return;
+    const exists = readingList.some((item) => item.url === activeTab.url);
+    if (exists) {
+      setReadingList((prev) => prev.filter((item) => item.url !== activeTab.url));
+    } else {
+      let domain = 'web';
+      try {
+        domain = new URL(activeTab.url).hostname.replace(/^www\./, '');
+      } catch {}
+      const newItem: ReadingListItem = {
+        id: `read-${Date.now()}`,
+        title: activeTab.title || 'Page',
+        url: activeTab.url,
+        domain,
+        favicon: activeTab.favicon,
+        addedAt: 'Just now',
+        readingTimeMinutes: Math.max(1, Math.round((activeTab.extractedText?.split(/\s+/).length || 300) / 200)),
+        isRead: false,
+        excerpt: activeTab.metaDescription || (activeTab.extractedText ? activeTab.extractedText.slice(0, 120) + '...' : undefined),
+      };
+      setReadingList((prev) => [newItem, ...prev]);
+    }
+  };
+
+  const handleSwitchWorkspace = (workspaceId: string) => {
+    setActiveWorkspaceId(workspaceId);
+    const matchingTab = tabs.find((t) => t.workspaceId === workspaceId);
+    if (matchingTab) {
+      setActiveTabId(matchingTab.id);
+    } else {
+      setTabs((prev) =>
+        prev.map((t) => (t.id === activeTabId ? { ...t, workspaceId } : t))
+      );
+    }
+  };
 
   const handleToggleAmbientSound = () => {
     if (ambientState.isPlaying) {
@@ -264,6 +342,12 @@ export function App() {
             currentPage: 1,
           };
         }
+      } else if (normalizedUrl === 'aksh://extensions') {
+        resolvedType = 'extensions';
+        title = 'Extensions & Add-ons Hub';
+      } else if (normalizedUrl === 'aksh://reading_list' || normalizedUrl === 'aksh://readlater') {
+        resolvedType = 'reading_list';
+        title = 'Reading List';
       } else if (normalizedUrl === 'aksh://history') {
         resolvedType = 'history';
         title = 'Browsing History';
@@ -1132,6 +1216,51 @@ export function App() {
           />
         )}
 
+        {targetTab.contentType === 'extensions' && (
+          <ExtensionsView
+            extensions={extensions}
+            storeExtensions={storeExtensions}
+            onToggleExtension={handleToggleExtension}
+            onInstallExtension={handleInstallExtension}
+            onUninstallExtension={handleUninstallExtension}
+          />
+        )}
+
+        {targetTab.contentType === 'reading_list' && (
+          <ReadingListView
+            items={readingList}
+            onToggleRead={handleToggleReadReadingItem}
+            onDeleteItem={handleDeleteReadingItem}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+            onAddItem={(url, title) => {
+              let domain = 'web';
+              try {
+                domain = new URL(url).hostname.replace(/^www\./, '');
+              } catch {}
+              setReadingList((prev) => [
+                {
+                  id: `read-${Date.now()}`,
+                  title: title || url,
+                  url,
+                  domain,
+                  readingTimeMinutes: 3,
+                  addedAt: 'Just now',
+                  isRead: false,
+                },
+                ...prev,
+              ]);
+            }}
+            onTriggerSpeech={(text, title) => {
+              setAudioNarration({
+                isOpen: true,
+                text,
+                title,
+              });
+            }}
+            onSaveAsNote={handleSaveAsNote}
+          />
+        )}
+
         {targetTab.contentType === 'settings' && (
           <SettingsView
             settings={settings}
@@ -1169,6 +1298,9 @@ export function App() {
         onCloseTabsToRight={handleCloseTabsToRight}
         onOpenTour={() => setIsTourOpen(true)}
         onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        onSelectWorkspace={handleSwitchWorkspace}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -1208,6 +1340,12 @@ export function App() {
         onToggleAmbientSound={handleToggleAmbientSound}
         isAmbientPlaying={ambientState.isPlaying}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        extensions={extensions}
+        onToggleExtension={handleToggleExtension}
+        onOpenExtensionsManager={() => navigateTab(activeTabId, 'aksh://extensions')}
+        isInReadingList={readingList.some((item) => item.url === activeTab?.url)}
+        onToggleReadingList={handleToggleCurrentReadingList}
+        onOpenResponsiveMode={() => setIsResponsiveModalOpen(true)}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onClearBrowsingData={() => setIsClearDataOpen(true)}
@@ -1517,6 +1655,14 @@ export function App() {
           downloads: downloads.length,
           notes: notes.length,
         }}
+      />
+
+      {/* Responsive Device Simulator Modal */}
+      <ResponsiveDeviceModal
+        isOpen={isResponsiveModalOpen}
+        onClose={() => setIsResponsiveModalOpen(false)}
+        activeUrl={activeTab?.url || 'aksh://newtab'}
+        pageTitle={activeTab?.title || 'Current Page'}
       />
 
       {/* Floating Focus Ambient Soundscapes Player */}

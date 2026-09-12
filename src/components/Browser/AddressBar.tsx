@@ -50,10 +50,14 @@ import {
   Layout,
   Trash2,
   Shield,
-  EyeOff
+  EyeOff,
+  Puzzle,
+  BookMarked,
+  Smartphone
 } from 'lucide-react';
-import { Tab, PageContentType, BrowserSettings } from '../../types';
+import { Tab, PageContentType, BrowserSettings, BrowserExtension } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
+import { ExtensionsPopover } from './ExtensionsPopover';
 
 interface AddressBarProps {
   activeTab: Tab | null;
@@ -86,6 +90,13 @@ interface AddressBarProps {
   onOpenSessionStash?: () => void;
   onToggleAmbientSound?: () => void;
   isAmbientPlaying?: boolean;
+  // Extensions, Reading list, and Responsive mode
+  extensions?: BrowserExtension[];
+  onToggleExtension?: (id: string) => void;
+  onOpenExtensionsManager?: () => void;
+  isInReadingList?: boolean;
+  onToggleReadingList?: () => void;
+  onOpenResponsiveMode?: () => void;
   // Browser settings & controls for the 3-dot menu
   settings?: BrowserSettings;
   onUpdateSettings?: (newSettings: Partial<BrowserSettings>) => void;
@@ -111,6 +122,38 @@ const evaluateMathExpression = (expr: string): string | null => {
     if (!isNaN(p) && !isNaN(total)) {
       return String((p / 100) * total);
     }
+  }
+
+  // Unit and Currency conversions
+  const kmToMiles = clean.match(/^([\d.]+)\s*(?:km|kms|kilometers?)\s*(?:to|in)\s*(?:miles?|mi)$/i);
+  if (kmToMiles) {
+    const v = parseFloat(kmToMiles[1]);
+    return !isNaN(v) ? `${(v * 0.621371).toFixed(2)} miles` : null;
+  }
+  const milesToKm = clean.match(/^([\d.]+)\s*(?:miles?|mi)\s*(?:to|in)\s*(?:km|kms|kilometers?)$/i);
+  if (milesToKm) {
+    const v = parseFloat(milesToKm[1]);
+    return !isNaN(v) ? `${(v * 1.60934).toFixed(2)} km` : null;
+  }
+  const cToF = clean.match(/^([\d.]+)\s*(?:c|celsius)\s*(?:to|in)\s*(?:f|fahrenheit)$/i);
+  if (cToF) {
+    const v = parseFloat(cToF[1]);
+    return !isNaN(v) ? `${(v * 1.8 + 32).toFixed(1)} °F` : null;
+  }
+  const fToC = clean.match(/^([\d.]+)\s*(?:f|fahrenheit)\s*(?:to|in)\s*(?:c|celsius)$/i);
+  if (fToC) {
+    const v = parseFloat(fToC[1]);
+    return !isNaN(v) ? `${((v - 32) * (5 / 9)).toFixed(1)} °C` : null;
+  }
+  const usdToEur = clean.match(/^([\d.]+)\s*(?:usd|dollars?)\s*(?:to|in)\s*eur(?:o|os)?$/i);
+  if (usdToEur) {
+    const v = parseFloat(usdToEur[1]);
+    return !isNaN(v) ? `€${(v * 0.92).toFixed(2)} EUR` : null;
+  }
+  const eurToUsd = clean.match(/^([\d.]+)\s*eur(?:o|os)?\s*(?:to|in)\s*(?:usd|dollars?)$/i);
+  if (eurToUsd) {
+    const v = parseFloat(eurToUsd[1]);
+    return !isNaN(v) ? `$${(v * 1.09).toFixed(2)} USD` : null;
   }
 
   if (/^[\d\s+\-*/().^%]+$/.test(clean) && /[+\-*/^%]/.test(clean)) {
@@ -158,6 +201,12 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   onOpenSessionStash,
   onToggleAmbientSound,
   isAmbientPlaying = false,
+  extensions = [],
+  onToggleExtension,
+  onOpenExtensionsManager,
+  isInReadingList = false,
+  onToggleReadingList,
+  onOpenResponsiveMode,
   settings,
   onUpdateSettings,
   onClearBrowsingData,
@@ -177,11 +226,13 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [menuTab, setMenuTab] = useState<'tools' | 'settings'>('tools');
   const [showSecurityShield, setShowSecurityShield] = useState(false);
+  const [showExtensions, setShowExtensions] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [calcResult, setCalcResult] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; url: string; type: string }>>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const shieldRef = useRef<HTMLDivElement>(null);
+  const extensionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleCopyUrl = () => {
@@ -207,6 +258,9 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       }
       if (shieldRef.current && !shieldRef.current.contains(e.target as Node)) {
         setShowSecurityShield(false);
+      }
+      if (extensionsRef.current && !extensionsRef.current.contains(e.target as Node)) {
+        setShowExtensions(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -252,7 +306,19 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     }
 
     // Bang shortcuts parsing
-    if (target.startsWith('!scrape') || target.startsWith('!extract')) {
+    if (target.startsWith('!ext') || target.startsWith('!extensions')) {
+      onNavigate('aksh://extensions');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!reading') || target.startsWith('!read')) {
+      onNavigate('aksh://reading_list');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!responsive') || target.startsWith('!device') || target.startsWith('!mobile')) {
+      onOpenResponsiveMode?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!scrape') || target.startsWith('!extract')) {
       onOpenDataExtractor?.();
       setIsFocused(false);
       return;
@@ -501,6 +567,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                 </button>
               )}
 
+              {/* Reading List Toggle */}
+              {onToggleReadingList && (
+                <button
+                  type="button"
+                  onClick={onToggleReadingList}
+                  className={`p-1 rounded-md transition-colors cursor-pointer ${
+                    isInReadingList
+                      ? 'text-amber-600 bg-amber-50 hover:bg-amber-100'
+                      : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/80'
+                  }`}
+                  title={isInReadingList ? 'Remove from Reading List' : 'Save to Reading List (Read Later)'}
+                >
+                  <BookMarked className={`w-3.5 h-3.5 ${isInReadingList ? 'fill-amber-500' : ''}`} />
+                </button>
+              )}
+
               {/* Bookmark Star Toggle */}
               <button
                 type="button"
@@ -636,6 +718,46 @@ export const AddressBar: React.FC<AddressBarProps> = ({
             <Activity className="w-4 h-4 text-slate-600 hover:text-amber-600" />
           </button>
         )}
+
+        {/* Responsive Device Viewport Emulator */}
+        {onOpenResponsiveMode && (
+          <button
+            onClick={onOpenResponsiveMode}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Responsive Device Viewport Emulator (iPhone 15, Pixel 8, iPad, Desktop)"
+          >
+            <Smartphone className="w-4 h-4 text-indigo-600" />
+          </button>
+        )}
+
+        {/* Extensions Hub Popover */}
+        <div className="relative" ref={extensionsRef}>
+          <button
+            onClick={() => setShowExtensions(!showExtensions)}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer relative ${
+              showExtensions ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-100'
+            }`}
+            title="Extensions & Add-on Hub"
+          >
+            <Puzzle className="w-4 h-4" />
+            {extensions.filter((e) => e.enabled).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center">
+                {extensions.filter((e) => e.enabled).length}
+              </span>
+            )}
+          </button>
+
+          <ExtensionsPopover
+            isOpen={showExtensions}
+            onClose={() => setShowExtensions(false)}
+            extensions={extensions}
+            onToggleExtension={onToggleExtension || (() => {})}
+            onOpenExtensionsManager={() => {
+              setShowExtensions(false);
+              onOpenExtensionsManager?.();
+            }}
+          />
+        </div>
 
         {/* Split Screen Toggle */}
         <button
@@ -1094,6 +1216,47 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                       </div>
                       <span className="text-[10px] text-slate-400 font-mono">Ctrl+Shift+O</span>
                     </button>
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('reading_list');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <BookMarked className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Reading List & Read Later</span>
+                      </div>
+                      <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">List</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('extensions');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Puzzle className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span>Extensions & Add-on Hub</span>
+                      </div>
+                      <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Store</span>
+                    </button>
+                    {onOpenResponsiveMode && (
+                      <button
+                        onClick={() => {
+                          onOpenResponsiveMode();
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Smartphone className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Responsive Device Simulator</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">Mobile</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         onOpenInternalView('history');

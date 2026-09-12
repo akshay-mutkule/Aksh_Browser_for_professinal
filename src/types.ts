@@ -11,6 +11,8 @@ export type PageContentType =
   | 'notes'
   | 'mindmap'
   | 'devtools'
+  | 'extensions'
+  | 'reading_list'
   | 'readme';
 
 export interface Tab {
@@ -183,3 +185,33 @@ export interface AgentTaskRun {
     extractedInsights?: string[];
   };
 }
+
+export interface BrowserExtension {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  icon: string;
+  enabled: boolean;
+  category: 'productivity' | 'privacy' | 'developer' | 'ai' | 'accessibility';
+  actionLabel?: string;
+  author: string;
+  rating: number;
+  installs: string;
+  permissions: string[];
+}
+
+export interface ReadingListItem {
+  id: string;
+  url: string;
+  title: string;
+  domain: string;
+  readingTimeMinutes: number;
+  addedAt: string;
+  isRead: boolean;
+  excerpt?: string;
+  favicon?: string;
+}
+
+export type ResponsiveDevice = 'responsive' | 'iphone15' | 'pixel8' | 'ipad' | 'desktop';
+

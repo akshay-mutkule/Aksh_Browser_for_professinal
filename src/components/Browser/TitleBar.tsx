@@ -1,6 +1,6 @@
-import React from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle } from 'lucide-react';
-import { Tab } from '../../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen } from 'lucide-react';
+import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
 interface TitleBarProps {
@@ -26,6 +26,9 @@ interface TitleBarProps {
   onCloseTabsToRight?: (id: string) => void;
   onOpenTour?: () => void;
   onGoHome?: () => void;
+  workspaces?: Workspace[];
+  activeWorkspaceId?: string;
+  onSelectWorkspace?: (id: string) => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -51,8 +54,27 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onCloseTabsToRight,
   onOpenTour,
   onGoHome,
+  workspaces = [],
+  activeWorkspaceId,
+  onSelectWorkspace,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (workspaceRef.current && !workspaceRef.current.contains(e.target as Node)) {
+        setShowWorkspaceMenu(false);
+      }
+    };
+    if (showWorkspaceMenu) {
+      document.addEventListener('mousedown', handleOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showWorkspaceMenu]);
 
   return (
     <div className="h-10 bg-slate-100/90 flex items-center justify-between select-none border-b border-slate-200 relative z-20">
@@ -77,6 +99,49 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           Aksh
         </span>
       </button>
+
+      {/* Workspace Switcher Pill */}
+      {workspaces.length > 0 && onSelectWorkspace && (
+        <div className="relative shrink-0 mx-1" ref={workspaceRef}>
+          <button
+            onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 shadow-2xs transition-colors cursor-pointer"
+            title="Switch Workspace Space (Alt+1...4)"
+          >
+            <span>{activeWorkspace?.badge || '🪐'}</span>
+            <span className="hidden md:inline max-w-[100px] truncate">{activeWorkspace?.name}</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
+
+          {showWorkspaceMenu && (
+            <div className="absolute left-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+              <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
+                Spaces & Workspaces
+              </div>
+              {workspaces.map((ws, idx) => (
+                <button
+                  key={ws.id}
+                  onClick={() => {
+                    onSelectWorkspace(ws.id);
+                    setShowWorkspaceMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors cursor-pointer ${
+                    ws.id === activeWorkspaceId
+                      ? 'bg-blue-50 text-blue-700 font-bold'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{ws.badge}</span>
+                    <span>{ws.name}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">Alt+{idx + 1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tab Strip OR Active Tab Header in Vertical Mode */}
       {tabLayout === 'horizontal' ? (
