@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Code2,
@@ -22,7 +22,16 @@ import {
   Bot,
   Database,
   Download,
-  ArrowRight
+  ArrowRight,
+  HardDrive,
+  Gauge,
+  Trash2,
+  Plus,
+  Search,
+  Check,
+  Sliders,
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { Tab, NetworkLog } from '../../types';
 import { inspectCode, executeAgentTask, extractStructuredData } from '../../services/api';
@@ -32,8 +41,22 @@ interface DevToolsViewProps {
   onSaveAsNote: (title: string, content: string, sourceUrl?: string) => void;
 }
 
+interface ConsoleEntry {
+  id: string;
+  type: 'log' | 'info' | 'warn' | 'error' | 'command' | 'result';
+  text: string;
+  timestamp: string;
+  details?: any;
+}
+
+interface StorageEntry {
+  key: string;
+  value: string;
+  type: 'local' | 'session' | 'cookie';
+}
+
 export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsNote }) => {
-  const [activePanel, setActivePanel] = useState<'elements' | 'network' | 'security' | 'ai_audit' | 'agent' | 'extract'>('elements');
+  const [activePanel, setActivePanel] = useState<'elements' | 'console' | 'network' | 'storage' | 'performance' | 'security' | 'ai_audit' | 'agent' | 'extract'>('elements');
   const [auditResult, setAuditResult] = useState<string>('');
   const [isAuditing, setIsAuditing] = useState<boolean>(false);
   const [selectedElement, setSelectedElement] = useState<string>('<body>');
@@ -50,6 +73,51 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [extractedDataResult, setExtractedDataResult] = useState<any>(null);
   const [extractCopied, setExtractCopied] = useState<boolean>(false);
+
+  // Console REPL state
+  const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([
+    {
+      id: 'c-1',
+      type: 'info',
+      text: 'Aksh AI Browser DevTools v2.4 initialized. Connected to Gemini 3.7 Flash Engine.',
+      timestamp: new Date().toLocaleTimeString(),
+    },
+    {
+      id: 'c-2',
+      type: 'log',
+      text: `Navigated to [${activeTab?.title || 'Current Page'}] (${activeTab?.url || 'aksh://newtab'})`,
+      timestamp: new Date().toLocaleTimeString(),
+    },
+    {
+      id: 'c-3',
+      type: 'info',
+      text: 'DOM ready. Content security policy: strict-origin-when-cross-origin. HTTP/3 protocol active.',
+      timestamp: new Date().toLocaleTimeString(),
+    },
+  ]);
+  const [consoleInput, setConsoleInput] = useState('');
+  const [consoleFilter, setConsoleFilter] = useState<'all' | 'errors' | 'warnings' | 'logs'>('all');
+  const consoleBottomRef = useRef<HTMLDivElement>(null);
+
+  // Storage Inspector state
+  const [storageType, setStorageType] = useState<'local' | 'session' | 'cookie'>('local');
+  const [storageItems, setStorageItems] = useState<StorageEntry[]>([
+    { key: 'aksh_theme', value: 'system_light', type: 'local' },
+    { key: 'aksh_ai_model', value: 'gemini-3.7-flash', type: 'local' },
+    { key: 'aksh_adblock_shield', value: 'enabled', type: 'local' },
+    { key: 'aksh_active_workspace', value: 'ws-general', type: 'local' },
+    { key: 'session_tab_count', value: '4', type: 'session' },
+    { key: 'session_auth_token', value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aksh-token', type: 'session' },
+    { key: '_aksh_client_id', value: 'cid_981273918274', type: 'cookie' },
+    { key: '_aksh_pref_lang', value: 'en-US', type: 'cookie' },
+  ]);
+  const [newStorageKey, setNewStorageKey] = useState('');
+  const [newStorageVal, setNewStorageVal] = useState('');
+  const [storageSearch, setStorageSearch] = useState('');
+
+  // Performance HUD state
+  const [perfAuditScore] = useState(96);
+  const [perfRunning, setPerfRunning] = useState(false);
 
   // Generate simulated realistic network traffic for the active tab
   const [networkLogs, setNetworkLogs] = useState<NetworkLog[]>([]);
@@ -180,6 +248,146 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Console execution handler
+  const handleExecuteConsole = (cmdToRun?: string) => {
+    const cmd = (cmdToRun || consoleInput).trim();
+    if (!cmd) return;
+
+    const now = new Date().toLocaleTimeString();
+    const commandEntry: ConsoleEntry = {
+      id: `c-${Date.now()}`,
+      type: 'command',
+      text: cmd,
+      timestamp: now,
+    };
+
+    let resultEntry: ConsoleEntry;
+
+    if (cmd === 'clear()' || cmd === 'clear') {
+      setConsoleLogs([]);
+      setConsoleInput('');
+      return;
+    } else if (cmd === 'document.title') {
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'result',
+        text: `"${activeTab?.title || 'Aksh AI Browser'}"`,
+        timestamp: now,
+      };
+    } else if (cmd === 'window.location.href' || cmd === 'location.href') {
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'result',
+        text: `"${activeTab?.url || 'aksh://newtab'}"`,
+        timestamp: now,
+      };
+    } else if (cmd === 'navigator.userAgent') {
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'result',
+        text: '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Aksh/2.4"',
+        timestamp: now,
+      };
+    } else if (cmd === 'performance.now()' || cmd.startsWith('performance')) {
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'result',
+        text: `${(performance.now() + Math.random() * 5).toFixed(2)} ms`,
+        timestamp: now,
+      };
+    } else if (cmd.includes('querySelectorAll') || cmd.includes('elements')) {
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'result',
+        text: `NodeList(42) [<html>, <head>, <title>, <body>, <header>, <main>, <article>, <section>, <nav>, ...]`,
+        timestamp: now,
+      };
+    } else if (cmd.startsWith('console.log(')) {
+      const match = cmd.match(/^console\.log\((.*)\)$/);
+      const inner = match ? match[1].replace(/^['"`](.*)['"`]$/, '$1') : cmd;
+      resultEntry = {
+        id: `r-${Date.now()}`,
+        type: 'log',
+        text: inner,
+        timestamp: now,
+      };
+    } else {
+      try {
+        if (/^[\d\s+\-*/().%MathPIEsqrtpowabsminmaxfloorroundceil,]+$/.test(cmd)) {
+          // eslint-disable-next-line no-new-func
+          const evalFn = new Function(`return (${cmd})`);
+          const res = evalFn();
+          resultEntry = {
+            id: `r-${Date.now()}`,
+            type: 'result',
+            text: String(res),
+            timestamp: now,
+          };
+        } else {
+          resultEntry = {
+            id: `r-${Date.now()}`,
+            type: 'result',
+            text: `Object { type: "expression", source: "${cmd}", status: "evaluated", timeMs: 0.8 }`,
+            timestamp: now,
+          };
+        }
+      } catch (evalErr: any) {
+        resultEntry = {
+          id: `r-${Date.now()}`,
+          type: 'error',
+          text: `Uncaught SyntaxError: ${evalErr.message || 'Invalid JavaScript'}`,
+          timestamp: now,
+        };
+      }
+    }
+
+    setConsoleLogs((prev) => [...prev, commandEntry, resultEntry]);
+    setConsoleInput('');
+    setTimeout(() => {
+      consoleBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 40);
+  };
+
+  const handleClearConsole = () => {
+    setConsoleLogs([]);
+  };
+
+  // Storage Handlers
+  const handleAddStorage = () => {
+    if (!newStorageKey.trim()) return;
+    setStorageItems((prev) => [
+      ...prev,
+      {
+        key: newStorageKey.trim(),
+        value: newStorageVal.trim(),
+        type: storageType,
+      },
+    ]);
+    setNewStorageKey('');
+    setNewStorageVal('');
+  };
+
+  const handleDeleteStorage = (keyToDelete: string) => {
+    setStorageItems((prev) => prev.filter((item) => !(item.key === keyToDelete && item.type === storageType)));
+  };
+
+  const handleClearAllStorage = () => {
+    setStorageItems((prev) => prev.filter((item) => item.type !== storageType));
+  };
+
+  const filteredStorage = storageItems
+    .filter((item) => item.type === storageType)
+    .filter((item) =>
+      storageSearch ? item.key.toLowerCase().includes(storageSearch.toLowerCase()) || item.value.toLowerCase().includes(storageSearch.toLowerCase()) : true
+    );
+
+  const filteredConsoleLogs = consoleLogs.filter((log) => {
+    if (consoleFilter === 'errors') return log.type === 'error';
+    if (consoleFilter === 'warnings') return log.type === 'warn';
+    if (consoleFilter === 'logs') return log.type === 'log' || log.type === 'info';
+    return true;
+  });
+
   return (
     <div className="h-full bg-slate-50 text-slate-900 flex flex-col overflow-hidden select-none font-sans">
       {/* DevTools Navigation Bar */}
@@ -205,7 +413,19 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
             }`}
           >
             <FileCode className="w-3.5 h-3.5" />
-            <span>Elements (DOM)</span>
+            <span>Elements</span>
+          </button>
+
+          <button
+            onClick={() => setActivePanel('console')}
+            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              activePanel === 'console'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span>Console ({consoleLogs.length})</span>
           </button>
 
           <button
@@ -221,6 +441,30 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
           </button>
 
           <button
+            onClick={() => setActivePanel('storage')}
+            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              activePanel === 'storage'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <HardDrive className="w-3.5 h-3.5" />
+            <span>Storage</span>
+          </button>
+
+          <button
+            onClick={() => setActivePanel('performance')}
+            className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              activePanel === 'performance'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Gauge className="w-3.5 h-3.5" />
+            <span>Performance</span>
+          </button>
+
+          <button
             onClick={() => setActivePanel('security')}
             className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activePanel === 'security'
@@ -229,7 +473,7 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Security & TLS</span>
+            <span>Security</span>
           </button>
 
           <button
@@ -244,7 +488,7 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Code Audit</span>
+            <span>AI Audit</span>
           </button>
 
           <button
@@ -256,7 +500,7 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
             }`}
           >
             <Bot className="w-3.5 h-3.5" />
-            <span>Autonomous Web Agent</span>
+            <span>Autonomous Agent</span>
           </button>
 
           <button
@@ -413,6 +657,144 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
           </div>
         )}
 
+        {/* PANEL: Console REPL */}
+        {activePanel === 'console' && (
+          <div className="flex-1 flex flex-col overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs">
+            {/* Console Toolbar */}
+            <div className="px-3 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs shrink-0">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <span className="font-bold text-slate-200">JavaScript Console REPL</span>
+                <div className="flex items-center gap-1 ml-4 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60 text-[10px]">
+                  {(['all', 'logs', 'warnings', 'errors'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setConsoleFilter(filter)}
+                      className={`px-2 py-0.5 rounded cursor-pointer capitalize transition-colors ${
+                        consoleFilter === filter ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleClearConsole}
+                  className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  title="Clear Console (clear())"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Snippets Bar */}
+            <div className="px-3 py-1.5 bg-slate-900/60 border-b border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[11px] shrink-0">
+              <span className="text-slate-500 text-[10px] uppercase font-bold shrink-0">Snippets:</span>
+              <button
+                onClick={() => handleExecuteConsole('document.title')}
+                className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 cursor-pointer shrink-0"
+              >
+                document.title
+              </button>
+              <button
+                onClick={() => handleExecuteConsole('window.location.href')}
+                className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 cursor-pointer shrink-0"
+              >
+                window.location.href
+              </button>
+              <button
+                onClick={() => handleExecuteConsole('performance.now()')}
+                className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 cursor-pointer shrink-0"
+              >
+                performance.now()
+              </button>
+              <button
+                onClick={() => handleExecuteConsole('document.querySelectorAll("*")')}
+                className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 cursor-pointer shrink-0"
+              >
+                Query DOM Elements
+              </button>
+              <button
+                onClick={() => handleExecuteConsole('navigator.userAgent')}
+                className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50 cursor-pointer shrink-0"
+              >
+                User Agent
+              </button>
+            </div>
+
+            {/* Console Output Stream */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+              {filteredConsoleLogs.map((entry) => (
+                <div key={entry.id} className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-slate-600 select-none text-[10px] shrink-0 pt-0.5">{entry.timestamp}</span>
+                  {entry.type === 'command' && (
+                    <div className="flex items-center gap-1 text-slate-300">
+                      <ChevronRight className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span className="text-blue-300 font-semibold">{entry.text}</span>
+                    </div>
+                  )}
+                  {entry.type === 'result' && (
+                    <div className="flex items-center gap-1 text-emerald-400 pl-4">
+                      <span className="text-slate-600 select-none">&lt;</span>
+                      <span>{entry.text}</span>
+                    </div>
+                  )}
+                  {entry.type === 'log' && (
+                    <div className="text-slate-200 pl-4">{entry.text}</div>
+                  )}
+                  {entry.type === 'info' && (
+                    <div className="flex items-center gap-1 text-cyan-400 pl-4">
+                      <span className="text-cyan-600 select-none">ℹ</span>
+                      <span>{entry.text}</span>
+                    </div>
+                  )}
+                  {entry.type === 'warn' && (
+                    <div className="flex items-center gap-1 text-amber-400 pl-4 bg-amber-950/20 px-1 py-0.5 rounded">
+                      <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span>{entry.text}</span>
+                    </div>
+                  )}
+                  {entry.type === 'error' && (
+                    <div className="flex items-center gap-1 text-rose-400 pl-4 bg-rose-950/30 px-1 py-0.5 rounded">
+                      <span className="text-rose-500 font-bold select-none">✖</span>
+                      <span>{entry.text}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={consoleBottomRef} />
+            </div>
+
+            {/* Command Prompt Line */}
+            <div className="p-2 bg-slate-900 border-t border-slate-800 flex items-center gap-2 shrink-0">
+              <ChevronRight className="w-4 h-4 text-emerald-400 shrink-0" />
+              <input
+                type="text"
+                value={consoleInput}
+                onChange={(e) => setConsoleInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleExecuteConsole();
+                  }
+                }}
+                placeholder="Type JavaScript (e.g. document.title, 42 * 1337, clear())..."
+                className="flex-1 bg-transparent text-emerald-300 placeholder:text-slate-600 text-xs focus:outline-none font-mono"
+              />
+              <button
+                onClick={() => handleExecuteConsole()}
+                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Play className="w-3 h-3 fill-current" />
+                <span>Run</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PANEL 2: Network Traffic Monitor */}
         {activePanel === 'network' && (
           <div className="flex-1 flex flex-col overflow-hidden bg-white">
@@ -482,6 +864,195 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* PANEL: Application Storage Inspector */}
+        {activePanel === 'storage' && (
+          <div className="flex-1 flex flex-col overflow-hidden bg-white">
+            {/* Storage Header */}
+            <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-indigo-600" />
+                <div className="flex items-center bg-slate-200/80 p-0.5 rounded-xl border border-slate-300/60">
+                  {(['local', 'session', 'cookie'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setStorageType(type)}
+                      className={`px-3 py-1 rounded-lg font-semibold text-xs cursor-pointer capitalize transition-all ${
+                        storageType === type ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {type === 'local' ? 'Local Storage' : type === 'session' ? 'Session Storage' : 'Cookies'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={storageSearch}
+                    onChange={(e) => setStorageSearch(e.target.value)}
+                    placeholder="Filter key/value..."
+                    className="pl-8 pr-3 py-1 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <button
+                  onClick={handleClearAllStorage}
+                  className="px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs cursor-pointer transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead className="bg-slate-100 text-slate-600 sticky top-0 border-b border-slate-200">
+                  <tr>
+                    <th className="p-2.5 font-bold w-1/3">Key</th>
+                    <th className="p-2.5 font-bold">Value</th>
+                    <th className="p-2.5 font-bold w-16 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-800">
+                  {filteredStorage.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-2.5 font-semibold text-indigo-700 truncate">{item.key}</td>
+                      <td className="p-2.5 text-slate-700 truncate max-w-md font-mono">{item.value}</td>
+                      <td className="p-2.5 text-center">
+                        <button
+                          onClick={() => handleDeleteStorage(item.key)}
+                          className="p-1 rounded hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-colors cursor-pointer"
+                          title="Delete key"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredStorage.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-8 text-center text-slate-400 font-sans">
+                        No storage entries found for this origin.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Add Item Bar */}
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center gap-2 shrink-0">
+              <input
+                type="text"
+                value={newStorageKey}
+                onChange={(e) => setNewStorageKey(e.target.value)}
+                placeholder="New Key..."
+                className="w-1/3 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+              <input
+                type="text"
+                value={newStorageVal}
+                onChange={(e) => setNewStorageVal(e.target.value)}
+                placeholder="New Value..."
+                className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+              />
+              <button
+                onClick={handleAddStorage}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Entry</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PANEL: Performance & Core Web Vitals */}
+        {activePanel === 'performance' && (
+          <div className="flex-1 p-6 overflow-y-auto space-y-6 max-w-5xl mx-auto">
+            {/* Overview Score Card */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-blue-50 border border-indigo-100 shadow-sm flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-emerald-500 text-white flex flex-col items-center justify-center shadow-md">
+                  <span className="text-3xl font-extrabold tracking-tight">{perfAuditScore}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Performance</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-900">Core Web Vitals Assessment</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">Passed</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 max-w-md">
+                    This tab meets Google Web Vitals criteria across desktop and simulated mobile viewports.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setPerfRunning(true);
+                    setTimeout(() => setPerfRunning(false), 800);
+                  }}
+                  disabled={perfRunning}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer transition-all"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${perfRunning ? 'animate-spin' : ''}`} />
+                  <span>{perfRunning ? 'Auditing...' : 'Re-Run Audit'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metric Tiles Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { label: 'Largest Contentful Paint (LCP)', value: '1.1s', status: 'Good', target: '< 2.5s', desc: 'Main content visible fast' },
+                { label: 'Interaction to Next Paint (INP)', value: '16ms', status: 'Good', target: '< 200ms', desc: 'Instant tactile user feedback' },
+                { label: 'Cumulative Layout Shift (CLS)', value: '0.01', status: 'Good', target: '< 0.1', desc: 'Visual page stability' },
+                { label: 'First Contentful Paint (FCP)', value: '0.6s', status: 'Good', target: '< 1.8s', desc: 'First DOM text rendered' },
+                { label: 'Time to First Byte (TTFB)', value: '82ms', status: 'Good', target: '< 800ms', desc: 'Fast server response' },
+                { label: 'DOM Content Loaded', value: '380ms', status: 'Fast', target: '< 1.5s', desc: 'HTML parsed and ready' },
+              ].map((metric, i) => (
+                <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700">{metric.label}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200">
+                      {metric.status}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 font-mono">{metric.value}</div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                    <span>{metric.desc}</span>
+                    <span className="font-mono text-[10px] text-slate-400">target {metric.target}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Resource Breakdown */}
+            <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Payload Size Breakdown</h4>
+              <div className="space-y-2">
+                <div className="h-3 rounded-full bg-slate-100 overflow-hidden flex">
+                  <div className="bg-blue-500 h-full w-[45%]" title="Scripts (45%)" />
+                  <div className="bg-emerald-500 h-full w-[25%]" title="HTML/Doc (25%)" />
+                  <div className="bg-purple-500 h-full w-[15%]" title="Stylesheets (15%)" />
+                  <div className="bg-amber-500 h-full w-[15%]" title="Media & Fonts (15%)" />
+                </div>
+                <div className="flex flex-wrap gap-4 text-xs pt-1">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> JavaScript: 142 KB</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Document: 42 KB</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Stylesheets: 18 KB</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Media & Fonts: 8 KB</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
