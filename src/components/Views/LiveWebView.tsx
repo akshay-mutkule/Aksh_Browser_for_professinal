@@ -399,7 +399,28 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           <div className="mt-8 space-y-6">
             {activeContent ? (
               <div className="prose max-w-none">
-                <ReactMarkdown>{activeContent}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    a: ({ href, children, ...props }) => (
+                      <a
+                        href={href}
+                        onClick={(e) => {
+                          if (href && !href.startsWith('#')) {
+                            e.preventDefault();
+                            onNavigate(href);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+                        title={`Navigate to ${href}`}
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {activeContent}
+                </ReactMarkdown>
               </div>
             ) : (
               <p className="text-slate-500 italic">No textual content extracted to render in reader mode.</p>
@@ -817,7 +838,29 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             {activeContent ? (
               <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs space-y-5 text-slate-800 text-sm md:text-base leading-relaxed">
                 <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
-                  <ReactMarkdown>{activeContent}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      a: ({ href, children, ...props }) => (
+                        <a
+                          href={href}
+                          onClick={(e) => {
+                            if (href && !href.startsWith('#')) {
+                              e.preventDefault();
+                              onNavigate(href);
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer inline-flex items-center gap-0.5"
+                          title={`Navigate to ${href}`}
+                          {...props}
+                        >
+                          <span>{children}</span>
+                          <ArrowUpRight className="w-3.5 h-3.5 inline-block opacity-70 shrink-0" />
+                        </a>
+                      ),
+                    }}
+                  >
+                    {activeContent}
+                  </ReactMarkdown>
                 </div>
               </div>
             ) : (

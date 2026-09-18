@@ -1070,6 +1070,7 @@ export function App() {
           <NewTab
             onNavigate={(url) => navigateTab(targetTab.id, url)}
             bookmarks={bookmarks}
+            history={history}
             onOpenResearch={(q) => {
               navigateTab(targetTab.id, `aksh://research?q=${encodeURIComponent(q)}`);
             }}
@@ -1077,6 +1078,7 @@ export function App() {
               navigateTab(targetTab.id, `aksh://pdf/${pdfId}`);
             }}
             onOpenTour={() => setIsTourOpen(true)}
+            onSaveAsNote={handleSaveAsNote}
           />
         )}
 
@@ -1306,6 +1308,8 @@ export function App() {
       {/* 2. Address Bar / Omnibox */}
       <AddressBar
         activeTab={activeTab}
+        bookmarks={bookmarks}
+        history={history}
         onNavigate={(url) => navigateTab(activeTabId, url)}
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}

@@ -55,12 +55,14 @@ import {
   BookMarked,
   Smartphone
 } from 'lucide-react';
-import { Tab, PageContentType, BrowserSettings, BrowserExtension } from '../../types';
+import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
 import { ExtensionsPopover } from './ExtensionsPopover';
 
 interface AddressBarProps {
   activeTab: Tab | null;
+  bookmarks?: Bookmark[];
+  history?: HistoryItem[];
   onNavigate: (url: string) => void;
   onGoBack: () => void;
   onGoForward: () => void;
@@ -172,6 +174,8 @@ const evaluateMathExpression = (expr: string): string | null => {
 
 export const AddressBar: React.FC<AddressBarProps> = ({
   activeTab,
+  bookmarks = [],
+  history = [],
   onNavigate,
   onGoBack,
   onGoForward,
@@ -275,17 +279,46 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     const calc = evaluateMathExpression(val);
     setCalcResult(calc);
 
+    if (val.startsWith('!')) {
+      const bangCommands = [
+        { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!mindmap <topic> - Visual Concept Graph', url: `aksh://mindmap?topic=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!compare - Multi-product AI Analysis', url: 'aksh://comparison', type: 'bang' },
+        { title: '!devtools - Performance, Storage & Console', url: 'aksh://devtools', type: 'bang' },
+        { title: '!pdf - Neural PDF Reader & Analyst', url: 'aksh://pdf', type: 'bang' },
+        { title: '!notes - AI Markdown Notebook', url: 'aksh://notes', type: 'bang' },
+        { title: '!reading - Read Later List', url: 'aksh://reading_list', type: 'bang' },
+        { title: '!scrape - Structured Data Extractor', url: 'aksh://scrape', type: 'bang' },
+        { title: '!stash - Session Snapshot & Tabs', url: 'aksh://stash', type: 'bang' },
+        { title: '!responsive - Mobile / Tablet Simulator', url: 'aksh://responsive', type: 'bang' },
+        { title: '!sound - Focus Ambient Audio', url: 'aksh://sound', type: 'bang' },
+        { title: '!zen - Distraction-Free Reader Mode', url: 'aksh://zen', type: 'bang' },
+        { title: '!wiki <term> - Wikipedia Search', url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!gh <repo> - GitHub Code Search', url: `https://github.com/search?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+      ];
+      const filtered = bangCommands.filter((b) => b.title.toLowerCase().includes(val.toLowerCase()));
+      setSuggestions(filtered.slice(0, 7));
+      return;
+    }
+
     if (val.trim().length > 1) {
-      // Dynamic suggestions with Bang shortcuts
-      const list = [
+      const matchedBookmarks = (bookmarks || [])
+        .filter((b) => b.title.toLowerCase().includes(val.toLowerCase()) || b.url.toLowerCase().includes(val.toLowerCase()))
+        .slice(0, 2)
+        .map((b) => ({ title: `⭐ ${b.title}`, url: b.url, type: 'bookmark' }));
+
+      const matchedHistory = (history || [])
+        .filter((h) => h.title.toLowerCase().includes(val.toLowerCase()) || h.url.toLowerCase().includes(val.toLowerCase()))
+        .slice(0, 2)
+        .map((h) => ({ title: `🕒 ${h.title}`, url: h.url, type: 'history' }));
+
+      const searchActions = [
         { title: `Ask Gemini 3.7: "${val}"`, url: `aksh://research?q=${encodeURIComponent(val)}`, type: 'ai' },
-        { title: `Search Google for "${val}"`, url: `https://www.google.com/search?q=${encodeURIComponent(val)}`, type: 'search' },
+        { title: `Search Web for "${val}"`, url: `https://www.google.com/search?q=${encodeURIComponent(val)}`, type: 'search' },
         { title: `AI Mindmap: "${val}"`, url: `aksh://mindmap?topic=${encodeURIComponent(val)}`, type: 'mindmap' },
-        { title: 'Top 5 Python Courses 2026', url: 'https://learn.python.org/courses/2026-guide', type: 'site' },
-        { title: 'MacBook Pro vs XPS 15 vs ThinkPad', url: 'https://tech-radar.io/laptops/flagship-comparison-2026', type: 'site' },
-        { title: 'Transformer Architecture PDF', url: 'aksh://pdf/transformer-paper', type: 'pdf' },
-      ].filter((s) => s.title.toLowerCase().includes(val.toLowerCase()) || s.url.toLowerCase().includes(val.toLowerCase()));
-      setSuggestions(list.slice(0, 5));
+      ];
+
+      setSuggestions([...matchedBookmarks, ...matchedHistory, ...searchActions].slice(0, 6));
     } else {
       setSuggestions([]);
     }
@@ -367,8 +400,20 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   };
 
   const handleSelectSuggestion = (url: string) => {
+    if (url === 'aksh://scrape') {
+      onOpenDataExtractor?.();
+    } else if (url === 'aksh://stash') {
+      onOpenSessionStash?.();
+    } else if (url === 'aksh://responsive') {
+      onOpenResponsiveMode?.();
+    } else if (url === 'aksh://sound') {
+      onToggleAmbientSound?.();
+    } else if (url === 'aksh://zen') {
+      onToggleReaderMode();
+    } else {
+      onNavigate(url);
+    }
     setUrlInput(url);
-    onNavigate(url);
     setIsFocused(false);
     setSuggestions([]);
   };
@@ -642,6 +687,12 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                     <FileText className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                   ) : item.type === 'search' ? (
                     <Search className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  ) : item.type === 'bookmark' ? (
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                  ) : item.type === 'history' ? (
+                    <History className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  ) : item.type === 'bang' ? (
+                    <Zap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                   ) : (
                     <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   )}

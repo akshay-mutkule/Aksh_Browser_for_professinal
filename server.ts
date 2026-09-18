@@ -56,6 +56,80 @@ app.post("/api/scrape-proxy", async (req: Request, res: Response) => {
       targetUrl = "https://" + targetUrl;
     }
 
+    // Direct handling for web search engine URLs (Google, Bing, DuckDuckGo)
+    const isSearchEngine =
+      /(?:google|bing|duckduckgo|yahoo|ecosia)\.[a-z.]+\/(?:search|\?)/i.test(targetUrl) ||
+      targetUrl.includes("search?q=") ||
+      targetUrl.includes("?q=");
+
+    if (isSearchEngine) {
+      const match = targetUrl.match(/[?&]q=([^&]+)/i);
+      const query = match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : "Web search";
+      const ai = getGeminiClient();
+
+      if (ai) {
+        try {
+          const searchPrompt = `The user is searching the web using Aksh AI Browser for: "${query}".
+Using Google Search Grounding, search the live web and compile a high-signal, authentic search results briefing.
+Structure your answer strictly in the following JSON format without markdown code blocks:
+{
+  "title": "Search: ${query}",
+  "metaDescription": "Real-time web search results, facts, and sources for '${query}'.",
+  "headings": ["Instant Intelligence Brief", "Top Sources & Web Results", "Related Explorations"],
+  "contentMarkdown": "# Search Results: ${query}\\n\\n## ⚡ Instant Intelligence Brief\\n(Clear 2-3 paragraph answer summarizing facts, figures, and direct takeaways)\\n\\n## 🌐 Top Sources & Web Results\\n(List 5 authentic, reputable web sources found during search. For EACH source, provide: ### [Page Title](exact_https_url)\\n- **Domain:** domain.com\\n- **Summary:** Concise summary snippet of what this page covers)\\n\\n## 🔍 Related Explorations & Next Steps\\n(3-4 suggested related search queries formatted as bullet points)"
+}`;
+
+          let aiResp;
+          try {
+            aiResp = await ai.models.generateContent({
+              model: "gemini-3.7-flash",
+              contents: searchPrompt,
+              config: {
+                tools: [{ googleSearch: {} }],
+                temperature: 0.2,
+              },
+            });
+          } catch {
+            aiResp = await ai.models.generateContent({
+              model: "gemini-3.7-flash",
+              contents: searchPrompt,
+              config: {
+                temperature: 0.3,
+              },
+            });
+          }
+
+          const rawText = aiResp?.text || "";
+          let parsed: any = null;
+          try {
+            const cleanJson = rawText.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+            parsed = JSON.parse(cleanJson);
+          } catch {
+            parsed = {
+              title: `Search: ${query}`,
+              metaDescription: `Real-time search results for ${query}`,
+              headings: ["Instant Answer", "Web Results"],
+              contentMarkdown: rawText || `Search results compiled for "${query}".`,
+            };
+          }
+
+          res.json({
+            url: targetUrl,
+            title: parsed.title || `Search: ${query}`,
+            metaDescription: parsed.metaDescription || `Search results for ${query}`,
+            headings: parsed.headings || ["Instant Intelligence Brief", "Top Sources & Web Results"],
+            textContent: parsed.contentMarkdown || rawText,
+            favicon: "https://www.google.com/s2/favicons?domain=google.com&sz=64",
+            fetchedAt: new Date().toISOString(),
+            isAiGrounded: true,
+          });
+          return;
+        } catch (searchErr) {
+          console.warn("Search engine grounding error:", searchErr);
+        }
+      }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
