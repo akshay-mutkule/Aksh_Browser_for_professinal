@@ -30,7 +30,8 @@ import {
   HelpCircle,
   Database,
   Archive,
-  Headphones
+  Headphones,
+  Scissors
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -56,6 +57,7 @@ interface CommandPaletteProps {
   onOpenDataExtractor?: () => void;
   onOpenSessionStash?: () => void;
   onToggleAmbientSound?: () => void;
+  onOpenWebClipper?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -80,6 +82,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenDataExtractor,
   onOpenSessionStash,
   onToggleAmbientSound,
+  onOpenWebClipper,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -111,6 +114,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     // Advanced Tools
+    {
+      id: 'ai-web-clipper',
+      title: 'AI Web Clipper (Clip to Notes)',
+      subtitle: 'Summarize key takeaways, extract academic citations, and save to notes',
+      category: 'AI Intelligence',
+      icon: Scissors,
+      iconColor: 'text-blue-600',
+      action: () => {
+        if (onOpenWebClipper) onOpenWebClipper();
+        onClose();
+      },
+    },
     {
       id: 'ai-data-extractor',
       title: 'AI Web Scraper & Structured Table Extractor',

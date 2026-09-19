@@ -208,11 +208,13 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
     }
   };
 
-  const handleRunAgentTask = async () => {
-    if (!agentGoal.trim()) return;
+  const handleRunAgentTask = async (goalOverride?: string) => {
+    const activeGoal = (goalOverride || agentGoal).trim();
+    if (!activeGoal) return;
+    if (goalOverride) setAgentGoal(goalOverride);
     setIsAgentRunning(true);
     try {
-      const res = await executeAgentTask(agentGoal, {
+      const res = await executeAgentTask(activeGoal, {
         url: activeTab?.url || 'https://example.com',
         title: activeTab?.title || 'Current Webpage',
         textContent: activeTab?.extractedText || activeTab?.metaDescription || 'Web content',
@@ -1172,13 +1174,50 @@ export const DevToolsView: React.FC<DevToolsViewProps> = ({ activeTab, onSaveAsN
                     className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-purple-500 shadow-2xs"
                   />
                   <button
-                    onClick={handleRunAgentTask}
+                    onClick={() => handleRunAgentTask()}
                     disabled={isAgentRunning || !agentGoal.trim()}
                     className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                   >
                     <Play className={`w-3.5 h-3.5 ${isAgentRunning ? 'animate-spin' : ''}`} />
                     <span>{isAgentRunning ? 'Executing...' : 'Run Agent'}</span>
                   </button>
+                </div>
+
+                {/* Quick Autonomous Playbooks */}
+                <div className="pt-2">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Pre-Built Autonomous Agent Playbooks:
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      {
+                        name: '🛡️ Security & Privacy Audit',
+                        goal: 'Audit CSP headers, cookie security, third-party tracker scripts, and identify potential vulnerabilities.',
+                      },
+                      {
+                        name: '⚡ Performance & Web Vitals',
+                        goal: 'Analyze render-blocking resources, image optimization, LCP paint obstacles, and cache policy.',
+                      },
+                      {
+                        name: '📊 Entity & Schema Extractor',
+                        goal: 'Extract all structured schema.org entities, author metadata, product specs, and key quantitative data points.',
+                      },
+                      {
+                        name: '♿ WCAG 2.2 Accessibility Scan',
+                        goal: 'Audit contrast ratios, ARIA landmark roles, semantic headings hierarchy, and keyboard navigability.',
+                      },
+                    ].map((playbook, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleRunAgentTask(playbook.goal)}
+                        disabled={isAgentRunning}
+                        className="px-2.5 py-1 rounded-xl bg-white border border-purple-200 hover:border-purple-400 hover:bg-purple-50/80 text-purple-900 text-[11px] font-medium transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                      >
+                        {playbook.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

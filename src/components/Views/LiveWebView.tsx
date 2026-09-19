@@ -26,7 +26,9 @@ import {
   Clock,
   Globe,
   Loader2,
-  X
+  X,
+  Scissors,
+  Zap
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab } from '../../types';
@@ -39,6 +41,9 @@ interface LiveWebViewProps {
   onTriggerAiSummary: () => void;
   onSaveAsNote: (title: string, content: string) => void;
   onTriggerSpeech?: () => void;
+  onToggleReaderMode?: () => void;
+  onOpenWebClipper?: () => void;
+  onOpenFindInPage?: () => void;
   findQuery?: string;
   matchIndex?: number;
   caseSensitive?: boolean;
@@ -64,6 +69,9 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   onTriggerAiSummary,
   onSaveAsNote,
   onTriggerSpeech,
+  onToggleReaderMode,
+  onOpenWebClipper,
+  onOpenFindInPage,
   findQuery = '',
   matchIndex = 0,
   caseSensitive = false,
@@ -90,6 +98,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [readerFontSize, setReaderFontSize] = useState<'normal' | 'large' | 'huge'>('normal');
   const [readerFontFamily, setReaderFontFamily] = useState<'sans' | 'serif'>('serif');
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isFloatingHudCollapsed, setIsFloatingHudCollapsed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mockSite = SAMPLE_WEBSITES[tab.url];
@@ -910,6 +919,113 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Floating Smart Page Tools HUD */}
+      <div className="absolute bottom-5 right-5 z-30 flex items-center select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+        {isFloatingHudCollapsed ? (
+          <button
+            onClick={() => setIsFloatingHudCollapsed(false)}
+            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl flex items-center justify-center transition-all cursor-pointer group"
+            title="Open AI Page Tools"
+          >
+            <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-1.5 shadow-xl text-xs text-slate-700">
+            {onOpenWebClipper && (
+              <button
+                onClick={onOpenWebClipper}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                title="Clip to AI Notes with Key Takeaways & Citation"
+              >
+                <Scissors className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-[11px] font-semibold">Clip</span>
+              </button>
+            )}
+
+            {onToggleReaderMode && (
+              <button
+                onClick={onToggleReaderMode}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                  tab.isReaderMode
+                    ? 'bg-amber-100 text-amber-900 font-bold'
+                    : 'hover:bg-slate-100 text-slate-700'
+                }`}
+                title="Toggle Reader Mode"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-[11px]">Reader</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowTranslateMenu(!showTranslateMenu)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                showTranslateMenu
+                  ? 'bg-indigo-100 text-indigo-900 font-bold'
+                  : 'hover:bg-slate-100 text-slate-700'
+              }`}
+              title="Translate Page"
+            >
+              <Languages className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="text-[11px]">Translate</span>
+            </button>
+
+            {onTriggerSpeech && (
+              <button
+                onClick={onTriggerSpeech}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 font-medium transition-colors cursor-pointer"
+                title="Listen to Page Narration"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-purple-600" />
+                <span className="text-[11px]">Listen</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleFactCheck}
+              disabled={isFactChecking}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 font-medium transition-colors cursor-pointer disabled:opacity-50"
+              title="Fact Check Claims"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-[11px]">Fact Check</span>
+            </button>
+
+            <button
+              onClick={() => setShowOutline(!showOutline)}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                showOutline
+                  ? 'bg-blue-100 text-blue-900 font-bold'
+                  : 'hover:bg-slate-100 text-slate-700'
+              }`}
+              title="Table of Contents / Outline"
+            >
+              <ListFilter className="w-3.5 h-3.5 text-blue-600" />
+            </button>
+
+            {onOpenFindInPage && (
+              <button
+                onClick={onOpenFindInPage}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 font-medium transition-colors cursor-pointer"
+                title="Find in Page (Ctrl+F)"
+              >
+                <Search className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            )}
+
+            <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+            <button
+              onClick={() => setIsFloatingHudCollapsed(true)}
+              className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Collapse Toolbar"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -36,6 +36,7 @@ import { DataExtractorModal } from './components/Modals/DataExtractorModal';
 import { SessionStashModal, SavedSession } from './components/Modals/SessionStashModal';
 import { ClearBrowsingDataModal } from './components/Modals/ClearBrowsingDataModal';
 import { ResponsiveDeviceModal } from './components/Modals/ResponsiveDeviceModal';
+import { WebClipperModal } from './components/Modals/WebClipperModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -82,6 +83,7 @@ export function App() {
   const [storeExtensions, setStoreExtensions] = useState<BrowserExtension[]>(STORE_EXTENSIONS);
   const [readingList, setReadingList] = useState<ReadingListItem[]>(INITIAL_READING_LIST);
   const [isResponsiveModalOpen, setIsResponsiveModalOpen] = useState<boolean>(false);
+  const [isClipperOpen, setIsClipperOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -578,7 +580,7 @@ export function App() {
     }
   };
 
-  const handleSaveAsNote = (title: string, content: string, sourceUrl?: string) => {
+  const handleSaveAsNote = (title: string, content: string, sourceUrl?: string, tags?: string[]) => {
     const newNote: AINote = {
       id: String(Date.now()),
       title,
@@ -590,7 +592,7 @@ export function App() {
         hour: '2-digit',
         minute: '2-digit',
       }),
-      tags: ['AI-Research'],
+      tags: tags && tags.length > 0 ? tags : ['AI-Research'],
     };
     setNotes((prev) => [newNote, ...prev]);
   };
@@ -1089,6 +1091,9 @@ export function App() {
             onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
             onSaveAsNote={(title, content) => handleSaveAsNote(title, content, targetTab.url)}
             onTriggerSpeech={handleTriggerSpeech}
+            onToggleReaderMode={handleToggleReaderMode}
+            onOpenWebClipper={() => setIsClipperOpen(true)}
+            onOpenFindInPage={() => setIsFindInPageOpen(true)}
             findQuery={isFindInPageOpen ? findQuery : ''}
             matchIndex={findMatchIndex}
             caseSensitive={findCaseSensitive}
@@ -1343,6 +1348,7 @@ export function App() {
         onOpenSessionStash={() => setIsSessionStashOpen(true)}
         onToggleAmbientSound={handleToggleAmbientSound}
         isAmbientPlaying={ambientState.isPlaying}
+        onOpenWebClipper={() => setIsClipperOpen(true)}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         extensions={extensions}
         onToggleExtension={handleToggleExtension}
@@ -1448,6 +1454,44 @@ export function App() {
               onRatioChange={(r) => setSplitScreen((prev) => ({ ...prev, ratio: r }))}
               onSelectRightTab={(rTabId) => setSplitScreen((prev) => ({ ...prev, rightTabId: rTabId }))}
               onCloseSplitScreen={() => setSplitScreen((prev) => ({ ...prev, enabled: false }))}
+              onSwapPanes={() => {
+                setSplitScreen((prev) => ({
+                  ...prev,
+                  leftTabId: prev.rightTabId,
+                  rightTabId: prev.leftTabId,
+                }));
+              }}
+              onOpenCompanion={(view) => {
+                const targetUrl = `aksh://${view}`;
+                let companionTab = tabs.find((t) => t.url === targetUrl);
+                if (!companionTab) {
+                  const newId = `tab-${Date.now()}`;
+                  const titleMap: Record<string, string> = {
+                    notes: 'AI Notes',
+                    mindmap: 'Concept Mindmap',
+                    research: 'Deep Research',
+                    devtools: 'DevTools & Agent',
+                  };
+                  const newTab: Tab = {
+                    id: newId,
+                    title: titleMap[view] || view,
+                    url: targetUrl,
+                    contentType: view as PageContentType,
+                    historyStack: [targetUrl],
+                    historyIndex: 0,
+                    canGoBack: false,
+                    canGoForward: false,
+                    isLoading: false,
+                    isReaderMode: false,
+                    groupName: 'Companions',
+                    groupColor: '#6366f1',
+                  };
+                  setTabs((prev) => [...prev, newTab]);
+                  setSplitScreen((prev) => ({ ...prev, rightTabId: newId }));
+                } else {
+                  setSplitScreen((prev) => ({ ...prev, rightTabId: companionTab.id }));
+                }
+              }}
               renderTabContent={renderTabContent}
             />
           ) : (
@@ -1590,6 +1634,7 @@ export function App() {
         onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
         onOpenSessionStash={() => setIsSessionStashOpen(true)}
         onToggleAmbientSound={handleToggleAmbientSound}
+        onOpenWebClipper={() => setIsClipperOpen(true)}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -1667,6 +1712,15 @@ export function App() {
         onClose={() => setIsResponsiveModalOpen(false)}
         activeUrl={activeTab?.url || 'aksh://newtab'}
         pageTitle={activeTab?.title || 'Current Page'}
+      />
+
+      {/* AI Web Clipper & Citation Modal */}
+      <WebClipperModal
+        isOpen={isClipperOpen}
+        onClose={() => setIsClipperOpen(false)}
+        activeTab={activeTab}
+        onSaveAsNote={handleSaveAsNote}
+        onOpenNotes={() => navigateTab(activeTabId, 'aksh://notes')}
       />
 
       {/* Floating Focus Ambient Soundscapes Player */}

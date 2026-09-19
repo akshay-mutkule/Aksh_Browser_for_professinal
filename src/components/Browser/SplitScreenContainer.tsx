@@ -14,7 +14,11 @@ import {
   Copy,
   Check,
   Scale,
-  ArrowRight
+  ArrowRight,
+  ArrowLeftRight,
+  Compass,
+  BrainCircuit,
+  Wrench
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { synthesizeCrossTabs } from '../../services/api';
@@ -29,6 +33,8 @@ interface SplitScreenContainerProps {
   onCloseSplitScreen: () => void;
   renderTabContent: (tab: Tab | null) => React.ReactNode;
   onSaveAsNote?: (title: string, content: string, sourceUrl?: string) => void;
+  onSwapPanes?: () => void;
+  onOpenCompanion?: (view: string) => void;
 }
 
 export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
@@ -41,6 +47,8 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
   onCloseSplitScreen,
   renderTabContent,
   onSaveAsNote,
+  onSwapPanes,
+  onOpenCompanion,
 }) => {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesisResult, setSynthesisResult] = useState<string | null>(null);
@@ -169,7 +177,7 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
               <select
                 value={rightTab?.id || ''}
                 onChange={(e) => onSelectRightTab(e.target.value)}
-                className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer truncate max-w-xs font-medium shadow-2xs"
+                className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-0.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer truncate max-w-[160px] font-medium shadow-2xs"
               >
                 {allTabs
                   .filter((t) => t.id !== leftTab?.id)
@@ -179,9 +187,47 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
                     </option>
                   ))}
               </select>
+
+              {/* Quick Companion Shortcuts */}
+              {onOpenCompanion && (
+                <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-slate-200 text-[11px]">
+                  <button
+                    onClick={() => onOpenCompanion('notes')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open AI Notes in this pane"
+                  >
+                    📝 Notes
+                  </button>
+                  <button
+                    onClick={() => onOpenCompanion('mindmap')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Concept Mindmap in this pane"
+                  >
+                    🧠 Mindmap
+                  </button>
+                  <button
+                    onClick={() => onOpenCompanion('research')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Deep Research in this pane"
+                  >
+                    ⚡ Research
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Swap Panes Button */}
+              {onSwapPanes && (
+                <button
+                  onClick={onSwapPanes}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  title="Swap Left and Right Panes"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+
               {/* AI Cross-Tab Comparative Synthesis Trigger */}
               <button
                 onClick={handleCrossTabSynthesis}

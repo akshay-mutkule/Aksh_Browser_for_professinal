@@ -92,6 +92,7 @@ interface AddressBarProps {
   onOpenSessionStash?: () => void;
   onToggleAmbientSound?: () => void;
   isAmbientPlaying?: boolean;
+  onOpenWebClipper?: () => void;
   // Extensions, Reading list, and Responsive mode
   extensions?: BrowserExtension[];
   onToggleExtension?: (id: string) => void;
@@ -205,6 +206,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   onOpenSessionStash,
   onToggleAmbientSound,
   isAmbientPlaying = false,
+  onOpenWebClipper,
   extensions = [],
   onToggleExtension,
   onOpenExtensionsManager,
@@ -282,6 +284,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     if (val.startsWith('!')) {
       const bangCommands = [
         { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!clip - AI Web Clipper & Citation Tool', url: 'aksh://clip', type: 'bang' },
         { title: '!mindmap <topic> - Visual Concept Graph', url: `aksh://mindmap?topic=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
         { title: '!compare - Multi-product AI Analysis', url: 'aksh://comparison', type: 'bang' },
         { title: '!devtools - Performance, Storage & Console', url: 'aksh://devtools', type: 'bang' },
@@ -400,7 +403,9 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   };
 
   const handleSelectSuggestion = (url: string) => {
-    if (url === 'aksh://scrape') {
+    if (url === 'aksh://clip') {
+      onOpenWebClipper?.();
+    } else if (url === 'aksh://scrape') {
       onOpenDataExtractor?.();
     } else if (url === 'aksh://stash') {
       onOpenSessionStash?.();
