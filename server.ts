@@ -335,8 +335,12 @@ ${webpageContext.textContent.slice(0, 10000)}
       promptContents = `${contextPrompt}User: ${message}`;
     }
 
+    const requestedModel = req.body.model || "gemini-3.7-flash";
+    const validModels = ["gemini-3.7-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
+    const targetModel = validModels.includes(requestedModel) ? requestedModel : "gemini-3.7-flash";
+
     const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: targetModel,
       contents: promptContents,
       config: {
         systemInstruction,

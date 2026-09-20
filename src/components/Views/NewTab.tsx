@@ -24,10 +24,51 @@ import {
   X,
   Check,
   Cpu,
-  Compass
+  Compass,
+  RefreshCw,
+  Radio,
+  Layers,
+  Flame,
+  BookmarkCheck
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
+
+interface BriefingItem {
+  id: string;
+  tag: string;
+  title: string;
+  summary: string;
+  query: string;
+  sourceUrl?: string;
+}
+
+const DEFAULT_BRIEFINGS: BriefingItem[] = [
+  {
+    id: 'b-1',
+    tag: 'Frontier AI',
+    title: 'Autonomous Multi-Agent Orchestration & Reasoning',
+    summary: 'Next-generation reasoning architectures utilizing verifiable tool chains and persistent agent memory patterns.',
+    query: 'Autonomous AI agent architectures reasoning models',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Artificial_intelligence',
+  },
+  {
+    id: 'b-2',
+    tag: 'Web Engineering',
+    title: 'Local-First Runtimes & WebGPU Accelerated Compute',
+    summary: 'Direct client-side model inference and offline-first zero-latency synchronization frameworks transforming web browsers.',
+    query: 'Local-first software WebGPU browser inference',
+    sourceUrl: 'https://developer.mozilla.org',
+  },
+  {
+    id: 'b-3',
+    tag: 'Deep Tech',
+    title: 'Quantum Advantage & Topological Error Correction',
+    summary: 'Recent hardware benchmarks demonstrating quantum error mitigation in high-qubit logical processors.',
+    query: 'Quantum error correction quantum computing breakthrough',
+    sourceUrl: 'https://github.com',
+  },
+];
 
 interface NewTabProps {
   onNavigate: (url: string) => void;
@@ -71,6 +112,64 @@ export const NewTab: React.FC<NewTabProps> = ({
     return localStorage.getItem('aksh_quick_scratchpad') || '';
   });
   const [scratchpadSaved, setScratchpadSaved] = useState(false);
+
+  // AI Daily Briefing state
+  const [briefings, setBriefings] = useState<BriefingItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('aksh_ai_daily_briefings');
+      return saved ? JSON.parse(saved) : DEFAULT_BRIEFINGS;
+    } catch {
+      return DEFAULT_BRIEFINGS;
+    }
+  });
+  const [isGeneratingBriefing, setIsGeneratingBriefing] = useState(false);
+  const [briefingSaved, setBriefingSaved] = useState(false);
+
+  const handleRefreshBriefing = async () => {
+    setIsGeneratingBriefing(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message:
+            'Generate 3 timely, high-impact technology & research intelligence briefing cards for today. Format strictly as JSON array of objects with keys: "id" (string), "tag" (2 words max e.g. "Frontier AI", "Biotech"), "title" (concise headline), "summary" (1-2 sentences), "query" (suggested search query). Do not wrap with extra text, output only JSON.',
+          conversationHistory: [],
+          mode: 'general',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const clean = (data.reply || '').replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+        const parsed = JSON.parse(clean);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setBriefings(parsed);
+          localStorage.setItem('aksh_ai_daily_briefings', JSON.stringify(parsed));
+        }
+      }
+    } catch {
+      // Rotate order gracefully
+      const rotated = [...briefings.slice(1), briefings[0]];
+      setBriefings(rotated);
+    } finally {
+      setIsGeneratingBriefing(false);
+    }
+  };
+
+  const handleSaveBriefingToNotes = () => {
+    if (!onSaveAsNote || briefings.length === 0) return;
+    const title = `AI Daily Intelligence Briefing - ${new Date().toLocaleDateString()}`;
+    let md = `# ${title}\n\n`;
+    md += `*Compiled by Aksh AI Browser*\n\n---\n\n`;
+    briefings.forEach((b, i) => {
+      md += `### ${i + 1}. [${b.tag}] ${b.title}\n`;
+      md += `${b.summary}\n\n`;
+      md += `*Suggested Research Query:* \`${b.query}\`\n\n`;
+    });
+    onSaveAsNote(title, md, 'aksh://newtab');
+    setBriefingSaved(true);
+    setTimeout(() => setBriefingSaved(false), 2500);
+  };
 
   // Update clock & greeting
   useEffect(() => {
@@ -466,6 +565,100 @@ export const NewTab: React.FC<NewTabProps> = ({
                 Save to AI Notes
               </button>
             </div>
+          </div>
+        </motion.div>
+
+        {/* AI Daily Intelligence Radar Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.2 }}
+          className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3"
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                <Flame className="w-3.5 h-3.5 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-800">AI Daily Intelligence Radar</h4>
+                <p className="text-[10px] text-slate-400">Curated frontier research & technology insights</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {onSaveAsNote && (
+                <button
+                  onClick={handleSaveBriefingToNotes}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Save Daily Briefing to AI Notes"
+                >
+                  {briefingSaved ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span className="text-emerald-600">Saved</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkCheck className="w-3 h-3" />
+                      <span>Save Briefing</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button
+                onClick={handleRefreshBriefing}
+                disabled={isGeneratingBriefing}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                title="Generate Fresh Daily Intelligence"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingBriefing ? 'animate-spin text-purple-600' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Briefing Items Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {briefings.map((b) => (
+              <div
+                key={b.id}
+                className="p-3 rounded-xl bg-slate-50/80 hover:bg-purple-50/40 border border-slate-200/80 hover:border-purple-200 transition-all flex flex-col justify-between space-y-2 group"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-purple-100/70 text-purple-800">
+                      {b.tag}
+                    </span>
+                  </div>
+                  <h5 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-purple-900 transition-colors">
+                    {b.title}
+                  </h5>
+                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                    {b.summary}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    onClick={() => onOpenResearch(b.query)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-[10px] font-semibold text-purple-700 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-purple-600" />
+                    <span>Deep Research</span>
+                  </button>
+                  {b.sourceUrl && (
+                    <button
+                      onClick={() => onNavigate(b.sourceUrl!)}
+                      className="p-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-[10px] transition-colors cursor-pointer"
+                      title="Open Source"
+                    >
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
 

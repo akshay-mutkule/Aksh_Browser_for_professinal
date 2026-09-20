@@ -24,6 +24,11 @@ interface TitleBarProps {
   onBookmarkTab?: (id: string) => void;
   onCloseOtherTabs?: (id: string) => void;
   onCloseTabsToRight?: (id: string) => void;
+  onRenameGroup?: (oldName: string, newName: string) => void;
+  onChangeGroupColor?: (groupName: string, color: string) => void;
+  onCloseAllInGroup?: (groupName: string) => void;
+  onSynthesizeGroup?: (groupName: string, tabs: Tab[]) => void;
+  onSaveGroupAsNotes?: (groupName: string, tabs: Tab[]) => void;
   onOpenTour?: () => void;
   onGoHome?: () => void;
   workspaces?: Workspace[];
@@ -52,6 +57,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onBookmarkTab,
   onCloseOtherTabs,
   onCloseTabsToRight,
+  onRenameGroup,
+  onChangeGroupColor,
+  onCloseAllInGroup,
+  onSynthesizeGroup,
+  onSaveGroupAsNotes,
   onOpenTour,
   onGoHome,
   workspaces = [],
@@ -163,6 +173,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           onBookmarkTab={onBookmarkTab}
           onCloseOtherTabs={onCloseOtherTabs}
           onCloseTabsToRight={onCloseTabsToRight}
+          onRenameGroup={onRenameGroup}
+          onChangeGroupColor={onChangeGroupColor}
+          onCloseAllInGroup={onCloseAllInGroup}
+          onSynthesizeGroup={onSynthesizeGroup}
+          onSaveGroupAsNotes={onSaveGroupAsNotes}
         />
       ) : (
         <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-600">

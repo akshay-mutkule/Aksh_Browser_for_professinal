@@ -215,3 +215,14 @@ export interface ReadingListItem {
 
 export type ResponsiveDevice = 'responsive' | 'iphone15' | 'pixel8' | 'ipad' | 'desktop';
 
+export type AIModelId = 'gemini-3.7-flash' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
+
+export interface PageAnnotation {
+  id: string;
+  url: string;
+  text: string;
+  color: 'yellow' | 'blue' | 'emerald' | 'rose' | 'purple';
+  createdAt: string;
+  anchorSnippet?: string;
+}
+

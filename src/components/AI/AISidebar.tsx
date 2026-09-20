@@ -29,7 +29,7 @@ import {
   Network,
   StickyNote
 } from 'lucide-react';
-import { AIMessage, Tab } from '../../types';
+import { AIMessage, Tab, AIModelId } from '../../types';
 import { AIMessageItem } from './AIMessageItem';
 import { sendAIChat, generateSummary, analyzePDFDocument, factCheckClaim, translateText } from '../../services/api';
 
@@ -75,6 +75,9 @@ export const AISidebar: React.FC<AISidebarProps> = ({
 
   // Advanced Mode Switcher: Copilot Chat vs Autonomous Agent vs Page Intelligence
   const [activeTabMode, setActiveTabMode] = useState<'chat' | 'agent' | 'insights'>('chat');
+  const [selectedModel, setSelectedModel] = useState<AIModelId>('gemini-3.7-flash');
+  const [showModelMenu, setShowModelMenu] = useState(false);
+  const [reasoningDepth, setReasoningDepth] = useState<'fast' | 'deep'>('fast');
   const [agentGoal, setAgentGoal] = useState('');
   const [isAgentRunning, setIsAgentRunning] = useState(false);
   const [agentSteps, setAgentSteps] = useState<Array<{ id: string; label: string; status: 'pending' | 'running' | 'completed' }>>([]);
@@ -334,7 +337,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({
         content: m.content,
       }));
 
-      const res = await sendAIChat(query, conversationHistory, webpageContext);
+      const res = await sendAIChat(query, conversationHistory, webpageContext, 'general', selectedModel);
 
       const aiMsg: AIMessage = {
         id: String(Date.now() + 1),
@@ -494,11 +497,85 @@ Execute this mission thoroughly with high analytical rigor. Format your response
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 relative">
               <span className="font-bold text-sm text-slate-900">Aksh AI</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                Gemini 3.7
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowModelMenu(!showModelMenu)}
+                className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer transition-colors"
+                title="Select Gemini Intelligence Model"
+              >
+                <span>
+                  {selectedModel === 'gemini-3.7-flash'
+                    ? '3.7 Flash'
+                    : selectedModel === 'gemini-2.5-pro'
+                    ? '2.5 Pro'
+                    : '2.5 Flash'}
+                </span>
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+
+              {/* Model Menu Dropdown */}
+              {showModelMenu && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                    Gemini Model
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedModel('gemini-3.7-flash');
+                      setShowModelMenu(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                      selectedModel === 'gemini-3.7-flash'
+                        ? 'bg-blue-50 text-blue-700 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">⚡ Gemini 3.7 Flash</div>
+                      <div className="text-[10px] text-slate-400">Sub-second, search-grounded</div>
+                    </div>
+                    {selectedModel === 'gemini-3.7-flash' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedModel('gemini-2.5-pro');
+                      setShowModelMenu(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                      selectedModel === 'gemini-2.5-pro'
+                        ? 'bg-purple-50 text-purple-700 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">🧠 Gemini 2.5 Pro</div>
+                      <div className="text-[10px] text-slate-400">Deep reasoning & complex code</div>
+                    </div>
+                    {selectedModel === 'gemini-2.5-pro' && <Check className="w-3.5 h-3.5 text-purple-600" />}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedModel('gemini-2.5-flash');
+                      setShowModelMenu(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                      selectedModel === 'gemini-2.5-flash'
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold">⚖️ Gemini 2.5 Flash</div>
+                      <div className="text-[10px] text-slate-400">Balanced multimodal speed</div>
+                    </div>
+                    {selectedModel === 'gemini-2.5-flash' && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                  </button>
+                </div>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 truncate max-w-[200px]">
               {activeTab ? activeTab.title : 'Ready to assist'}

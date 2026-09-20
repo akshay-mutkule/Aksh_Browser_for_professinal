@@ -31,9 +31,10 @@ import {
   Zap
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Tab } from '../../types';
+import { Tab, PageAnnotation } from '../../types';
 import { SAMPLE_WEBSITES } from '../../data/mockWebsites';
 import { translateText, factCheckClaim } from '../../services/api';
+import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
 
 interface LiveWebViewProps {
   tab: Tab;
@@ -99,6 +100,64 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [readerFontFamily, setReaderFontFamily] = useState<'sans' | 'serif'>('serif');
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isFloatingHudCollapsed, setIsFloatingHudCollapsed] = useState(false);
+
+  // In-Page Sticky Notes & Annotations
+  const [showStickyNotes, setShowStickyNotes] = useState(false);
+  const [annotations, setAnnotations] = useState<PageAnnotation[]>(() => {
+    try {
+      const saved = localStorage.getItem(`aksh_page_annotations_${encodeURIComponent(tab.url)}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Reload annotations when tab URL changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`aksh_page_annotations_${encodeURIComponent(tab.url)}`);
+      setAnnotations(saved ? JSON.parse(saved) : []);
+    } catch {
+      setAnnotations([]);
+    }
+  }, [tab.url]);
+
+  const handleAddAnnotation = (text: string, color: PageAnnotation['color']) => {
+    const newAnn: PageAnnotation = {
+      id: 'ann-' + Date.now(),
+      url: tab.url,
+      text,
+      color,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    const updated = [newAnn, ...annotations];
+    setAnnotations(updated);
+    try {
+      localStorage.setItem(`aksh_page_annotations_${encodeURIComponent(tab.url)}`, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleDeleteAnnotation = (id: string) => {
+    const updated = annotations.filter((a) => a.id !== id);
+    setAnnotations(updated);
+    try {
+      localStorage.setItem(`aksh_page_annotations_${encodeURIComponent(tab.url)}`, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleExportAnnotationsToNotes = (anns: PageAnnotation[]) => {
+    if (anns.length === 0) return;
+    const title = `Sticky Notes: ${tab.title}`;
+    let md = `# Page Sticky Notes: ${tab.title}\n\n`;
+    md += `**Source URL:** ${tab.url}\n`;
+    md += `**Total Notes:** ${anns.length}\n`;
+    md += `**Date:** ${new Date().toLocaleString()}\n\n---\n\n`;
+    anns.forEach((a, i) => {
+      md += `### Note #${i + 1} (${a.color.toUpperCase()}) — ${a.createdAt}\n`;
+      md += `${a.text}\n\n`;
+    });
+    onSaveAsNote(title, md);
+  };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mockSite = SAMPLE_WEBSITES[tab.url];
@@ -992,6 +1051,25 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
               <span className="text-[11px]">Fact Check</span>
             </button>
 
+            {/* Sticky Notes Toggle */}
+            <button
+              onClick={() => setShowStickyNotes(!showStickyNotes)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                showStickyNotes
+                  ? 'bg-amber-100 text-amber-900 font-bold'
+                  : 'hover:bg-slate-100 text-slate-700'
+              }`}
+              title="Page Sticky Notes & Annotations"
+            >
+              <StickyNote className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-[11px]">Notes</span>
+              {annotations.length > 0 && (
+                <span className="text-[9px] px-1 rounded-full bg-amber-200 text-amber-900 font-mono">
+                  {annotations.length}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => setShowOutline(!showOutline)}
               className={`flex items-center gap-1 px-2 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
@@ -1026,6 +1104,17 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* In-Page Sticky Notes Layer */}
+      <PageStickyNotesLayer
+        url={tab.url}
+        annotations={annotations}
+        onAddAnnotation={handleAddAnnotation}
+        onDeleteAnnotation={handleDeleteAnnotation}
+        onExportToAiNotes={handleExportAnnotationsToNotes}
+        isOpen={showStickyNotes}
+        onClose={() => setShowStickyNotes(false)}
+      />
     </div>
   );
 };

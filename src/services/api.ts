@@ -63,7 +63,8 @@ export async function sendAIChat(
   message: string,
   conversationHistory: Array<{ role: string; content: string }>,
   webpageContext?: { url?: string; title?: string; textContent?: string },
-  mode: string = 'general'
+  mode: string = 'general',
+  model: string = 'gemini-3.7-flash'
 ): Promise<{ reply: string; sources?: Array<{ title: string; url: string }> }> {
   const res = await fetch('/api/chat', {
     method: 'POST',
@@ -73,6 +74,7 @@ export async function sendAIChat(
       conversationHistory,
       webpageContext,
       mode,
+      model,
     }),
   });
   if (!res.ok) {

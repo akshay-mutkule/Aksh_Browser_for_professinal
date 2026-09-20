@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
+import { TabGroupPopover } from './TabGroupPopover';
 
 interface TabBarProps {
   tabs: Tab[];
@@ -38,6 +39,11 @@ interface TabBarProps {
   onBookmarkTab?: (id: string) => void;
   onCloseOtherTabs?: (id: string) => void;
   onCloseTabsToRight?: (id: string) => void;
+  onRenameGroup?: (oldName: string, newName: string) => void;
+  onChangeGroupColor?: (groupName: string, color: string) => void;
+  onCloseAllInGroup?: (groupName: string) => void;
+  onSynthesizeGroup?: (groupName: string, tabs: Tab[]) => void;
+  onSaveGroupAsNotes?: (groupName: string, tabs: Tab[]) => void;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -58,11 +64,23 @@ export const TabBar: React.FC<TabBarProps> = ({
   onBookmarkTab,
   onCloseOtherTabs,
   onCloseTabsToRight,
+  onRenameGroup,
+  onChangeGroupColor,
+  onCloseAllInGroup,
+  onSynthesizeGroup,
+  onSaveGroupAsNotes,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     tab: Tab;
+  } | null>(null);
+
+  const [activeGroupPopover, setActiveGroupPopover] = useState<{
+    name: string;
+    color: string;
+    position: { x: number; y: number };
+    tabs: Tab[];
   } | null>(null);
   const getTabIcon = (tab: Tab) => {
     if (tab.contentType === 'pdf') return <FileText className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
@@ -101,12 +119,28 @@ export const TabBar: React.FC<TabBarProps> = ({
           <React.Fragment key={tab.id}>
             {/* Tab Group Chip */}
             {isNewGroup && (
-              <div
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-700 bg-slate-200/90 border border-slate-300 shadow-2xs shrink-0 select-none mr-0.5"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const groupTabs = tabs.filter((t) => t.groupName === tab.groupName);
+                  setActiveGroupPopover({
+                    name: tab.groupName!,
+                    color: tab.groupColor || '#3b82f6',
+                    position: { x: rect.left, y: rect.bottom },
+                    tabs: groupTabs,
+                  });
+                }}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold text-slate-700 bg-slate-200/90 hover:bg-slate-300 border border-slate-300 shadow-2xs shrink-0 select-none mr-0.5 cursor-pointer transition-colors"
                 style={{ borderLeftColor: tab.groupColor || '#3b82f6', borderLeftWidth: 3 }}
+                title={`Manage "${tab.groupName}" tab group (Color, Rename, AI Synthesize)`}
               >
                 <span>{tab.groupName}</span>
-              </div>
+                <span className="text-[9px] px-1 rounded-full bg-slate-300/80 text-slate-600 font-mono">
+                  {tabs.filter((t) => t.groupName === tab.groupName).length}
+                </span>
+              </button>
             )}
 
             <div
@@ -208,6 +242,35 @@ export const TabBar: React.FC<TabBarProps> = ({
           onCloseTab={() => onCloseTab(contextMenu.tab.id)}
           onCloseOtherTabs={() => onCloseOtherTabs?.(contextMenu.tab.id)}
           onCloseTabsToRight={() => onCloseTabsToRight?.(contextMenu.tab.id)}
+        />
+      )}
+
+      {/* Tab Group Management Popover */}
+      {activeGroupPopover && (
+        <TabGroupPopover
+          groupName={activeGroupPopover.name}
+          groupColor={activeGroupPopover.color}
+          tabsInGroup={tabs.filter((t) => t.groupName === activeGroupPopover.name)}
+          position={activeGroupPopover.position}
+          onClose={() => setActiveGroupPopover(null)}
+          onRenameGroup={(oldName, newName) => {
+            onRenameGroup?.(oldName, newName);
+            setActiveGroupPopover((prev) => (prev ? { ...prev, name: newName } : null));
+          }}
+          onChangeColor={(gName, color) => {
+            onChangeGroupColor?.(gName, color);
+            setActiveGroupPopover((prev) => (prev ? { ...prev, color } : null));
+          }}
+          onCloseAllInGroup={(gName) => {
+            onCloseAllInGroup?.(gName);
+            setActiveGroupPopover(null);
+          }}
+          onSynthesizeGroup={(gName, gTabs) => {
+            onSynthesizeGroup?.(gName, gTabs);
+          }}
+          onSaveGroupAsNotes={(gName, gTabs) => {
+            onSaveGroupAsNotes?.(gName, gTabs);
+          }}
         />
       )}
     </div>
