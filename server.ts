@@ -724,6 +724,61 @@ Generate at least 8-12 interconnected nodes demonstrating depth and clear relati
   }
 });
 
+// AI Mindmap Sub-node Expansion
+app.post("/api/ai/mindmap/expand", async (req: Request, res: Response) => {
+  try {
+    const { nodeLabel, rootTopic = "" } = req.body;
+    if (!nodeLabel || typeof nodeLabel !== "string") {
+      res.status(400).json({ error: "nodeLabel is required" });
+      return;
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      res.json({
+        nodes: [
+          { label: `${nodeLabel} Foundations`, category: "concept", description: `Core underlying elements and principles of ${nodeLabel}` },
+          { label: `${nodeLabel} Implementations`, category: "technology", description: `Practical architectural implementations and tooling` },
+          { label: `${nodeLabel} Frontier 2026`, category: "future", description: `Next-gen developments, scaling laws, and applications` },
+        ],
+      });
+      return;
+    }
+
+    const prompt = `Generate 3 high-yield, specific child sub-concepts branching off the concept "${nodeLabel}" within the broader domain of "${rootTopic}".
+Format strictly as JSON array of objects with keys:
+"label": concise title (2-5 words),
+"category": one of "concept", "technology", "application", "challenge", "future",
+"description": 1-2 informative sentences.
+Output only a valid JSON array.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.3,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "[]");
+      res.json({ nodes: Array.isArray(parsed) ? parsed : [] });
+    } catch {
+      res.json({
+        nodes: [
+          { label: `${nodeLabel} Deep Dive`, category: "concept", description: `In-depth exploration of ${nodeLabel}` },
+          { label: `${nodeLabel} Frameworks`, category: "technology", description: `Tooling and frameworks supporting ${nodeLabel}` },
+        ],
+      });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/mindmap/expand:", err);
+    const message = err instanceof Error ? err.message : "Error expanding node";
+    res.status(500).json({ error: message });
+  }
+});
+
 // AI Real-time Multi-language Translator
 app.post("/api/ai/translate", async (req: Request, res: Response) => {
   try {

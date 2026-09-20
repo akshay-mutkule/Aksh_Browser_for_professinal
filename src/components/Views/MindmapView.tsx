@@ -19,9 +19,11 @@ import {
   CheckCircle2,
   ExternalLink,
   ChevronRight,
-  X
+  X,
+  GitBranch,
+  BookmarkPlus
 } from 'lucide-react';
-import { generateMindmap } from '../../services/api';
+import { generateMindmap, expandMindmapNode } from '../../services/api';
 import { MindmapGraph, MindmapNode } from '../../types';
 
 interface MindmapViewProps {
@@ -37,10 +39,13 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
 }) => {
   const [topic, setTopic] = useState(initialTopic);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExpanding, setIsExpanding] = useState(false);
   const [graph, setGraph] = useState<MindmapGraph | null>(null);
   const [selectedNode, setSelectedNode] = useState<MindmapNode | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [nodeSavedSuccess, setNodeSavedSuccess] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   const fetchMindmap = async (targetTopic: string) => {
     setIsLoading(true);
@@ -57,6 +62,67 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleExpandNode = async (targetNode: MindmapNode) => {
+    if (!graph || isExpanding) return;
+    setIsExpanding(true);
+    try {
+      const res = await expandMindmapNode(targetNode.label, graph.root);
+      if (res && res.nodes && res.nodes.length > 0) {
+        const nextIdBase = Date.now();
+        const newNodes: MindmapNode[] = res.nodes.map((n, idx) => ({
+          id: `ext-${nextIdBase}-${idx}`,
+          label: n.label,
+          category: (n.category as any) || 'subtopic',
+          description: n.description,
+        }));
+
+        const newEdges = newNodes.map((n) => ({
+          from: targetNode.id,
+          to: n.id,
+          label: 'branches to',
+        }));
+
+        setGraph({
+          ...graph,
+          nodes: [...graph.nodes, ...newNodes],
+          edges: [...(graph.edges || []), ...newEdges],
+        });
+      }
+    } catch (err) {
+      console.error('Failed to expand node:', err);
+    } finally {
+      setIsExpanding(false);
+    }
+  };
+
+  const handleSaveSingleNodeNote = (node: MindmapNode) => {
+    if (!graph) return;
+    const noteTitle = `Concept: ${node.label} (${graph.root})`;
+    let md = `# ${node.label}\n\n`;
+    md += `**Category:** ${node.category.toUpperCase()} | **Parent Domain:** ${graph.root}\n\n`;
+    md += `## Definition & Analysis\n${node.description}\n\n`;
+    
+    // Find connected nodes
+    const outgoing = (graph.edges || []).filter((e) => e.from === node.id);
+    const incoming = (graph.edges || []).filter((e) => e.to === node.id);
+    
+    if (incoming.length > 0 || outgoing.length > 0) {
+      md += `## Knowledge Linkages\n`;
+      incoming.forEach((e) => {
+        const src = graph.nodes.find((n) => n.id === e.from)?.label || e.from;
+        md += `- **${src}** —[${e.label}]→ *${node.label}*\n`;
+      });
+      outgoing.forEach((e) => {
+        const tgt = graph.nodes.find((n) => n.id === e.to)?.label || e.to;
+        md += `- *${node.label}* —[${e.label}]→ **${tgt}**\n`;
+      });
+    }
+
+    onSaveAsNote(noteTitle, md, `aksh://mindmap?topic=${encodeURIComponent(graph.root)}`);
+    setNodeSavedSuccess(true);
+    setTimeout(() => setNodeSavedSuccess(false), 2500);
   };
 
   useEffect(() => {
@@ -160,6 +226,27 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(60, z - 10))}
+              className="p-1.5 hover:bg-white rounded-lg text-slate-600 cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] font-mono px-1 font-bold text-slate-700 min-w-[36px] text-center">
+              {zoomLevel}%
+            </span>
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
+              className="p-1.5 hover:bg-white rounded-lg text-slate-600 cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button
             onClick={handleSaveToNotes}
             disabled={!graph}
@@ -211,7 +298,14 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
               </p>
             </div>
           ) : graph ? (
-            <div className="w-full max-w-5xl space-y-8 my-auto py-4">
+            <div
+              style={{
+                transform: `scale(${zoomLevel / 100})`,
+                transformOrigin: 'top center',
+                transition: 'transform 0.15s ease-out',
+              }}
+              className="w-full max-w-5xl space-y-8 my-auto py-4"
+            >
               {/* Root Concept Center Card */}
               <div className="flex justify-center">
                 <motion.div
@@ -324,34 +418,64 @@ export const MindmapView: React.FC<MindmapViewProps> = ({
 
               {/* Action shortcuts for this concept node */}
               <div className="space-y-2 pt-4 border-t border-slate-200">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Deep Dive Actions
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                  <span>Deep Dive Actions</span>
+                  <span className="text-[10px] text-cyan-700 font-normal">Gemini 3.7</span>
                 </div>
+
+                {/* Branch sub-concepts */}
+                <button
+                  onClick={() => handleExpandNode(selectedNode)}
+                  disabled={isExpanding}
+                  className="w-full p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <GitBranch className={`w-3.5 h-3.5 text-purple-600 ${isExpanding ? 'animate-spin' : ''}`} />
+                    <span>{isExpanding ? 'Synthesizing Sub-Concepts...' : 'Branch Sub-Concepts with AI'}</span>
+                  </div>
+                  <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                </button>
+
+                {/* Save concept to AI Notes */}
+                <button
+                  onClick={() => handleSaveSingleNodeNote(selectedNode)}
+                  className="w-full p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    {nodeSavedSuccess ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <BookmarkPlus className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                    <span>{nodeSavedSuccess ? 'Saved to Notes!' : 'Save Concept to Notes'}</span>
+                  </div>
+                  <ArrowRight className="w-3 h-3 text-emerald-600" />
+                </button>
 
                 <button
                   onClick={() => {
                     onNavigateUrl(`aksh://research?q=${encodeURIComponent(selectedNode.label)}`);
                   }}
-                  className="w-full p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
+                  className="w-full p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
                     <Zap className="w-3.5 h-3.5 text-amber-600" />
                     <span>Deep Research this Concept</span>
                   </div>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 text-amber-600" />
                 </button>
 
                 <button
                   onClick={() => {
                     onNavigateUrl(`https://www.google.com/search?q=${encodeURIComponent(selectedNode.label)}`);
                   }}
-                  className="w-full p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
+                  className="w-full p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-between transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
                     <Search className="w-3.5 h-3.5 text-blue-600" />
                     <span>Search Web for "{selectedNode.label}"</span>
                   </div>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3 text-slate-500" />
                 </button>
               </div>
             </div>

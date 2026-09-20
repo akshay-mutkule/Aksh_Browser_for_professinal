@@ -31,8 +31,15 @@ import {
   Database,
   Archive,
   Headphones,
-  Scissors
+  Scissors,
+  Copy,
+  Check,
+  BookmarkPlus,
+  Calculator,
+  RefreshCw,
+  CornerDownLeft
 } from 'lucide-react';
+import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
 
 interface CommandPaletteProps {
@@ -58,6 +65,7 @@ interface CommandPaletteProps {
   onOpenSessionStash?: () => void;
   onToggleAmbientSound?: () => void;
   onOpenWebClipper?: () => void;
+  onSaveAsNote?: (title: string, content: string) => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -83,18 +91,76 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenSessionStash,
   onToggleAmbientSound,
   onOpenWebClipper,
+  onSaveAsNote,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [aiAnswer, setAiAnswer] = useState<{ query: string; text: string } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiCopied, setAiCopied] = useState(false);
+  const [aiSaved, setAiSaved] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setQuery('');
       setSelectedIndex(0);
+      setAiAnswer(null);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
+
+  // Safe arithmetic evaluator
+  const getMathResult = (expr: string): string | null => {
+    const clean = expr.trim().replace(/^=/, '').trim();
+    if (!clean || clean.length < 3) return null;
+    // Allow digits, spaces, +, -, *, /, %, (, ), ., ^
+    if (!/^[\d\s+\-*/%.()^]+$/.test(clean)) return null;
+    // Must contain at least one math operator
+    if (!/[+\-*/%.^]/.test(clean)) return null;
+    try {
+      // Replace ^ with ** for exponentiation
+      const sanitized = clean.replace(/\^/g, '**');
+      // eslint-disable-next-line no-new-func
+      const res = Function(`'use strict'; return (${sanitized})`)();
+      if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
+        return res.toLocaleString(undefined, { maximumFractionDigits: 6 });
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const mathResult = getMathResult(query);
+
+  const handleAskAi = async (userPrompt: string) => {
+    const cleanPrompt = userPrompt.replace(/^(!ai|\?)\s*/i, '').trim();
+    if (!cleanPrompt) return;
+    setIsAiLoading(true);
+    setAiAnswer({ query: cleanPrompt, text: '' });
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: cleanPrompt,
+          conversationHistory: [],
+          mode: 'general',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiAnswer({ query: cleanPrompt, text: data.reply || 'No answer returned.' });
+      } else {
+        setAiAnswer({ query: cleanPrompt, text: 'Unable to reach Aksh AI service.' });
+      }
+    } catch {
+      setAiAnswer({ query: cleanPrompt, text: 'Error contacting AI engine.' });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -430,14 +496,77 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const allItems = [...allCommands, ...tabCommands];
 
-  const filteredItems = query.trim()
+  // Dynamic AI & Bang commands when user types
+  const dynamicCommands = [];
+  const trimmed = query.trim();
+
+  if (trimmed) {
+    if (trimmed.startsWith('!research ')) {
+      const topic = trimmed.replace(/^!research\s+/i, '');
+      dynamicCommands.push({
+        id: 'bang-research',
+        title: `Deep Research: "${topic}"`,
+        subtitle: 'Multi-source autonomous synthesis with search grounding',
+        category: 'AI Quick Bang',
+        icon: Zap,
+        iconColor: 'text-amber-600',
+        action: () => {
+          onNavigateTab(activeTabId, `aksh://research?q=${encodeURIComponent(topic)}`);
+          onClose();
+        },
+      });
+    } else if (trimmed.startsWith('!mindmap ')) {
+      const topic = trimmed.replace(/^!mindmap\s+/i, '');
+      dynamicCommands.push({
+        id: 'bang-mindmap',
+        title: `Generate Mindmap: "${topic}"`,
+        subtitle: 'Interactive topological knowledge graph & sub-concept branching',
+        category: 'AI Quick Bang',
+        icon: Network,
+        iconColor: 'text-cyan-600',
+        action: () => {
+          onNavigateTab(activeTabId, `aksh://mindmap?topic=${encodeURIComponent(topic)}`);
+          onClose();
+        },
+      });
+    } else if (trimmed.startsWith('!compare ')) {
+      const items = trimmed.replace(/^!compare\s+/i, '');
+      dynamicCommands.push({
+        id: 'bang-compare',
+        title: `Compare Products/Tech: "${items}"`,
+        subtitle: 'Head-to-head specifications matrix & buyer verdict',
+        category: 'AI Quick Bang',
+        icon: Scale,
+        iconColor: 'text-pink-600',
+        action: () => {
+          onNavigateTab(activeTabId, `aksh://comparison`);
+          onClose();
+        },
+      });
+    } else {
+      // General Instant AI Ask item
+      dynamicCommands.push({
+        id: 'ask-gemini-instant',
+        title: `Ask Aksh AI: "${trimmed.replace(/^(!ai|\?)\s*/i, '')}"`,
+        subtitle: 'Instant Gemini 3.7 streaming answer with markdown synthesis',
+        category: 'AI Intelligence',
+        icon: Sparkles,
+        iconColor: 'text-blue-600',
+        action: () => handleAskAi(trimmed),
+      });
+    }
+  }
+
+  const baseFiltered = trimmed
     ? allItems.filter(
         (item) =>
-          item.title.toLowerCase().includes(query.toLowerCase()) ||
-          item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
-          item.category.toLowerCase().includes(query.toLowerCase())
+          item.title.toLowerCase().includes(trimmed.toLowerCase()) ||
+          item.subtitle.toLowerCase().includes(trimmed.toLowerCase()) ||
+          item.category.toLowerCase().includes(trimmed.toLowerCase())
       )
     : allItems;
+
+  const filteredItems = [...dynamicCommands, ...baseFiltered];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -477,7 +606,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         exit={{ opacity: 0, scale: 0.96, y: -10 }}
         transition={{ duration: 0.15 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-white border border-slate-300 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh] shadow-slate-900/20"
+        className="w-full max-w-2xl bg-white border border-slate-300 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[78vh] shadow-slate-900/20"
       >
         {/* Search Header */}
         <div className="p-3.5 border-b border-slate-200 flex items-center gap-3 bg-slate-50/70">
@@ -493,13 +622,94 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Type a command, search open tabs, or ask Aksh AI..."
+            placeholder="Type a command, ask Aksh AI, or use !research, !mindmap, !compare..."
             className="w-full bg-transparent text-slate-900 placeholder-slate-400 text-sm font-medium focus:outline-none"
           />
           <kbd className="px-2 py-0.5 rounded-lg bg-slate-200 border border-slate-300 text-[10px] text-slate-600 font-mono font-bold">
             ESC
           </kbd>
         </div>
+
+        {/* Live Math Calculator Result Chip */}
+        {mathResult && (
+          <div className="mx-3.5 mt-2.5 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-emerald-900 text-xs">
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-emerald-600" />
+              <span className="text-slate-500 font-mono">{query.trim()} =</span>
+              <span className="font-mono font-extrabold text-sm text-emerald-900">{mathResult}</span>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(mathResult);
+                setAiCopied(true);
+                setTimeout(() => setAiCopied(false), 2000);
+              }}
+              className="px-2 py-1 rounded-md bg-white border border-emerald-300 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+            >
+              {aiCopied ? 'Copied!' : 'Copy Result'}
+            </button>
+          </div>
+        )}
+
+        {/* Live AI Quick Answer Card */}
+        {aiAnswer && (
+          <div className="mx-3.5 mt-2.5 p-3.5 rounded-xl bg-slate-900 text-white space-y-2.5 shadow-lg border border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2 truncate pr-2">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="text-xs font-bold text-blue-300 shrink-0">Aksh AI Answer</span>
+                <span className="text-[10px] text-slate-400 font-mono truncate">"{aiAnswer.query}"</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(aiAnswer.text);
+                    setAiCopied(true);
+                    setTimeout(() => setAiCopied(false), 2000);
+                  }}
+                  className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Copy Answer"
+                >
+                  {aiCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+                {onSaveAsNote && (
+                  <button
+                    onClick={() => {
+                      onSaveAsNote(`AI Q&A: ${aiAnswer.query}`, aiAnswer.text);
+                      setAiSaved(true);
+                      setTimeout(() => setAiSaved(false), 2500);
+                    }}
+                    className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    title="Save to AI Notes"
+                  >
+                    {aiSaved ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <BookmarkPlus className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    onOpenAiSidebar();
+                    onClose();
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                >
+                  Ask in Sidebar →
+                </button>
+              </div>
+            </div>
+            <div className="text-xs text-slate-200 leading-relaxed max-h-48 overflow-y-auto pr-1">
+              {isAiLoading ? (
+                <div className="flex items-center gap-2 py-4 justify-center text-blue-300">
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
+                  <span className="text-xs font-medium">Synthesizing instant response with Gemini 3.7...</span>
+                </div>
+              ) : (
+                <div className="markdown-body text-slate-200 text-xs">
+                  <Markdown>{aiAnswer.text}</Markdown>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Results List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 select-none">

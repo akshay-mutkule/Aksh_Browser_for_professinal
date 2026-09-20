@@ -1635,6 +1635,7 @@ export function App() {
         onOpenSessionStash={() => setIsSessionStashOpen(true)}
         onToggleAmbientSound={handleToggleAmbientSound}
         onOpenWebClipper={() => setIsClipperOpen(true)}
+        onSaveAsNote={handleSaveAsNote}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}

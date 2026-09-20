@@ -165,6 +165,22 @@ export async function generateMindmap(
   return await res.json();
 }
 
+export async function expandMindmapNode(
+  nodeLabel: string,
+  rootTopic: string = ''
+): Promise<{ nodes: Array<{ label: string; category: string; description: string }> }> {
+  const res = await fetch('/api/ai/mindmap/expand', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodeLabel, rootTopic }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to expand node`);
+  }
+  return await res.json();
+}
+
 export async function translateText(
   text: string,
   targetLanguage: string = 'Spanish'
