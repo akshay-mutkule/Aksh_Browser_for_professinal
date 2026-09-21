@@ -37,6 +37,7 @@ import { SessionStashModal, SavedSession } from './components/Modals/SessionStas
 import { ClearBrowsingDataModal } from './components/Modals/ClearBrowsingDataModal';
 import { ResponsiveDeviceModal } from './components/Modals/ResponsiveDeviceModal';
 import { WebClipperModal } from './components/Modals/WebClipperModal';
+import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -84,6 +85,7 @@ export function App() {
   const [readingList, setReadingList] = useState<ReadingListItem[]>(INITIAL_READING_LIST);
   const [isResponsiveModalOpen, setIsResponsiveModalOpen] = useState<boolean>(false);
   const [isClipperOpen, setIsClipperOpen] = useState<boolean>(false);
+  const [isSmartOrganizerOpen, setIsSmartOrganizerOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -943,49 +945,8 @@ export function App() {
   };
 
   // Auto Cluster Tabs with Gemini Smart Tab Organizer
-  const handleAutoClusterTabs = async () => {
-    if (tabs.length <= 1) return;
-    setIsClustering(true);
-    try {
-      const tabsPayload = tabs.map((t) => ({
-        id: t.id,
-        title: t.title,
-        url: t.url,
-        extractedSnippet: (t.extractedText || t.metaDescription || '').slice(0, 300),
-      }));
-
-      const res = await organizeTabsSmartly(tabsPayload);
-      if (res && res.groups && res.groups.length > 0) {
-        // Map group names and colors back to tabs
-        const tabToGroupMap = new Map<string, { name: string; color: string }>();
-        res.groups.forEach((g: any) => {
-          g.tabIds.forEach((id: string) => {
-            tabToGroupMap.set(id, { name: g.groupName, color: g.color || '#3b82f6' });
-          });
-        });
-
-        setTabs((prev) => {
-          const updated = prev.map((t) => {
-            const group = tabToGroupMap.get(t.id);
-            if (group) {
-              return { ...t, groupName: group.name, groupColor: group.color };
-            }
-            return t;
-          });
-
-          // Sort tabs so grouped tabs sit contiguously
-          return [...updated].sort((a, b) => {
-            const groupA = a.groupName || '';
-            const groupB = b.groupName || '';
-            return groupA.localeCompare(groupB);
-          });
-        });
-      }
-    } catch (err) {
-      console.error('Error clustering tabs:', err);
-    } finally {
-      setIsClustering(false);
-    }
+  const handleAutoClusterTabs = () => {
+    setIsSmartOrganizerOpen(true);
   };
 
   // Keyboard Shortcuts Listener
@@ -1145,7 +1106,12 @@ export function App() {
         )}
 
         {targetTab.contentType === 'comparison' && (
-          <ProductComparisonView onSaveAsNote={handleSaveAsNote} />
+          <ProductComparisonView
+            tabs={tabs}
+            onSaveAsNote={handleSaveAsNote}
+            onOpenInSplit={handleOpenInSplit}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
         )}
 
         {targetTab.contentType === 'history' && (
@@ -1722,6 +1688,50 @@ export function App() {
         activeTab={activeTab}
         onSaveAsNote={handleSaveAsNote}
         onOpenNotes={() => navigateTab(activeTabId, 'aksh://notes')}
+      />
+
+      {/* AI Smart Workspace & Tab Declutter Studio Modal */}
+      <SmartTabOrganizerModal
+        isOpen={isSmartOrganizerOpen}
+        onClose={() => setIsSmartOrganizerOpen(false)}
+        tabs={tabs}
+        onApplyGroups={(assignments) => {
+          setTabs((prev) => {
+            const updated = prev.map((t) => {
+              const group = assignments.get(t.id);
+              if (group) {
+                return { ...t, groupName: group.name, groupColor: group.color };
+              }
+              return t;
+            });
+            return [...updated].sort((a, b) => {
+              const groupA = a.groupName || '';
+              const groupB = b.groupName || '';
+              return groupA.localeCompare(groupB);
+            });
+          });
+        }}
+        onCloseTabs={(tabIds) => {
+          tabIds.forEach((id) => handleCloseTab(id));
+        }}
+        onSaveAsSession={(title, tabsToSave) => {
+          const newSession = {
+            id: String(Date.now()),
+            name: title,
+            tabs: tabsToSave.map((t) => ({
+              id: t.id,
+              title: t.title,
+              url: t.url,
+              favicon: t.favicon,
+            })),
+            timestamp: 'Just now',
+          };
+          try {
+            const saved = localStorage.getItem('aksh_saved_sessions');
+            const parsed = saved ? JSON.parse(saved) : [];
+            localStorage.setItem('aksh_saved_sessions', JSON.stringify([newSession, ...parsed]));
+          } catch {}
+        }}
       />
 
       {/* Floating Focus Ambient Soundscapes Player */}

@@ -302,8 +302,12 @@ export async function generatePodcastScript(
 }
 
 export async function organizeTabsSmartly(
-  tabs: Array<{ id: string; title: string; url: string; contentType?: string }>
-): Promise<{ groups: Array<{ name: string; color: string; tabIds: string[] }> }> {
+  tabs: Array<{ id: string; title: string; url: string; contentType?: string; extractedSnippet?: string }>
+): Promise<{
+  summary?: string;
+  groups: Array<{ name: string; color: string; tabIds: string[]; reason?: string }>;
+  duplicates?: Array<{ tabId: string; duplicateOfId: string; reason?: string }>;
+}> {
   const res = await fetch('/api/ai/smart-tab-organizer', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

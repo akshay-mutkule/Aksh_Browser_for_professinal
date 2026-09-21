@@ -1182,23 +1182,35 @@ app.post("/api/ai/smart-tab-organizer", async (req: Request, res: Response) => {
       title: t.title,
       url: t.url,
       type: t.contentType,
+      snippet: (t.extractedSnippet || t.extractedText || "").slice(0, 200),
     }));
 
-    const prompt = `You are the Aksh AI Smart Workspace Tab Clustering Engine.
-Analyze this list of browser tabs and cluster them into 2 to 4 intuitive, semantic Workspace Groups (e.g., "AI & Machine Learning", "Engineering & DevTools", "News & Reading", "Shopping & Decisions", "Knowledge Base"):
+    const prompt = `You are the Aksh AI Smart Workspace Tab Clustering & Declutter Engine.
+Analyze this list of browser tabs and perform three tasks:
+1. Executive Workspace Summary: In 1-2 concise sentences, describe what high-level workflows or topics the user is currently engaged in.
+2. Semantic Clusters: Cluster the tabs into 2 to 5 logical Workspace Groups (e.g., "AI & Machine Learning", "Engineering & DevTools", "Documentation & Specs", "Shopping & Decisions", "Research & Reading").
+3. Duplicate / Redundant Tabs: Identify any exact duplicates or highly redundant tabs (e.g., same destination or same subject matter).
 
 Tabs:
 ${JSON.stringify(tabList, null, 2)}
 
-Return a JSON array of groups where each group has:
-- "name": Group title (concise, 2-4 words)
-- "color": One of ["indigo", "blue", "emerald", "amber", "rose", "purple", "cyan"]
-- "tabIds": Array of matching tab id strings
-
-Respond ONLY with valid JSON:
+Return valid JSON with this exact structure:
 {
+  "summary": "1-2 sentence executive overview of the current workspace",
   "groups": [
-    { "name": "...", "color": "...", "tabIds": ["..."] }
+    {
+      "name": "Concise Group Name (2-4 words)",
+      "color": "One of [indigo, blue, emerald, amber, rose, purple, cyan]",
+      "reason": "Brief explanation of this cluster",
+      "tabIds": ["tab id strings"]
+    }
+  ],
+  "duplicates": [
+    {
+      "tabId": "id of redundant tab",
+      "duplicateOfId": "id of tab it duplicates or competes with",
+      "reason": "Why this tab is redundant"
+    }
   ]
 }`;
 
@@ -1213,16 +1225,23 @@ Respond ONLY with valid JSON:
 
     try {
       const parsed = JSON.parse(response.text || "{}");
-      res.json(parsed);
+      res.json({
+        summary: parsed.summary || "Workspace clustered by domain & topical relevance.",
+        groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+        duplicates: Array.isArray(parsed.duplicates) ? parsed.duplicates : [],
+      });
     } catch {
       res.json({
+        summary: "Workspace clustered by topical relevance.",
         groups: [
           {
             name: "Workspace Alpha",
             color: "blue",
+            reason: "General active tabs",
             tabIds: tabs.map((t: any) => t.id),
           },
         ],
+        duplicates: [],
       });
     }
   } catch (err: unknown) {
