@@ -38,6 +38,8 @@ import { ClearBrowsingDataModal } from './components/Modals/ClearBrowsingDataMod
 import { ResponsiveDeviceModal } from './components/Modals/ResponsiveDeviceModal';
 import { WebClipperModal } from './components/Modals/WebClipperModal';
 import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerModal';
+import { PageQuizModal } from './components/Modals/PageQuizModal';
+import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -86,6 +88,8 @@ export function App() {
   const [isResponsiveModalOpen, setIsResponsiveModalOpen] = useState<boolean>(false);
   const [isClipperOpen, setIsClipperOpen] = useState<boolean>(false);
   const [isSmartOrganizerOpen, setIsSmartOrganizerOpen] = useState<boolean>(false);
+  const [isGlobalQuizOpen, setIsGlobalQuizOpen] = useState<boolean>(false);
+  const [isGlobalCredibilityOpen, setIsGlobalCredibilityOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -1601,6 +1605,8 @@ export function App() {
         onOpenSessionStash={() => setIsSessionStashOpen(true)}
         onToggleAmbientSound={handleToggleAmbientSound}
         onOpenWebClipper={() => setIsClipperOpen(true)}
+        onOpenQuiz={() => setIsGlobalQuizOpen(true)}
+        onOpenCredibility={() => setIsGlobalCredibilityOpen(true)}
         onSaveAsNote={handleSaveAsNote}
       />
 
@@ -1732,6 +1738,26 @@ export function App() {
             localStorage.setItem('aksh_saved_sessions', JSON.stringify([newSession, ...parsed]));
           } catch {}
         }}
+      />
+
+      {/* Global AI Active Recall Comprehension Quiz Modal */}
+      <PageQuizModal
+        isOpen={isGlobalQuizOpen}
+        onClose={() => setIsGlobalQuizOpen(false)}
+        pageTitle={activeTab?.title || 'Current Webpage'}
+        pageUrl={activeTab?.url || 'https://example.com'}
+        pageContent={activeTab?.extractedText || activeTab?.metaDescription || ''}
+        onSaveAsNote={handleSaveAsNote}
+      />
+
+      {/* Global AI Page Credibility & Bias Radar Modal */}
+      <PageCredibilityModal
+        isOpen={isGlobalCredibilityOpen}
+        onClose={() => setIsGlobalCredibilityOpen(false)}
+        pageTitle={activeTab?.title || 'Current Webpage'}
+        pageUrl={activeTab?.url || 'https://example.com'}
+        pageContent={activeTab?.extractedText || activeTab?.metaDescription || ''}
+        onSaveAsNote={handleSaveAsNote}
       />
 
       {/* Floating Focus Ambient Soundscapes Player */}

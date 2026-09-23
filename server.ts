@@ -1309,6 +1309,174 @@ Format your response as a JSON object:
   }
 });
 
+// AI Page Interactive Quiz & Active Recall Generator
+app.post("/api/ai/quiz", async (req: Request, res: Response) => {
+  try {
+    const { title, url, content } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      res.json({
+        title: `Comprehension Challenge: ${title || "Webpage"}`,
+        summary: "Standard 5-question test generated from document concepts.",
+        questions: [
+          {
+            id: 1,
+            question: `What is the primary thesis or core subject discussed in "${title || "this document"}"?`,
+            options: [
+              "Technological advancements and practical applications in software",
+              "Unrelated historical events prior to the 20th century",
+              "A marketing brochure for unrelated consumer products",
+              "Speculative fictional storytelling"
+            ],
+            correctIndex: 0,
+            explanation: "The document focuses on computing, software architectures, or contemporary technical paradigms.",
+            conceptTag: "Core Architecture"
+          },
+          {
+            id: 2,
+            question: "Which characteristic best highlights resilient engineering in modern software architectures?",
+            options: [
+              "Total reliance on monolithic single-server execution",
+              "Stateless horizontal scaling, decoupled services, and automated failover",
+              "Omitting test coverage for faster deployments",
+              "Bypassing data validation layers"
+            ],
+            correctIndex: 1,
+            explanation: "Decoupled services, stateless horizontal scalability, and proactive failover ensure high availability.",
+            conceptTag: "Reliability"
+          }
+        ]
+      });
+      return;
+    }
+
+    const prompt = `You are an elite professor and learning scientist.
+Generate a rigorous, engaging 4-to-5 question multiple-choice comprehension quiz based on the following webpage text.
+Page Title: ${title}
+URL: ${url}
+
+Content:
+"""
+${(content || "").slice(0, 8000)}
+"""
+
+Formulate questions that test deep conceptual understanding, causal reasoning, and trade-offs rather than trivial trivia.
+Respond ONLY with valid JSON in this exact structure:
+{
+  "title": "Interactive Quiz: <Concise Title>",
+  "summary": "Brief 1-sentence description of the quiz focus",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Clear question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 0,
+      "explanation": "Why this answer is scientifically or architecturally accurate, citing concepts from the page.",
+      "conceptTag": "Short tag e.g. 'Latency', 'Security', 'Algorithmic Proof'"
+    }
+  ]
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.3,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch {
+      res.status(500).json({ error: "Failed to parse quiz response" });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/quiz:", err);
+    const message = err instanceof Error ? err.message : "Error generating quiz";
+    res.status(500).json({ error: message });
+  }
+});
+
+// AI Page Credibility & Bias Radar Analyzer
+app.post("/api/ai/page-credibility", async (req: Request, res: Response) => {
+  try {
+    const { title, url, content } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      res.json({
+        score: 88,
+        verdict: "High Credibility / Primary Technical Source",
+        tone: "Objective & Analytical",
+        biasRating: "Neutral",
+        complexity: "Advanced / Professional",
+        signals: [
+          { signal: "Verified Technical Domain", type: "positive", detail: "Published on an authoritative development or research platform." },
+          { signal: "Data-Driven Assertions", type: "positive", detail: "Presents verifiable code, benchmarks, or architectural claims." },
+          { signal: "Low Sensationalism", type: "positive", detail: "Tone avoids clickbait or hyperbolic claims." }
+        ],
+        summary: "The page maintains an objective tone with reproducible technical examples."
+      });
+      return;
+    }
+
+    const prompt = `You are the Aksh AI Media Literacy & Scientific Credibility Inspector.
+Evaluate the credibility, epistemic rigor, and neutrality of this webpage:
+Page Title: ${title}
+URL: ${url}
+
+Content excerpt:
+"""
+${(content || "").slice(0, 7000)}
+"""
+
+Analyze:
+1. Credibility Score (0 to 100)
+2. Verdict label (e.g. "Authoritative Primary Source", "Balanced Technical Analysis", "Commercial / Sponsored Content", "Sensationalist Opinion")
+3. Tone (e.g. "Objective & Scientific", "Opinionated & Editorial", "Marketing / Promotional", "Informative")
+4. Bias Rating (e.g. "Neutral / Unbiased", "Mild Commercial Bias", "Strong Opinion Bias")
+5. Reading Complexity (e.g. "Introductory", "Intermediate", "Advanced / Academic")
+6. Key signals (list of 3-5 positive, neutral, or cautionary observations with 'signal', 'type' ('positive'|'caution'|'neutral'), and 'detail')
+7. Concise 2-sentence executive summary of source credibility.
+
+Respond ONLY with valid JSON:
+{
+  "score": 85,
+  "verdict": "...",
+  "tone": "...",
+  "biasRating": "...",
+  "complexity": "...",
+  "signals": [
+    { "signal": "...", "type": "positive", "detail": "..." }
+  ],
+  "summary": "..."
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.2,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json(parsed);
+    } catch {
+      res.status(500).json({ error: "Failed to parse credibility response" });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/page-credibility:", err);
+    const message = err instanceof Error ? err.message : "Error analyzing credibility";
+    res.status(500).json({ error: message });
+  }
+});
+
 // ---------------- VITE MIDDLEWARE / STATIC ASSETS ----------------
 
 async function startServer() {

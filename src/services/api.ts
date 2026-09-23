@@ -337,3 +337,69 @@ export async function clipWebpageToNote(
   return await res.json();
 }
 
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  conceptTag?: string;
+}
+
+export interface PageQuizResult {
+  title: string;
+  summary: string;
+  questions: QuizQuestion[];
+}
+
+export async function generatePageQuiz(
+  title: string,
+  url: string,
+  content: string
+): Promise<PageQuizResult> {
+  const res = await fetch('/api/ai/quiz', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, url, content }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to generate quiz`);
+  }
+  return await res.json();
+}
+
+export interface CredibilitySignal {
+  signal: string;
+  type: 'positive' | 'caution' | 'neutral';
+  detail: string;
+}
+
+export interface PageCredibilityResult {
+  score: number;
+  verdict: string;
+  tone: string;
+  biasRating: string;
+  complexity: string;
+  signals: CredibilitySignal[];
+  summary: string;
+}
+
+export async function analyzePageCredibility(
+  title: string,
+  url: string,
+  content: string
+): Promise<PageCredibilityResult> {
+  const res = await fetch('/api/ai/page-credibility', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, url, content }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to analyze credibility`);
+  }
+  return await res.json();
+}
+
+

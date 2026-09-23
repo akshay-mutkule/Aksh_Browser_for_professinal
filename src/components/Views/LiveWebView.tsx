@@ -28,13 +28,17 @@ import {
   Loader2,
   X,
   Scissors,
-  Zap
+  Zap,
+  GraduationCap,
+  ShieldAlert
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
 import { SAMPLE_WEBSITES } from '../../data/mockWebsites';
 import { translateText, factCheckClaim } from '../../services/api';
 import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
+import { PageQuizModal } from '../Modals/PageQuizModal';
+import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
 
 interface LiveWebViewProps {
   tab: Tab;
@@ -93,6 +97,10 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [isFactChecking, setIsFactChecking] = useState(false);
   const [factCheckResult, setFactCheckResult] = useState<string | null>(null);
   const [showFactCheckModal, setShowFactCheckModal] = useState(false);
+
+  // Active Recall Quiz & Credibility Radar modals
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showCredibilityModal, setShowCredibilityModal] = useState(false);
 
   // Reader Mode styling state
   const [readerTheme, setReaderTheme] = useState<'dark' | 'sepia' | 'light' | 'solarized'>('light');
@@ -447,6 +455,16 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Summarize</span>
               </button>
+
+              {/* Active Recall Quiz */}
+              <button
+                onClick={() => setShowQuizModal(true)}
+                className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs cursor-pointer"
+                title="Active Recall Quiz from this Article"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Quiz Me</span>
+              </button>
             </div>
           </div>
         </div>
@@ -587,6 +605,26 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             )}
             <span className="hidden sm:inline">Fact-Check</span>
+          </button>
+
+          {/* AI Active Recall Quiz Button */}
+          <button
+            onClick={() => setShowQuizModal(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 font-semibold transition-colors cursor-pointer text-xs shadow-2xs"
+            title="Generate conceptual active recall quiz from this page"
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">AI Quiz</span>
+          </button>
+
+          {/* Source Credibility & Bias Radar Button */}
+          <button
+            onClick={() => setShowCredibilityModal(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-800 font-semibold transition-colors cursor-pointer text-xs shadow-2xs"
+            title="Source Credibility & Epistemic Bias Radar"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden md:inline">Credibility</span>
           </button>
 
           {/* Audio Listen */}
@@ -1114,6 +1152,26 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
         onExportToAiNotes={handleExportAnnotationsToNotes}
         isOpen={showStickyNotes}
         onClose={() => setShowStickyNotes(false)}
+      />
+
+      {/* AI Page Active Recall Comprehension Quiz Modal */}
+      <PageQuizModal
+        isOpen={showQuizModal}
+        onClose={() => setShowQuizModal(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
+
+      {/* AI Page Credibility & Bias Radar Modal */}
+      <PageCredibilityModal
+        isOpen={showCredibilityModal}
+        onClose={() => setShowCredibilityModal(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || ''}
+        onSaveAsNote={onSaveAsNote}
       />
     </div>
   );

@@ -37,7 +37,9 @@ import {
   BookmarkPlus,
   Calculator,
   RefreshCw,
-  CornerDownLeft
+  CornerDownLeft,
+  GraduationCap,
+  ShieldAlert
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -65,6 +67,8 @@ interface CommandPaletteProps {
   onOpenSessionStash?: () => void;
   onToggleAmbientSound?: () => void;
   onOpenWebClipper?: () => void;
+  onOpenQuiz?: () => void;
+  onOpenCredibility?: () => void;
   onSaveAsNote?: (title: string, content: string) => void;
 }
 
@@ -91,6 +95,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenSessionStash,
   onToggleAmbientSound,
   onOpenWebClipper,
+  onOpenQuiz,
+  onOpenCredibility,
   onSaveAsNote,
 }) => {
   const [query, setQuery] = useState('');
@@ -267,6 +273,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           const topic = activeTab?.title || 'Web Research';
           onOpenNewTab(`aksh://mindmap?topic=${encodeURIComponent(topic)}`);
         }
+        onClose();
+      },
+    },
+    {
+      id: 'page-quiz',
+      title: 'Generate Active Recall Comprehension Quiz (!quiz)',
+      subtitle: 'Create interactive multiple-choice test based on active webpage',
+      category: 'AI Intelligence',
+      icon: GraduationCap,
+      iconColor: 'text-emerald-600',
+      action: () => {
+        if (onOpenQuiz) onOpenQuiz();
+        onClose();
+      },
+    },
+    {
+      id: 'page-credibility',
+      title: 'Audit Page Credibility & Media Bias (!credibility, !bias)',
+      subtitle: 'Analyze source reliability, editorial tone, and epistemic signals',
+      category: 'AI Intelligence',
+      icon: ShieldAlert,
+      iconColor: 'text-blue-600',
+      action: () => {
+        if (onOpenCredibility) onOpenCredibility();
         onClose();
       },
     },
