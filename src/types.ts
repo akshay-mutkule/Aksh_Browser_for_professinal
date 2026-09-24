@@ -144,19 +144,55 @@ export interface ResearchReport {
 }
 
 export interface BrowserSettings {
-  theme: 'dark' | 'light' | 'cyber';
-  searchEngine: 'google' | 'duckduckgo' | 'bing' | 'ai';
-  aiSummaryLength: 'short' | 'detailed' | 'beginner' | 'technical';
-  autoAttachWebContext: boolean;
+  // Appearance & Themes
+  theme: 'dark' | 'light' | 'cyber' | 'solarized' | 'nord' | 'oled';
+  tabLayout?: 'horizontal' | 'vertical';
   showBookmarksBar?: boolean;
   defaultNewTabPage?: 'speed_dial' | 'blank' | 'ai_research';
-  enableKeyboardShortcuts?: boolean;
-  voiceSpeed?: number;
-  preferredLanguage?: string;
-  adBlockerEnabled?: boolean;
-  memorySaverEnabled?: boolean;
-  tabLayout?: 'horizontal' | 'vertical';
+  compactMode?: boolean;
+  smoothScrolling?: boolean;
   zoomLevel?: number;
+  fontScale?: number; // 90, 100, 110, 125
+
+  // Search & Navigation
+  searchEngine: 'google' | 'duckduckgo' | 'bing' | 'ai' | 'kagi' | 'perplexity' | 'custom';
+  customSearchUrl?: string;
+  dnsProvider?: 'system' | 'cloudflare' | 'google' | 'quad9';
+  userAgentPreset?: 'default' | 'safari' | 'firefox' | 'mobile';
+
+  // AI Intelligence & Copilot
+  aiModel?: 'gemini-3.7-flash' | 'gemini-2.5-pro' | 'gemini-2.5-flash';
+  aiReasoningEffort?: 'fast' | 'balanced' | 'deep';
+  aiPersona?: 'default' | 'coder' | 'academic' | 'executive' | 'custom';
+  customAiPersonaPrompt?: string;
+  aiSummaryLength: 'short' | 'detailed' | 'beginner' | 'technical';
+  autoAttachWebContext: boolean;
+  aiAutoSummarizeLongPages?: boolean;
+  aiStreamResponses?: boolean;
+  aiTemperature?: number;
+
+  // Privacy & Shield Protection
+  adBlockerEnabled?: boolean;
+  shieldAggressiveness?: 'standard' | 'aggressive' | 'off';
+  fingerprintProtection?: boolean;
+  httpsOnlyMode?: boolean;
+  blockThirdPartyCookies?: boolean;
+  clearOnExit?: boolean;
+  webrtcProtection?: boolean;
+
+  // Performance & Power
+  memorySaverEnabled?: boolean;
+  tabSleepTimeoutMinutes?: number; // 15, 30, 60, 120, 0 (never)
+  hardwareAcceleration?: boolean;
+  dataSaverMode?: boolean;
+
+  // Audio, Voice & Accessibility
+  voiceSpeed?: number;
+  voicePitch?: number;
+  preferredLanguage?: string;
+  enableKeyboardShortcuts?: boolean;
+  vimKeybindings?: boolean;
+  dyslexicFont?: boolean;
 }
 
 export interface Workspace {

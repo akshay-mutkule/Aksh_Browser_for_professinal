@@ -653,6 +653,36 @@ export function App() {
     });
   };
 
+  const handleExportAllData = () => {
+    const backup = {
+      version: '2.0',
+      timestamp: new Date().toISOString(),
+      settings,
+      bookmarks,
+      notes,
+      history,
+      readingList,
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aksh-browser-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportAllData = (data: any) => {
+    if (!data) return;
+    if (data.settings) handleUpdateSettings(data.settings);
+    if (Array.isArray(data.bookmarks)) setBookmarks(data.bookmarks);
+    if (Array.isArray(data.notes)) setNotes(data.notes);
+    if (Array.isArray(data.history)) setHistory(data.history);
+    if (Array.isArray(data.readingList)) setReadingList(data.readingList);
+  };
+
   const handleChangeZoom = (delta: number) => {
     setZoomLevel((prev) => Math.min(200, Math.max(50, prev + delta)));
   };
@@ -1241,8 +1271,16 @@ export function App() {
         {targetTab.contentType === 'settings' && (
           <SettingsView
             settings={settings}
-            onUpdateSettings={(newSettings) => setSettings((s) => ({ ...s, ...newSettings }))}
+            onUpdateSettings={handleUpdateSettings}
             onClearAllLocalData={handleClearAllLocalData}
+            historyCount={history.length}
+            bookmarksCount={bookmarks.length}
+            notesCount={notes.length}
+            readingListCount={readingList.length}
+            tabsCount={tabs.length}
+            onExportAllData={handleExportAllData}
+            onImportAllData={handleImportAllData}
+            onClearHistory={() => setHistory([])}
           />
         )}
       </div>
@@ -1250,7 +1288,23 @@ export function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-white text-slate-900 overflow-hidden font-sans select-none antialiased">
+    <div
+      data-theme={settings.theme}
+      data-compact={settings.compactMode ? 'true' : 'false'}
+      className={`flex flex-col h-screen w-screen overflow-hidden select-none antialiased transition-colors ${
+        settings.theme === 'dark'
+          ? 'bg-slate-900 text-slate-100'
+          : settings.theme === 'oled'
+          ? 'bg-black text-slate-100'
+          : settings.theme === 'nord'
+          ? 'bg-slate-800 text-sky-100'
+          : settings.theme === 'solarized'
+          ? 'bg-amber-50/50 text-stone-900'
+          : settings.theme === 'cyber'
+          ? 'bg-indigo-950 text-indigo-100'
+          : 'bg-white text-slate-900'
+      } ${settings.dyslexicFont ? 'tracking-wider' : 'font-sans'}`}
+    >
       {/* 1. TitleBar & Tab Strip */}
       <TitleBar
         tabs={tabs}

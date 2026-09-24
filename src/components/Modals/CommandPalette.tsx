@@ -486,11 +486,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
     {
       id: 'view-settings',
-      title: 'Open Browser Settings',
-      subtitle: 'Customize AI preferences, themes & search engines',
+      title: 'Open Advanced Browser & AI Settings (!settings, !pref)',
+      subtitle: 'Themes, Gemini 3.7 models, privacy shields, memory saver & backups',
       category: 'System',
       icon: Settings,
-      iconColor: 'text-slate-600',
+      iconColor: 'text-indigo-600',
       action: () => {
         onOpenNewTab('aksh://settings');
         onClose();
