@@ -21,7 +21,10 @@ import {
   ChevronRight,
   Shield,
   Zap,
-  FolderOpen
+  FolderOpen,
+  Flag,
+  Cpu,
+  Moon
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -88,6 +91,8 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
     if (tab.contentType === 'notes') return <StickyNote className="w-4 h-4 text-amber-500 shrink-0" />;
     if (tab.contentType === 'devtools') return <Bot className="w-4 h-4 text-purple-500 shrink-0" />;
     if (tab.contentType === 'readme') return <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />;
+    if (tab.contentType === 'flags') return <Flag className="w-4 h-4 text-purple-500 shrink-0" />;
+    if (tab.contentType === 'tasks') return <Cpu className="w-4 h-4 text-indigo-500 shrink-0" />;
     if (tab.favicon) {
       return (
         <img
@@ -313,14 +318,18 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
                   getTabIcon(tab)
                 )}
                 <div className="truncate min-w-0">
-                  <div className="truncate font-semibold text-slate-800 text-[11px] leading-tight">
+                  <div className={`truncate font-semibold text-slate-800 text-[11px] leading-tight ${tab.isSleeping ? 'opacity-60 italic' : ''}`}>
                     {tab.title || 'New Tab'}
                   </div>
-                  {tab.groupName && (
+                  {tab.isSleeping ? (
+                    <div className="text-[9px] text-indigo-500 font-medium flex items-center gap-0.5">
+                      <Moon className="w-2.5 h-2.5" /> Sleeping
+                    </div>
+                  ) : tab.groupName ? (
                     <div className="text-[9px] text-blue-600 font-medium truncate">
                       {tab.groupName}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 

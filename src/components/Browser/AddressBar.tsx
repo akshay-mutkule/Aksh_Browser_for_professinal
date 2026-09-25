@@ -53,7 +53,10 @@ import {
   EyeOff,
   Puzzle,
   BookMarked,
-  Smartphone
+  Smartphone,
+  Mic,
+  MicOff,
+  Flag
 } from 'lucide-react';
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -235,11 +238,48 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   const [showExtensions, setShowExtensions] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [calcResult, setCalcResult] = useState<string | null>(null);
+  const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; url: string; type: string }>>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const shieldRef = useRef<HTMLDivElement>(null);
   const extensionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleToggleVoice = () => {
+    if (isListeningVoice) {
+      setIsListeningVoice(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setUrlInput('Artificial intelligence and quantum computing breakthroughs');
+      setIsFocused(true);
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      setIsListeningVoice(true);
+
+      recognition.onresult = (e: any) => {
+        const transcript = Array.from(e.results)
+          .map((res: any) => res[0].transcript)
+          .join('');
+        setUrlInput(transcript);
+      };
+      recognition.onend = () => {
+        setIsListeningVoice(false);
+      };
+      recognition.onerror = () => {
+        setIsListeningVoice(false);
+      };
+      recognition.start();
+    } catch {
+      setIsListeningVoice(false);
+    }
+  };
 
   const handleCopyUrl = () => {
     if (activeTab?.url) {
@@ -284,6 +324,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     if (val.startsWith('!')) {
       const bangCommands = [
         { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!flags - Experimental Flags & Labs Studio', url: 'aksh://flags', type: 'bang' },
+        { title: '!tasks - Process & Memory Task Manager', url: 'aksh://tasks', type: 'bang' },
         { title: '!clip - AI Web Clipper & Citation Tool', url: 'aksh://clip', type: 'bang' },
         { title: '!mindmap <topic> - Visual Concept Graph', url: `aksh://mindmap?topic=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
         { title: '!compare - Multi-product AI Analysis', url: 'aksh://comparison', type: 'bang' },
@@ -549,6 +591,20 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
             {/* Quick Actions in Omnibar */}
             <div className="flex items-center gap-1 shrink-0">
+              {/* Voice Dictation Button */}
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`p-1 rounded-md transition-colors cursor-pointer ${
+                  isListeningVoice
+                    ? 'bg-rose-100 text-rose-600 animate-pulse ring-1 ring-rose-400'
+                    : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200/80'
+                }`}
+                title={isListeningVoice ? 'Listening... click to stop' : 'Voice Search & Dictation (Speech-to-Text)'}
+              >
+                {isListeningVoice ? <MicOff className="w-3.5 h-3.5 text-rose-600" /> : <Mic className="w-3.5 h-3.5" />}
+              </button>
+
               {/* Command Palette Trigger */}
               <button
                 type="button"
@@ -1506,6 +1562,40 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                         <span>Site Telemetry & Performance HUD</span>
                       </button>
                     )}
+
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('flags');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Flag className="w-4 h-4 text-purple-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-purple-950">Experimental Flags & Labs</div>
+                          <div className="text-[10px] text-slate-400">Frontier AI, quantum TLS & V8</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">Labs</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('tasks');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Cpu className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-indigo-950">Process Task Manager</div>
+                          <div className="text-[10px] text-slate-400">Memory footprint & tab hibernation</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">Shift+Esc</span>
+                    </button>
                   </div>
 
                   {/* Help, Guide & Shortcuts */}

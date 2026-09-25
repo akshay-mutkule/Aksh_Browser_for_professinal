@@ -19,6 +19,8 @@ import { DevToolsView } from './components/Views/DevToolsView';
 import { ReadmeView } from './components/Views/ReadmeView';
 import { ExtensionsView } from './components/Views/ExtensionsView';
 import { ReadingListView } from './components/Views/ReadingListView';
+import { FlagsView } from './components/Views/FlagsView';
+import { TaskManagerView } from './components/Views/TaskManagerView';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
@@ -41,9 +43,10 @@ import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerMod
 import { PageQuizModal } from './components/Modals/PageQuizModal';
 import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
-import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace } from './types';
+import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
 import { DEFAULT_EXTENSIONS, STORE_EXTENSIONS, INITIAL_READING_LIST, DEFAULT_WORKSPACES } from './data/extensionsAndSpaces';
+import { DEFAULT_BROWSER_FLAGS } from './data/experimentalFlags';
 import { scrapeWebpage, organizeTabsSmartly } from './services/api';
 
 export function App() {
@@ -85,6 +88,62 @@ export function App() {
   const [extensions, setExtensions] = useState<BrowserExtension[]>(DEFAULT_EXTENSIONS);
   const [storeExtensions, setStoreExtensions] = useState<BrowserExtension[]>(STORE_EXTENSIONS);
   const [readingList, setReadingList] = useState<ReadingListItem[]>(INITIAL_READING_LIST);
+  const [flags, setFlags] = useState<BrowserFlag[]>(() => {
+    try {
+      const saved = localStorage.getItem('aksh_experimental_flags');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return DEFAULT_BROWSER_FLAGS.map((df) => ({
+          ...df,
+          enabled: parsed[df.id] !== undefined ? parsed[df.id] : df.enabled,
+        }));
+      }
+    } catch {}
+    return DEFAULT_BROWSER_FLAGS;
+  });
+
+  const handleToggleFlag = (flagId: string) => {
+    setFlags((prev) => {
+      const updated = prev.map((f) => (f.id === flagId ? { ...f, enabled: !f.enabled } : f));
+      try {
+        const flagMap = updated.reduce((acc, f) => ({ ...acc, [f.id]: f.enabled }), {});
+        localStorage.setItem('aksh_experimental_flags', JSON.stringify(flagMap));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleResetAllFlags = () => {
+    setFlags(DEFAULT_BROWSER_FLAGS);
+    try {
+      localStorage.removeItem('aksh_experimental_flags');
+    } catch {}
+  };
+
+  const handleHibernateTab = (tabId: string) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === tabId ? { ...t, isSleeping: true } : t))
+    );
+  };
+
+  const handleWakeTab = (tabId: string) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === tabId ? { ...t, isSleeping: false } : t))
+    );
+  };
+
+  const handleHibernateAllInactive = () => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id !== activeTabId ? { ...t, isSleeping: true } : t))
+    );
+  };
+
+  const handleSelectTabWithWake = (id: string) => {
+    setActiveTabId(id);
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id && t.isSleeping ? { ...t, isSleeping: false } : t))
+    );
+  };
   const [isResponsiveModalOpen, setIsResponsiveModalOpen] = useState<boolean>(false);
   const [isClipperOpen, setIsClipperOpen] = useState<boolean>(false);
   const [isSmartOrganizerOpen, setIsSmartOrganizerOpen] = useState<boolean>(false);
@@ -374,6 +433,12 @@ export function App() {
       } else if (normalizedUrl === 'aksh://readme' || normalizedUrl === 'aksh://docs') {
         resolvedType = 'readme';
         title = 'System Documentation & README';
+      } else if (normalizedUrl === 'aksh://flags' || normalizedUrl === 'aksh://experiments') {
+        resolvedType = 'flags';
+        title = 'Experiments & Frontier Flags';
+      } else if (normalizedUrl === 'aksh://tasks' || normalizedUrl === 'aksh://taskmanager') {
+        resolvedType = 'tasks';
+        title = 'Process Task Manager';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1036,6 +1101,21 @@ export function App() {
         e.preventDefault();
         navigateTab(activeTabId, 'aksh://devtools');
       }
+      // Process Task Manager: Shift+Escape
+      if (e.shiftKey && e.key === 'Escape') {
+        e.preventDefault();
+        const existingTaskTab = tabs.find((t) => t.contentType === 'tasks');
+        if (existingTaskTab) {
+          handleSelectTabWithWake(existingTaskTab.id);
+        } else {
+          handleNewTab('aksh://tasks');
+        }
+      }
+      // Experimental Flags: Ctrl+Shift+F
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        navigateTab(activeTabId, 'aksh://flags');
+      }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         setIsShortcutsOpen(true);
@@ -1283,6 +1363,26 @@ export function App() {
             onClearHistory={() => setHistory([])}
           />
         )}
+
+        {targetTab.contentType === 'flags' && (
+          <FlagsView
+            flags={flags}
+            onToggleFlag={handleToggleFlag}
+            onResetAllFlags={handleResetAllFlags}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'tasks' && (
+          <TaskManagerView
+            tabs={tabs}
+            onCloseTab={handleCloseTab}
+            onHibernateTab={handleHibernateTab}
+            onWakeTab={handleWakeTab}
+            onHibernateAllInactive={handleHibernateAllInactive}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1309,7 +1409,7 @@ export function App() {
       <TitleBar
         tabs={tabs}
         activeTabId={activeTabId}
-        onSelectTab={setActiveTabId}
+        onSelectTab={handleSelectTabWithWake}
         onCloseTab={handleCloseTab}
         onNewTab={() => handleNewTab('aksh://newtab')}
         onPinTab={handlePinTab}
@@ -1426,7 +1526,7 @@ export function App() {
           <VerticalTabBar
             tabs={tabs}
             activeTabId={activeTabId}
-            onSelectTab={setActiveTabId}
+            onSelectTab={handleSelectTabWithWake}
             onCloseTab={handleCloseTab}
             onNewTab={() => handleNewTab('aksh://newtab')}
             onPinTab={handlePinTab}
@@ -1597,7 +1697,7 @@ export function App() {
         tabs={tabs}
         activeTabId={activeTabId}
         onSelectTab={(id) => {
-          setActiveTabId(id);
+          handleSelectTabWithWake(id);
           setIsMobileTabsOpen(false);
         }}
         onCloseTab={handleCloseTab}

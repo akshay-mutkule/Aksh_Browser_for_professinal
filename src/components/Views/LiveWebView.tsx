@@ -101,6 +101,23 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   // Active Recall Quiz & Credibility Radar modals
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCredibilityModal, setShowCredibilityModal] = useState(false);
+  const [isBionic, setIsBionic] = useState(tab.isBionicReading || false);
+
+  // Helper to transform text into bionic reading format (bold first half of each word)
+  const toBionicMarkdown = (markdown: string): string => {
+    return markdown
+      .split('\n')
+      .map((line) => {
+        if (line.startsWith('```') || line.startsWith('#') || line.startsWith('!') || line.startsWith('<') || line.includes('|')) {
+          return line;
+        }
+        return line.replace(/\b([a-zA-Z]{2,})\b/g, (match) => {
+          const mid = Math.ceil(match.length / 2);
+          return `**${match.slice(0, mid)}**${match.slice(mid)}`;
+        });
+      })
+      .join('\n');
+  };
 
   // Reader Mode styling state
   const [readerTheme, setReaderTheme] = useState<'dark' | 'sepia' | 'light' | 'solarized'>('light');
@@ -172,6 +189,9 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
 
   // Raw content determination
   const activeContent = translatedText || tab.extractedText || '';
+  const displayContent = useMemo(() => {
+    return isBionic ? toBionicMarkdown(activeContent) : activeContent;
+  }, [activeContent, isBionic]);
 
   // Calculate Reading Stats (words & estimated minutes)
   const readingStats = useMemo(() => {
@@ -436,6 +456,20 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 />
               </div>
 
+              {/* Bionic Reading Toggle */}
+              <button
+                onClick={() => setIsBionic(!isBionic)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  isBionic
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+                title="Toggle Bionic Reading (Accelerated eye fixation)"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Bionic</span>
+              </button>
+
               {/* Listen to Audio */}
               {onTriggerSpeech && (
                 <button
@@ -505,7 +539,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                     ),
                   }}
                 >
-                  {activeContent}
+                  {displayContent}
                 </ReactMarkdown>
               </div>
             ) : (
@@ -625,6 +659,20 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           >
             <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden md:inline">Credibility</span>
+          </button>
+
+          {/* Bionic Reading Toggle */}
+          <button
+            onClick={() => setIsBionic(!isBionic)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isBionic
+                ? 'bg-amber-500 border-amber-600 text-white shadow-xs'
+                : 'border-slate-200 hover:bg-slate-100 text-slate-700'
+            }`}
+            title="Toggle Bionic Reading (Accelerates eye fixation speed)"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Bionic</span>
           </button>
 
           {/* Audio Listen */}
@@ -965,7 +1013,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                       ),
                     }}
                   >
-                    {activeContent}
+                    {displayContent}
                   </ReactMarkdown>
                 </div>
               </div>
@@ -980,6 +1028,38 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 </p>
               </div>
             )}
+
+            {/* Neural Action Studio */}
+            <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/60 to-blue-50/80 border border-indigo-100 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-indigo-950">
+                <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Neural Action Studio:</span>
+                <span className="text-slate-500 font-normal">Instant recommended steps for this document</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={onTriggerAiSummary}
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Executive Brief</span>
+                </button>
+                <button
+                  onClick={() => setShowQuizModal(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Comprehension Quiz</span>
+                </button>
+                <button
+                  onClick={() => setShowCredibilityModal(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Check Bias & Rigor</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1054,6 +1134,20 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 <span className="text-[11px]">Reader</span>
               </button>
             )}
+
+            {/* Bionic Reading Toggle */}
+            <button
+              onClick={() => setIsBionic(!isBionic)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                isBionic
+                  ? 'bg-amber-500 text-white font-bold'
+                  : 'hover:bg-slate-100 text-slate-700'
+              }`}
+              title="Toggle Bionic Reading (Faster cognitive reading speed)"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Bionic</span>
+            </button>
 
             <button
               onClick={() => setShowTranslateMenu(!showTranslateMenu)}

@@ -39,7 +39,8 @@ import {
   RefreshCw,
   CornerDownLeft,
   GraduationCap,
-  ShieldAlert
+  ShieldAlert,
+  Flag
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -359,6 +360,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-purple-600',
       action: () => {
         onOpenNewTab('aksh://devtools');
+        onClose();
+      },
+    },
+    {
+      id: 'view-flags',
+      title: 'Open Experimental Browser Flags & Labs (aksh://flags)',
+      subtitle: 'Enable neural pre-fetching, post-quantum TLS 1.3, V8 tuning & UI labs',
+      category: 'Advanced & System',
+      icon: Flag,
+      iconColor: 'text-purple-600',
+      action: () => {
+        onOpenInternalView('flags');
+        onClose();
+      },
+    },
+    {
+      id: 'view-tasks',
+      title: 'Open Process & Memory Task Manager (aksh://tasks)',
+      subtitle: 'Monitor live RAM footprint, CPU load & hibernate background tabs (Shift+Esc)',
+      category: 'Advanced & System',
+      icon: Cpu,
+      iconColor: 'text-indigo-600',
+      action: () => {
+        onOpenInternalView('tasks');
         onClose();
       },
     },

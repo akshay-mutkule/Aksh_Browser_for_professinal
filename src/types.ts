@@ -13,7 +13,9 @@ export type PageContentType =
   | 'devtools'
   | 'extensions'
   | 'reading_list'
-  | 'readme';
+  | 'readme'
+  | 'flags'
+  | 'tasks';
 
 export interface Tab {
   id: string;
@@ -34,6 +36,9 @@ export interface Tab {
   metaDescription?: string;
   headings?: string[];
   isReaderMode?: boolean;
+  isBionicReading?: boolean;
+  memoryMb?: number;
+  containerId?: 'work' | 'personal' | 'research' | 'ghost' | 'default';
   groupName?: string;
   groupColor?: string;
   pdfData?: {
@@ -193,6 +198,33 @@ export interface BrowserSettings {
   enableKeyboardShortcuts?: boolean;
   vimKeybindings?: boolean;
   dyslexicFont?: boolean;
+  bionicReading?: boolean;
+
+  // Experimental Flags
+  experimentalFlags?: Record<string, boolean>;
+}
+
+export interface BrowserFlag {
+  id: string;
+  name: string;
+  description: string;
+  category: 'ai' | 'security' | 'performance' | 'developer' | 'ux';
+  status: 'experimental' | 'frontier' | 'beta' | 'stable';
+  enabled: boolean;
+  impact: 'High' | 'Medium' | 'Low';
+  requiresRestart?: boolean;
+}
+
+export interface ProcessTask {
+  pid: number;
+  name: string;
+  type: 'core' | 'ai' | 'tab' | 'extension' | 'devtools' | 'worker';
+  tabId?: string;
+  cpuPercent: number;
+  memoryMb: number;
+  networkKb: number;
+  status: 'running' | 'idle' | 'sleeping' | 'suspended';
+  uptimeSeconds: number;
 }
 
 export interface Workspace {

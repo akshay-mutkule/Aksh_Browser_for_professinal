@@ -15,7 +15,10 @@ import {
   StickyNote,
   Layers,
   Bot,
-  BookOpen
+  BookOpen,
+  Flag,
+  Cpu,
+  Moon
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -93,6 +96,8 @@ export const TabBar: React.FC<TabBarProps> = ({
     if (tab.contentType === 'notes') return <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
     if (tab.contentType === 'devtools') return <Bot className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
     if (tab.contentType === 'readme') return <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+    if (tab.contentType === 'flags') return <Flag className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+    if (tab.contentType === 'tasks') return <Cpu className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
     if (tab.favicon) {
       return (
         <img
@@ -166,8 +171,15 @@ export const TabBar: React.FC<TabBarProps> = ({
 
               {/* Tab Title (hidden if pinned) */}
               {!tab.pinned && (
-                <span className="truncate flex-1 text-left select-none font-semibold">
+                <span className={`truncate flex-1 text-left select-none font-semibold ${tab.isSleeping ? 'opacity-60 italic' : ''}`}>
                   {tab.title || 'New Tab'}
+                </span>
+              )}
+
+              {/* Sleeping Tab Indicator */}
+              {tab.isSleeping && (
+                <span className="text-[9px] px-1 rounded-xs bg-slate-200 dark:bg-slate-700 text-slate-500 font-mono shrink-0" title="Tab sleeping to save RAM">
+                  Zzz
                 </span>
               )}
 
