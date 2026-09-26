@@ -24,7 +24,9 @@ import {
   FolderOpen,
   Flag,
   Cpu,
-  Moon
+  Moon,
+  Code2,
+  ShieldCheck
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -93,6 +95,9 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
     if (tab.contentType === 'readme') return <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />;
     if (tab.contentType === 'flags') return <Flag className="w-4 h-4 text-purple-500 shrink-0" />;
     if (tab.contentType === 'tasks') return <Cpu className="w-4 h-4 text-indigo-500 shrink-0" />;
+    if (tab.contentType === 'scripts') return <Code2 className="w-4 h-4 text-purple-400 shrink-0" />;
+    if (tab.contentType === 'security') return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
+    if (tab.contentType === 'agent') return <Bot className="w-4 h-4 text-indigo-400 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

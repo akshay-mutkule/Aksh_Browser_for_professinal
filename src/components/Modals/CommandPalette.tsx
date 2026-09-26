@@ -40,7 +40,8 @@ import {
   CornerDownLeft,
   GraduationCap,
   ShieldAlert,
-  Flag
+  Flag,
+  ShieldCheck
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -384,6 +385,42 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-indigo-600',
       action: () => {
         onOpenInternalView('tasks');
+        onClose();
+      },
+    },
+    {
+      id: 'view-scripts',
+      title: 'Userscript & Style Injector Engine (aksh://scripts)',
+      subtitle: 'Manage, edit & inject live JS/CSS scripts and styles into pages',
+      category: 'Advanced & System',
+      icon: Code2,
+      iconColor: 'text-purple-600',
+      action: () => {
+        onOpenInternalView('scripts');
+        onClose();
+      },
+    },
+    {
+      id: 'view-security',
+      title: 'Quantum Security & Shield Inspector (aksh://security)',
+      subtitle: 'Kyber-768 post-quantum TLS ciphers, fingerprint shields & CSP audit',
+      category: 'Advanced & System',
+      icon: ShieldCheck,
+      iconColor: 'text-emerald-600',
+      action: () => {
+        onOpenInternalView('security');
+        onClose();
+      },
+    },
+    {
+      id: 'view-agent',
+      title: 'Autonomous Web Research Agent Studio (aksh://agent)',
+      subtitle: 'Deep multi-phase autonomous agent command center with reasoning scratchpad',
+      category: 'AI Assistant',
+      icon: Bot,
+      iconColor: 'text-indigo-600',
+      action: () => {
+        onOpenInternalView('agent');
         onClose();
       },
     },

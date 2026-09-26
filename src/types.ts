@@ -15,7 +15,10 @@ export type PageContentType =
   | 'reading_list'
   | 'readme'
   | 'flags'
-  | 'tasks';
+  | 'tasks'
+  | 'scripts'
+  | 'security'
+  | 'agent';
 
 export interface Tab {
   id: string;
@@ -293,4 +296,49 @@ export interface PageAnnotation {
   createdAt: string;
   anchorSnippet?: string;
 }
+
+export interface UserScript {
+  id: string;
+  name: string;
+  description: string;
+  matchPattern: string;
+  scriptType: 'javascript' | 'css';
+  code: string;
+  enabled: boolean;
+  author: string;
+  version: string;
+  category: 'styling' | 'privacy' | 'utility' | 'automation';
+  lastRun?: string;
+  runCount?: number;
+}
+
+export interface SecurityAuditReport {
+  targetUrl: string;
+  protocol: string;
+  tlsVersion: string;
+  cipherSuite: string;
+  postQuantumStatus: 'enabled' | 'draft' | 'legacy';
+  certificate: {
+    issuer: string;
+    subject: string;
+    validFrom: string;
+    validTo: string;
+    keyAlgorithm: string;
+    fingerprintSha256: string;
+  };
+  csp: {
+    status: 'enforced' | 'report-only' | 'none';
+    directivesCount: number;
+    upgradeInsecureRequests: boolean;
+  };
+  shieldStats: {
+    trackersBlocked: number;
+    fingerprintsDeflected: number;
+    cookiesIsolated: number;
+    cryptominersKilled: number;
+    webrtcLeaksShielded: boolean;
+  };
+  score: number; // 0 to 100
+}
+
 

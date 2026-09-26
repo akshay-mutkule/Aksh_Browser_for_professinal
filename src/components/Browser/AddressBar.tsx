@@ -56,7 +56,8 @@ import {
   Smartphone,
   Mic,
   MicOff,
-  Flag
+  Flag,
+  Keyboard
 } from 'lucide-react';
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -82,6 +83,8 @@ interface AddressBarProps {
   isSplitScreen: boolean;
   onTriggerSpeech: () => void;
   isSpeaking: boolean;
+  isVimMode?: boolean;
+  onToggleVimMode?: () => void;
   onOpenCrossTabSynthesis?: () => void;
   tabLayout?: 'horizontal' | 'vertical';
   onToggleTabLayout?: () => void;
@@ -196,6 +199,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   isSplitScreen,
   onTriggerSpeech,
   isSpeaking,
+  isVimMode = false,
+  onToggleVimMode,
   onOpenCrossTabSynthesis,
   tabLayout = 'horizontal',
   onToggleTabLayout,
@@ -324,6 +329,9 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     if (val.startsWith('!')) {
       const bangCommands = [
         { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
+        { title: '!agent - Autonomous Web Research Agent Studio', url: 'aksh://agent', type: 'bang' },
+        { title: '!scripts - Userscript & Style Injector Studio', url: 'aksh://scripts', type: 'bang' },
+        { title: '!security - Quantum Security & Kyber-768 Shield', url: 'aksh://security', type: 'bang' },
         { title: '!flags - Experimental Flags & Labs Studio', url: 'aksh://flags', type: 'bang' },
         { title: '!tasks - Process & Memory Task Manager', url: 'aksh://tasks', type: 'bang' },
         { title: '!clip - AI Web Clipper & Citation Tool', url: 'aksh://clip', type: 'bang' },
@@ -386,6 +394,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     // Bang shortcuts parsing
     if (target.startsWith('!ext') || target.startsWith('!extensions')) {
       onNavigate('aksh://extensions');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!script')) {
+      onNavigate('aksh://scripts');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!sec') || target.startsWith('!shield')) {
+      onNavigate('aksh://security');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!agent') || target.startsWith('!auto')) {
+      onNavigate('aksh://agent');
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!vim')) {
+      onToggleVimMode?.();
       setIsFocused(false);
       return;
     } else if (target.startsWith('!reading') || target.startsWith('!read')) {
@@ -896,6 +920,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         >
           <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
         </button>
+
+        {/* Vim Keyboard Omnipresence Mode */}
+        {onToggleVimMode && (
+          <button
+            onClick={onToggleVimMode}
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold font-mono transition-all cursor-pointer ${
+              isVimMode
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+            }`}
+            title="Vim Navigation Mode (Press 'f' for Link Hints, 'j/k' to scroll, 'x' close tab)"
+          >
+            <Keyboard className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">VIM</span>
+          </button>
+        )}
 
         {/* Interactive Feature Tour & Guide */}
         {onOpenTour && (
@@ -1595,6 +1635,57 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                         </div>
                       </div>
                       <span className="text-[10px] text-slate-400 font-mono">Shift+Esc</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('scripts');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Code2 className="w-4 h-4 text-purple-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-purple-950">Userscript & Style Engine</div>
+                          <div className="text-[10px] text-slate-400">Custom JS/CSS live injection studio</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">Studio</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('security');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-emerald-950">Quantum Security & Shield</div>
+                          <div className="text-[10px] text-slate-400">Kyber-768 TLS, cipher & entropy radar</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Kyber</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('agent');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-indigo-950">Autonomous Agent Center</div>
+                          <div className="text-[10px] text-slate-400">Deep autonomous web tasks & dossiers</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Agent</span>
                     </button>
                   </div>
 

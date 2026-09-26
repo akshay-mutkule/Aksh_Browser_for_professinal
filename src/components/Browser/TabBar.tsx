@@ -18,7 +18,9 @@ import {
   BookOpen,
   Flag,
   Cpu,
-  Moon
+  Moon,
+  Code2,
+  ShieldCheck
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -98,6 +100,9 @@ export const TabBar: React.FC<TabBarProps> = ({
     if (tab.contentType === 'readme') return <BookOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
     if (tab.contentType === 'flags') return <Flag className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
     if (tab.contentType === 'tasks') return <Cpu className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
+    if (tab.contentType === 'scripts') return <Code2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+    if (tab.contentType === 'security') return <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+    if (tab.contentType === 'agent') return <Bot className="w-3.5 h-3.5 text-indigo-400 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

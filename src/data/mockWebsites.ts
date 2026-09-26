@@ -428,7 +428,11 @@ Key quantum algorithms demonstrating computational speedup:
 
 export const SPEED_DIAL_SHORTCUTS = [
   { id: 'app-search', title: 'Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
+  { id: 'app-agent', title: 'AI Agent', url: 'aksh://agent', icon: 'Sparkles', color: 'bg-indigo-600' },
   { id: 'app-research', title: 'Deep Research', url: 'aksh://research', icon: 'Zap', color: 'bg-amber-600' },
+  { id: 'app-scripts', title: 'Userscripts', url: 'aksh://scripts', icon: 'Code', color: 'bg-purple-600' },
+  { id: 'app-security', title: 'Security', url: 'aksh://security', icon: 'Network', color: 'bg-emerald-600' },
+  { id: 'app-tasks', title: 'Task Manager', url: 'aksh://tasks', icon: 'Cpu', color: 'bg-slate-800' },
   { id: 'app-mindmap', title: 'Mindmap', url: 'aksh://mindmap', icon: 'Network', color: 'bg-indigo-600' },
   { id: 'app-pdf', title: 'PDF Reader', url: 'aksh://pdf', icon: 'FileText', color: 'bg-rose-600' },
   { id: 'app-compare', title: 'Comparison', url: 'aksh://comparison', icon: 'Scale', color: 'bg-pink-600' },
@@ -438,7 +442,6 @@ export const SPEED_DIAL_SHORTCUTS = [
   { id: 'app-downloads', title: 'Downloads', url: 'aksh://downloads', icon: 'Download', color: 'bg-teal-600' },
   { id: 'app-devtools', title: 'DevTools', url: 'aksh://devtools', icon: 'Code', color: 'bg-slate-800' },
   { id: 'app-settings', title: 'Settings', url: 'aksh://settings', icon: 'Settings', color: 'bg-slate-700' },
-  { id: 'site-python', title: 'Python Guide', url: 'https://learn.python.org/courses/2026-guide', icon: 'Laptop', color: 'bg-blue-700' },
 ];
 
 export const INITIAL_BOOKMARKS: any[] = [];

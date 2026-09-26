@@ -21,6 +21,10 @@ import { ExtensionsView } from './components/Views/ExtensionsView';
 import { ReadingListView } from './components/Views/ReadingListView';
 import { FlagsView } from './components/Views/FlagsView';
 import { TaskManagerView } from './components/Views/TaskManagerView';
+import { UserScriptsView } from './components/Views/UserScriptsView';
+import { SecurityView } from './components/Views/SecurityView';
+import { AgentStudioView } from './components/Views/AgentStudioView';
+import { VimNavigationHud } from './components/Browser/VimNavigationHud';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
 import { SelectionAiHud } from './components/Browser/SelectionAiHud';
@@ -43,10 +47,11 @@ import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerMod
 import { PageQuizModal } from './components/Modals/PageQuizModal';
 import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
-import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag } from './types';
+import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag, UserScript } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
 import { DEFAULT_EXTENSIONS, STORE_EXTENSIONS, INITIAL_READING_LIST, DEFAULT_WORKSPACES } from './data/extensionsAndSpaces';
 import { DEFAULT_BROWSER_FLAGS } from './data/experimentalFlags';
+import { DEFAULT_USER_SCRIPTS } from './data/defaultUserScripts';
 import { scrapeWebpage, organizeTabsSmartly } from './services/api';
 
 export function App() {
@@ -117,6 +122,86 @@ export function App() {
     setFlags(DEFAULT_BROWSER_FLAGS);
     try {
       localStorage.removeItem('aksh_experimental_flags');
+    } catch {}
+  };
+
+  // UserScripts & CSS Injection Studio State
+  const [userScripts, setUserScripts] = useState<UserScript[]>(() => {
+    try {
+      const saved = localStorage.getItem('aksh_user_scripts');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {}
+    return DEFAULT_USER_SCRIPTS;
+  });
+
+  const [isVimMode, setIsVimMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('aksh_vim_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleVimMode = () => {
+    setIsVimMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('aksh_vim_mode', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleToggleUserScript = (scriptId: string) => {
+    setUserScripts((prev) => {
+      const updated = prev.map((s) => (s.id === scriptId ? { ...s, enabled: !s.enabled } : s));
+      try {
+        localStorage.setItem('aksh_user_scripts', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleUpdateUserScript = (updatedScript: UserScript) => {
+    setUserScripts((prev) => {
+      const updated = prev.map((s) => (s.id === updatedScript.id ? updatedScript : s));
+      try {
+        localStorage.setItem('aksh_user_scripts', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleCreateUserScript = (newScriptData: Omit<UserScript, 'id'>) => {
+    const newScript: UserScript = {
+      ...newScriptData,
+      id: `script-${Date.now()}`,
+    };
+    setUserScripts((prev) => {
+      const updated = [newScript, ...prev];
+      try {
+        localStorage.setItem('aksh_user_scripts', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleDeleteUserScript = (scriptId: string) => {
+    setUserScripts((prev) => {
+      const updated = prev.filter((s) => s.id !== scriptId);
+      try {
+        localStorage.setItem('aksh_user_scripts', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleResetUserScripts = () => {
+    setUserScripts(DEFAULT_USER_SCRIPTS);
+    try {
+      localStorage.removeItem('aksh_user_scripts');
     } catch {}
   };
 
@@ -439,6 +524,15 @@ export function App() {
       } else if (normalizedUrl === 'aksh://tasks' || normalizedUrl === 'aksh://taskmanager') {
         resolvedType = 'tasks';
         title = 'Process Task Manager';
+      } else if (normalizedUrl === 'aksh://scripts' || normalizedUrl === 'aksh://userscripts') {
+        resolvedType = 'scripts';
+        title = 'Userscript & Style Engine';
+      } else if (normalizedUrl === 'aksh://security' || normalizedUrl === 'aksh://shield') {
+        resolvedType = 'security';
+        title = 'Quantum Security & Shield';
+      } else if (normalizedUrl === 'aksh://agent' || normalizedUrl === 'aksh://autonomous') {
+        resolvedType = 'agent';
+        title = 'Autonomous Agent Studio';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1383,6 +1477,43 @@ export function App() {
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'scripts' && (
+          <UserScriptsView
+            userScripts={userScripts}
+            onToggleScript={handleToggleUserScript}
+            onUpdateScript={handleUpdateUserScript}
+            onCreateScript={handleCreateUserScript}
+            onDeleteScript={handleDeleteUserScript}
+            onResetDefaults={handleResetUserScripts}
+            activeTab={activeTab}
+            onExecuteScriptInTab={(script) => {
+              if (script.scriptType === 'css') {
+                const existing = document.getElementById(`injected-${script.id}`);
+                if (existing) existing.remove();
+                const styleEl = document.createElement('style');
+                styleEl.id = `injected-${script.id}`;
+                styleEl.textContent = script.code;
+                document.head.appendChild(styleEl);
+              }
+            }}
+          />
+        )}
+
+        {targetTab.contentType === 'security' && (
+          <SecurityView
+            activeTab={activeTab}
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'agent' && (
+          <AgentStudioView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigate={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1455,6 +1586,8 @@ export function App() {
         isSplitScreen={splitScreen.enabled}
         onTriggerSpeech={handleTriggerSpeech}
         isSpeaking={audioNarration.isOpen}
+        isVimMode={isVimMode}
+        onToggleVimMode={handleToggleVimMode}
         onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
         tabLayout={tabLayout}
         onToggleTabLayout={() => {
@@ -1975,6 +2108,25 @@ export function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Vimium-Style Link Hints & Keyboard Omnipresence HUD */}
+      <VimNavigationHud
+        enabled={isVimMode}
+        onToggleEnabled={handleToggleVimMode}
+        onNavigate={(url) => navigateTab(activeTabId, url)}
+        onCloseTab={() => {
+          if (activeTab) handleCloseTab(activeTab.id);
+        }}
+        onNewTab={() => handleNewTab('aksh://newtab')}
+        onReloadTab={handleReload}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        onFocusAddressBar={() => {
+          const el = document.querySelector('input[type="text"]') as HTMLInputElement;
+          el?.focus();
+          el?.select();
+        }}
+      />
     </div>
   );
 }
