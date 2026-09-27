@@ -62,6 +62,7 @@ import {
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
 import { ExtensionsPopover } from './ExtensionsPopover';
+import { resolveSearchOrUrl } from '../../utils/searchRouter';
 
 interface AddressBarProps {
   activeTab: Tab | null;
@@ -355,6 +356,26 @@ export const AddressBar: React.FC<AddressBarProps> = ({
     }
 
     if (val.trim().length > 1) {
+      const resolution = resolveSearchOrUrl(val, { bookmarks, history });
+      const newSuggestions: Array<{ title: string; url: string; type: string }> = [];
+
+      if (resolution.isAvailableInWeb) {
+        newSuggestions.push({
+          title: `🟢 In this Web: ${resolution.title}`,
+          url: resolution.targetUrl,
+          type: 'in-web',
+        });
+      }
+
+      // Always offer direct Google search option if not an exact internal protocol
+      if (!val.startsWith('aksh://')) {
+        newSuggestions.push({
+          title: `🌐 Search on Google: "${val}"`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(val)}`,
+          type: 'search',
+        });
+      }
+
       const matchedBookmarks = (bookmarks || [])
         .filter((b) => b.title.toLowerCase().includes(val.toLowerCase()) || b.url.toLowerCase().includes(val.toLowerCase()))
         .slice(0, 2)
@@ -367,11 +388,10 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
       const searchActions = [
         { title: `Ask Gemini 3.7: "${val}"`, url: `aksh://research?q=${encodeURIComponent(val)}`, type: 'ai' },
-        { title: `Search Web for "${val}"`, url: `https://www.google.com/search?q=${encodeURIComponent(val)}`, type: 'search' },
         { title: `AI Mindmap: "${val}"`, url: `aksh://mindmap?topic=${encodeURIComponent(val)}`, type: 'mindmap' },
       ];
 
-      setSuggestions([...matchedBookmarks, ...matchedHistory, ...searchActions].slice(0, 6));
+      setSuggestions([...newSuggestions, ...matchedBookmarks, ...matchedHistory, ...searchActions].slice(0, 7));
     } else {
       setSuggestions([]);
     }
@@ -391,32 +411,15 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       return;
     }
 
-    // Bang shortcuts parsing
-    if (target.startsWith('!ext') || target.startsWith('!extensions')) {
-      onNavigate('aksh://extensions');
-      setIsFocused(false);
-      return;
-    } else if (target.startsWith('!script')) {
-      onNavigate('aksh://scripts');
-      setIsFocused(false);
-      return;
-    } else if (target.startsWith('!sec') || target.startsWith('!shield')) {
-      onNavigate('aksh://security');
-      setIsFocused(false);
-      return;
-    } else if (target.startsWith('!agent') || target.startsWith('!auto')) {
-      onNavigate('aksh://agent');
-      setIsFocused(false);
-      return;
-    } else if (target.startsWith('!vim')) {
+    // Toggle vim if user typed !vim
+    if (target.startsWith('!vim')) {
       onToggleVimMode?.();
       setIsFocused(false);
       return;
-    } else if (target.startsWith('!reading') || target.startsWith('!read')) {
-      onNavigate('aksh://reading_list');
-      setIsFocused(false);
-      return;
-    } else if (target.startsWith('!responsive') || target.startsWith('!device') || target.startsWith('!mobile')) {
+    }
+
+    // Bang shortcuts parsing for custom actions
+    if (target.startsWith('!responsive') || target.startsWith('!device') || target.startsWith('!mobile')) {
       onOpenResponsiveMode?.();
       setIsFocused(false);
       return;
@@ -436,33 +439,11 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       onToggleReaderMode();
       setIsFocused(false);
       return;
-    } else if (target.startsWith('!ai ') || target.startsWith('!gemini ')) {
-      const q = target.replace(/^!(ai|gemini)\s+/, '');
-      onNavigate(`aksh://research?q=${encodeURIComponent(q)}`);
-    } else if (target.startsWith('!mindmap ') || target.startsWith('!m ')) {
-      const q = target.replace(/^!(mindmap|m)\s+/, '');
-      onNavigate(`aksh://mindmap?topic=${encodeURIComponent(q)}`);
-    } else if (target.startsWith('!gh ')) {
-      const q = target.replace(/^!gh\s+/, '');
-      onNavigate(`https://github.com/search?q=${encodeURIComponent(q)}`);
-    } else if (target.startsWith('!wiki ')) {
-      const q = target.replace(/^!wiki\s+/, '');
-      onNavigate(`https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q)}`);
-    } else if (target.startsWith('!g ')) {
-      const q = target.replace(/^!g\s+/, '');
-      onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
-    } else if (target.startsWith('aksh://') || target.startsWith('nexus://')) {
-      onNavigate(target);
-    } else if (!target.includes('.') && !target.startsWith('http://') && !target.startsWith('https://')) {
-      // Search query
-      target = `https://www.google.com/search?q=${encodeURIComponent(target)}`;
-      onNavigate(target);
-    } else if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      target = 'https://' + target;
-      onNavigate(target);
-    } else {
-      onNavigate(target);
     }
+
+    // Resolve search or URL: if available in this web, navigates to it; if NOT available, directs to Google!
+    const resolution = resolveSearchOrUrl(target, { bookmarks, history });
+    onNavigate(resolution.targetUrl);
 
     setIsFocused(false);
     inputRef.current?.blur();

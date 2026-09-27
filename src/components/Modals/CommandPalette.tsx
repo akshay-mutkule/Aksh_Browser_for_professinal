@@ -646,6 +646,20 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         iconColor: 'text-blue-600',
         action: () => handleAskAi(trimmed),
       });
+
+      // Direct to Google Search option
+      dynamicCommands.push({
+        id: 'direct-to-google',
+        title: `Search on Google: "${trimmed}"`,
+        subtitle: 'Direct query to live Google Search index',
+        category: 'Web Search',
+        icon: Globe,
+        iconColor: 'text-blue-600',
+        action: () => {
+          onNavigateTab(activeTabId, `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`);
+          onClose();
+        },
+      });
     }
   }
 

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
+import { resolveSearchOrUrl } from '../../utils/searchRouter';
 
 interface BriefingItem {
   id: string;
@@ -237,63 +238,9 @@ export const NewTab: React.FC<NewTabProps> = ({
       return;
     }
 
-    const lower = q.toLowerCase();
-    if (lower === 'research' || lower === 'deep research') {
-      onNavigate('aksh://research');
-      return;
-    }
-    if (lower === 'mindmap' || lower === 'concept mindmap') {
-      onNavigate('aksh://mindmap');
-      return;
-    }
-    if (lower === 'pdf' || lower === 'pdf reader') {
-      onNavigate('aksh://pdf');
-      return;
-    }
-    if (lower === 'compare' || lower === 'comparison') {
-      onNavigate('aksh://comparison');
-      return;
-    }
-    if (lower === 'notes' || lower === 'ai notes') {
-      onNavigate('aksh://notes');
-      return;
-    }
-    if (lower === 'bookmarks') {
-      onNavigate('aksh://bookmarks');
-      return;
-    }
-    if (lower === 'history') {
-      onNavigate('aksh://history');
-      return;
-    }
-    if (lower === 'downloads') {
-      onNavigate('aksh://downloads');
-      return;
-    }
-    if (lower === 'settings') {
-      onNavigate('aksh://settings');
-      return;
-    }
-    if (lower === 'devtools' || lower === 'inspect') {
-      onNavigate('aksh://devtools');
-      return;
-    }
-    if (lower === 'home' || lower === 'new tab') {
-      onNavigate('aksh://newtab');
-      return;
-    }
-
-    if (
-      q.startsWith('http://') ||
-      q.startsWith('https://') ||
-      q.startsWith('aksh://') ||
-      q.startsWith('nexus://')
-    ) {
-      onNavigate(q);
-      return;
-    }
-
-    onNavigate(`https://www.google.com/search?q=${encodeURIComponent(q)}`);
+    // Resolve search: if available in this web, navigates to it; if NOT available, directs to Google!
+    const resolution = resolveSearchOrUrl(q, { bookmarks, history });
+    onNavigate(resolution.targetUrl);
   };
 
   const getShortcutIcon = (iconName: string) => {
@@ -418,6 +365,31 @@ export const NewTab: React.FC<NewTabProps> = ({
               </button>
             </div>
           </form>
+
+          {/* Live Search Routing Indicator (Available in web vs Direct to Google) */}
+          {searchInput.trim().length > 1 && (() => {
+            const res = resolveSearchOrUrl(searchInput, { bookmarks, history });
+            return (
+              <div className="mt-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs flex items-center justify-between shadow-2xs">
+                <div className="flex items-center gap-2">
+                  {res.isAvailableInWeb ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span className="font-semibold text-emerald-700">Available in this Web:</span>
+                      <span className="text-slate-700 font-medium truncate max-w-xs">{res.title}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <span className="font-semibold text-blue-700">Not in this Web:</span>
+                      <span className="text-slate-600 truncate max-w-xs">Directs to Google Search for &quot;{searchInput.trim()}&quot;</span>
+                    </>
+                  )}
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">Press Enter ↵</span>
+              </div>
+            );
+          })()}
         </motion.div>
 
         {/* AI Suggested Trending Research Chips */}

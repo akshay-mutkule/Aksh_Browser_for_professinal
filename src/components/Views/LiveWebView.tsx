@@ -39,6 +39,7 @@ import { translateText, factCheckClaim } from '../../services/api';
 import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
 import { PageQuizModal } from '../Modals/PageQuizModal';
 import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
+import { GoogleSearchPageView } from './GoogleSearchPageView';
 
 interface LiveWebViewProps {
   tab: Tab;
@@ -865,7 +866,18 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           </div>
         )}
 
-        {mockSite && !translatedText ? (
+        {/* If the URL is Google Search or Google Home, render dedicated Google Search Page */}
+        {(tab.url.includes('google.com/search') ||
+          tab.url.includes('google.com/?q=') ||
+          tab.url.replace(/\/+$/, '') === 'https://www.google.com' ||
+          tab.url.replace(/\/+$/, '') === 'http://www.google.com' ||
+          tab.url.replace(/\/+$/, '') === 'https://google.com') && !translatedText ? (
+          <GoogleSearchPageView
+            tab={tab}
+            onNavigate={onNavigate}
+            onSaveAsNote={onSaveAsNote}
+          />
+        ) : mockSite && !translatedText ? (
           /* High-Fidelity Rich Preloaded Website Layout */
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {/* Hero Section */}

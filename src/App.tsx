@@ -468,7 +468,12 @@ export function App() {
       const normalizedUrl = targetUrl.replace(/^nexus:\/\//, 'aksh://');
 
       // Handle internal scheme routes
-      if (normalizedUrl === 'aksh://newtab') {
+      if (normalizedUrl.includes('google.com/search') || normalizedUrl.includes('google.com/?q=')) {
+        resolvedType = 'web';
+        const match = normalizedUrl.match(/[?&]q=([^&]+)/i);
+        const q = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : 'Web Search';
+        title = `Google Search: ${q}`;
+      } else if (normalizedUrl === 'aksh://newtab') {
         resolvedType = 'newtab';
         title = 'New Tab';
       } else if (normalizedUrl.startsWith('aksh://research')) {
