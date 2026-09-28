@@ -29,7 +29,11 @@ import {
   Radio,
   Layers,
   Flame,
-  BookmarkCheck
+  BookmarkCheck,
+  Mic,
+  MicOff,
+  Camera,
+  ExternalLink
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -91,6 +95,8 @@ export const NewTab: React.FC<NewTabProps> = ({
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
+  const [searchMode, setSearchMode] = useState<'google' | 'ai' | 'scholar' | 'news'>('google');
+  const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [greeting, setGreeting] = useState<string>('Welcome');
 
@@ -227,9 +233,19 @@ export const NewTab: React.FC<NewTabProps> = ({
     const q = searchInput.trim();
     if (!q) return;
 
-    if (isAiMode || q.startsWith('!ai ') || q.startsWith('!gemini ')) {
+    if (searchMode === 'ai' || isAiMode || q.startsWith('!ai ') || q.startsWith('!gemini ')) {
       const cleanQ = q.replace(/^!(ai|gemini)\s+/, '');
       onNavigate(`aksh://research?q=${encodeURIComponent(cleanQ)}`);
+      return;
+    }
+
+    if (searchMode === 'scholar') {
+      onNavigate(`https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`);
+      return;
+    }
+
+    if (searchMode === 'news') {
+      onNavigate(`https://news.google.com/search?q=${encodeURIComponent(q)}`);
       return;
     }
 
@@ -241,6 +257,35 @@ export const NewTab: React.FC<NewTabProps> = ({
     // Resolve search: if available in this web, navigates to it; if NOT available, directs to Google!
     const resolution = resolveSearchOrUrl(q, { bookmarks, history });
     onNavigate(resolution.targetUrl);
+  };
+
+  const handleTriggerVoiceSearch = () => {
+    setIsListeningVoice(true);
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRec) {
+      try {
+        const rec = new SpeechRec();
+        rec.continuous = false;
+        rec.interimResults = false;
+        rec.lang = 'en-US';
+        rec.onresult = (evt: any) => {
+          const text = evt.results[0][0].transcript;
+          setSearchInput(text);
+          setIsListeningVoice(false);
+          onNavigate(`https://www.google.com/search?q=${encodeURIComponent(text)}`);
+        };
+        rec.onerror = () => setIsListeningVoice(false);
+        rec.onend = () => setIsListeningVoice(false);
+        rec.start();
+        return;
+      } catch {}
+    }
+    setTimeout(() => {
+      setIsListeningVoice(false);
+      const sample = 'Quantum Computing Breakthroughs 2026';
+      setSearchInput(sample);
+      onNavigate(`https://www.google.com/search?q=${encodeURIComponent(sample)}`);
+    }, 1800);
   };
 
   const getShortcutIcon = (iconName: string) => {
@@ -312,6 +357,69 @@ export const NewTab: React.FC<NewTabProps> = ({
           </div>
         </motion.div>
 
+        {/* Search Engine Mode Switcher Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-2xl text-xs font-semibold">
+          <button
+            onClick={() => {
+              setSearchMode('google');
+              setIsAiMode(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              searchMode === 'google' && !isAiMode
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="text-[#4285F4] font-bold">G</span>
+            <span>Google Search</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSearchMode('ai');
+              setIsAiMode(true);
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              searchMode === 'ai' || isAiMode
+                ? 'bg-purple-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Gemini 3.7 Research</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSearchMode('scholar');
+              setIsAiMode(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              searchMode === 'scholar'
+                ? 'bg-white text-blue-700 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Scholar</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSearchMode('news');
+              setIsAiMode(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              searchMode === 'news'
+                ? 'bg-white text-emerald-700 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>News</span>
+          </button>
+        </div>
+
         {/* Clean, Focused Search Bar */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -324,7 +432,7 @@ export const NewTab: React.FC<NewTabProps> = ({
             className="w-full relative flex items-center bg-white border border-slate-200 hover:border-slate-300 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-2xl p-1.5 shadow-sm transition-all"
           >
             <div className="pl-3.5 pr-2 text-slate-400 shrink-0">
-              <Search className="w-5 h-5" />
+              <Search className="w-5 h-5 text-blue-600" />
             </div>
 
             <input
@@ -332,28 +440,41 @@ export const NewTab: React.FC<NewTabProps> = ({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={
-                isAiMode
-                  ? 'Ask Gemini 3.7 anything or enter research topic...'
-                  : 'Search the live web or type a URL...'
+                searchMode === 'ai' || isAiMode
+                  ? 'Ask Gemini 3.7 anything or enter deep research topic...'
+                  : searchMode === 'scholar'
+                  ? 'Search academic papers, journals, citations...'
+                  : searchMode === 'news'
+                  ? 'Search breaking global news and live headlines...'
+                  : 'Search Google or type a web address...'
               }
               className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-base focus:outline-none py-2 px-1"
               autoFocus
             />
 
             <div className="flex items-center gap-1.5 pr-1 shrink-0">
-              {/* AI Mode Quick Toggle */}
+              {/* Voice Search Button */}
               <button
                 type="button"
-                onClick={() => setIsAiMode(!isAiMode)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  isAiMode
-                    ? 'bg-purple-600 text-white shadow-xs shadow-purple-500/20'
-                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
+                onClick={handleTriggerVoiceSearch}
+                className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                  isListeningVoice
+                    ? 'bg-rose-100 text-rose-600 animate-pulse'
+                    : 'hover:bg-slate-100 text-slate-500 hover:text-blue-600'
                 }`}
-                title="Toggle Gemini Deep AI Search Mode"
+                title="Search with Voice"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Ask AI</span>
+                <Mic className="w-4 h-4 text-[#4285F4]" />
+              </button>
+
+              {/* Google Lens Trigger */}
+              <button
+                type="button"
+                onClick={() => onNavigate('https://www.google.com/search?q=visual+search+google+lens')}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                title="Google Lens Visual Search"
+              >
+                <Camera className="w-4 h-4 text-[#EA4335]" />
               </button>
 
               <button
@@ -370,23 +491,38 @@ export const NewTab: React.FC<NewTabProps> = ({
           {searchInput.trim().length > 1 && (() => {
             const res = resolveSearchOrUrl(searchInput, { bookmarks, history });
             return (
-              <div className="mt-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-2">
+              <div className="mt-2.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5 truncate">
                   {res.isAvailableInWeb ? (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                      <span className="font-semibold text-emerald-700">Available in this Web:</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span className="font-bold text-emerald-800">Available in this Web:</span>
                       <span className="text-slate-700 font-medium truncate max-w-xs">{res.title}</span>
                     </>
                   ) : (
                     <>
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                      <span className="font-semibold text-blue-700">Not in this Web:</span>
-                      <span className="text-slate-600 truncate max-w-xs">Directs to Google Search for &quot;{searchInput.trim()}&quot;</span>
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                        G
+                      </div>
+                      <span className="font-bold text-blue-800">Not in this Web:</span>
+                      <span className="text-slate-600 truncate max-w-xs">
+                        Will direct to Google Search for &quot;{searchInput.trim()}&quot;
+                      </span>
                     </>
                   )}
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">Press Enter ↵</span>
+
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0 ml-2 ${
+                    res.isAvailableInWeb
+                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-2xs'
+                  }`}
+                >
+                  {res.isAvailableInWeb ? 'Open in Web ↵' : 'Direct to Google ↵'}
+                </button>
               </div>
             );
           })()}

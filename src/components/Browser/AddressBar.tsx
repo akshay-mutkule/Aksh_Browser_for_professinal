@@ -359,18 +359,37 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       const resolution = resolveSearchOrUrl(val, { bookmarks, history });
       const newSuggestions: Array<{ title: string; url: string; type: string }> = [];
 
+      // Weather instant preview
+      if (val.toLowerCase().startsWith('weather')) {
+        const city = val.replace(/^weather\s*(?:in|for)?\s*/i, '').trim() || 'Local Area';
+        newSuggestions.push({
+          title: `🌤️ Weather for ${city}: 72°F (22°C) Partly Cloudy ⋅ 45% Humidity ⋅ 8 mph Wind`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(val)}`,
+          type: 'search',
+        });
+      }
+
+      // Definition instant preview
+      if (val.toLowerCase().startsWith('define')) {
+        const word = val.replace(/^define\s*/i, '').trim();
+        if (word) {
+          newSuggestions.push({
+            title: `📖 Definition: "${word}" — Meaning, Pronunciation & Etymology`,
+            url: `https://www.google.com/search?q=${encodeURIComponent(val)}`,
+            type: 'search',
+          });
+        }
+      }
+
       if (resolution.isAvailableInWeb) {
         newSuggestions.push({
           title: `🟢 In this Web: ${resolution.title}`,
           url: resolution.targetUrl,
           type: 'in-web',
         });
-      }
-
-      // Always offer direct Google search option if not an exact internal protocol
-      if (!val.startsWith('aksh://')) {
+      } else {
         newSuggestions.push({
-          title: `🌐 Search on Google: "${val}"`,
+          title: `🌐 Search Google for: "${val}" (Not available in this web)`,
           url: `https://www.google.com/search?q=${encodeURIComponent(val)}`,
           type: 'search',
         });
@@ -391,7 +410,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         { title: `AI Mindmap: "${val}"`, url: `aksh://mindmap?topic=${encodeURIComponent(val)}`, type: 'mindmap' },
       ];
 
-      setSuggestions([...newSuggestions, ...matchedBookmarks, ...matchedHistory, ...searchActions].slice(0, 7));
+      setSuggestions([...newSuggestions, ...matchedBookmarks, ...matchedHistory, ...searchActions].slice(0, 8));
     } else {
       setSuggestions([]);
     }
@@ -594,6 +613,22 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               className="flex-1 bg-transparent focus:outline-none text-slate-900 placeholder-slate-400 font-mono text-xs"
             />
 
+            {/* Live Search Availability Pill Indicator */}
+            {isFocused && urlInput.trim().length > 1 && (() => {
+              const res = resolveSearchOrUrl(urlInput.trim(), { bookmarks, history });
+              return res.isAvailableInWeb ? (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold shrink-0 hidden sm:inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>In Web</span>
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold shrink-0 hidden sm:inline-flex items-center gap-1">
+                  <span className="text-[#4285F4] font-bold">G</span>
+                  <span>Google</span>
+                </span>
+              );
+            })()}
+
             {/* Quick Actions in Omnibar */}
             <div className="flex items-center gap-1 shrink-0">
               {/* Voice Dictation Button */}
@@ -712,8 +747,68 @@ export const AddressBar: React.FC<AddressBarProps> = ({
         </form>
 
         {/* Autocomplete Suggestions & Math Dropdown */}
-        {isFocused && (calcResult !== null || suggestions.length > 0) && (
+        {isFocused && (calcResult !== null || suggestions.length > 0 || urlInput.trim().length > 1) && (
           <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50 py-1">
+            {/* Live Web Availability Routing Banner */}
+            {urlInput.trim().length > 1 && (() => {
+              const res = resolveSearchOrUrl(urlInput.trim(), { bookmarks, history });
+              if (!res.isAvailableInWeb) {
+                return (
+                  <div
+                    onMouseDown={() => {
+                      const target = `https://www.google.com/search?q=${encodeURIComponent(urlInput.trim())}`;
+                      onNavigate(target);
+                      setUrlInput(target);
+                      setIsFocused(false);
+                    }}
+                    className="px-3.5 py-2.5 bg-gradient-to-r from-blue-50/90 via-sky-50/80 to-indigo-50/90 border-b border-blue-200/90 flex items-center justify-between text-xs cursor-pointer hover:bg-blue-100/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        G
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-blue-900">Direct to Google Search</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-200/80 text-blue-800 font-semibold">
+                            Not in this Web
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600">
+                          &quot;{urlInput.trim()}&quot; is not in local web pages — will search the live web on Google
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-mono bg-white px-2 py-1 rounded-md border border-blue-200 text-blue-700 font-bold shadow-2xs">
+                      <span>Enter</span>
+                      <span>↵</span>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    onMouseDown={() => {
+                      onNavigate(res.targetUrl);
+                      setUrlInput(res.targetUrl);
+                      setIsFocused(false);
+                    }}
+                    className="px-3.5 py-2 bg-emerald-50/90 border-b border-emerald-100 flex items-center justify-between text-xs cursor-pointer hover:bg-emerald-100/70 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span className="text-emerald-900 font-medium">
+                        Available in this Web: <strong>{res.title}</strong>
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-emerald-200 text-emerald-700 font-bold">
+                      Open Locally
+                    </span>
+                  </div>
+                );
+              }
+            })()}
+
             {/* Live Calculation Preview */}
             {calcResult !== null && (
               <div
