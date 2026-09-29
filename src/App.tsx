@@ -24,6 +24,8 @@ import { TaskManagerView } from './components/Views/TaskManagerView';
 import { UserScriptsView } from './components/Views/UserScriptsView';
 import { SecurityView } from './components/Views/SecurityView';
 import { AgentStudioView } from './components/Views/AgentStudioView';
+import { CanvasView } from './components/Views/CanvasView';
+import { ModelMatrixView } from './components/Views/ModelMatrixView';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
@@ -538,6 +540,12 @@ export function App() {
       } else if (normalizedUrl === 'aksh://agent' || normalizedUrl === 'aksh://autonomous') {
         resolvedType = 'agent';
         title = 'Autonomous Agent Studio';
+      } else if (normalizedUrl === 'aksh://canvas' || normalizedUrl === 'aksh://spatial' || normalizedUrl === 'aksh://graph') {
+        resolvedType = 'canvas';
+        title = 'Spatial Knowledge Canvas';
+      } else if (normalizedUrl === 'aksh://matrix' || normalizedUrl === 'aksh://models' || normalizedUrl === 'aksh://arena') {
+        resolvedType = 'matrix';
+        title = 'Multi-Model Intelligence Matrix';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1519,6 +1527,25 @@ export function App() {
             onNavigate={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'canvas' && (
+          <CanvasView
+            tabs={tabs}
+            activeTab={activeTab}
+            onNavigateTab={(tabId, url) => navigateTab(tabId, url)}
+            onOpenNewTab={(url) => handleNewTab(url)}
+            onOpenInSplit={handleOpenInSplit}
+            onSaveAsNote={handleSaveAsNote}
+          />
+        )}
+
+        {targetTab.contentType === 'matrix' && (
+          <ModelMatrixView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1733,6 +1760,8 @@ export function App() {
                     mindmap: 'Concept Mindmap',
                     research: 'Deep Research',
                     devtools: 'DevTools & Agent',
+                    canvas: 'Knowledge Canvas',
+                    matrix: 'Model Matrix',
                   };
                   const newTab: Tab = {
                     id: newId,

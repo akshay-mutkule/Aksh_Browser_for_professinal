@@ -427,8 +427,10 @@ Key quantum algorithms demonstrating computational speedup:
 ];
 
 export const SPEED_DIAL_SHORTCUTS = [
-  { id: 'app-search', title: 'Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
-  { id: 'app-agent', title: 'AI Agent', url: 'aksh://agent', icon: 'Sparkles', color: 'bg-indigo-600' },
+  { id: 'app-search', title: 'Google Search', url: 'https://www.google.com', icon: 'Search', color: 'bg-blue-600' },
+  { id: 'app-canvas', title: 'Neural Canvas', url: 'aksh://canvas', icon: 'Network', color: 'bg-indigo-600' },
+  { id: 'app-matrix', title: 'Model Matrix', url: 'aksh://matrix', icon: 'Scale', color: 'bg-blue-600' },
+  { id: 'app-agent', title: 'AI Agent Studio', url: 'aksh://agent', icon: 'Sparkles', color: 'bg-purple-600' },
   { id: 'app-research', title: 'Deep Research', url: 'aksh://research', icon: 'Zap', color: 'bg-amber-600' },
   { id: 'app-scripts', title: 'Userscripts', url: 'aksh://scripts', icon: 'Code', color: 'bg-purple-600' },
   { id: 'app-security', title: 'Security', url: 'aksh://security', icon: 'Network', color: 'bg-emerald-600' },

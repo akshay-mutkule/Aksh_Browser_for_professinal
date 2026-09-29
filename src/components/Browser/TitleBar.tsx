@@ -87,15 +87,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   }, [showWorkspaceMenu]);
 
   return (
-    <div className="h-10 bg-slate-100/90 flex items-center justify-between select-none border-b border-slate-200 relative z-20">
-      {/* Window Controls (macOS style dots - desktop only) */}
-      <div className="hidden sm:flex items-center gap-2 px-3 shrink-0">
-        <div className="w-3 h-3 rounded-full bg-rose-500 hover:bg-rose-600 cursor-pointer shadow-xs" title="Close Window" />
-        <div className="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 cursor-pointer shadow-xs" title="Minimize Window" />
-        <div className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 cursor-pointer shadow-xs" title="Maximize Window" />
-        <div className="h-3.5 w-px bg-slate-300 ml-1.5" />
-      </div>
-
+    <div className="h-10 bg-slate-100/90 flex items-center justify-between select-none border-b border-slate-200 relative z-20 px-2">
       {/* Brand Icon (Always visible - Click to go Home) */}
       <button
         onClick={onGoHome}

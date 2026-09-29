@@ -18,7 +18,9 @@ export type PageContentType =
   | 'tasks'
   | 'scripts'
   | 'security'
-  | 'agent';
+  | 'agent'
+  | 'canvas'
+  | 'matrix';
 
 export interface Tab {
   id: string;

@@ -405,6 +405,14 @@ Execute this mission with world-class clarity and structured depth:
             {agentResult && (
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => onNavigate('aksh://canvas')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition-all cursor-pointer"
+                  title="Explore and connect this dossier on the Spatial Knowledge Canvas"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  View on Canvas
+                </button>
+                <button
                   onClick={handleSaveToNotes}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all cursor-pointer"
                 >

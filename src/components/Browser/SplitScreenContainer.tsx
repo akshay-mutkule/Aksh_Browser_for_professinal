@@ -192,6 +192,20 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
               {onOpenCompanion && (
                 <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-slate-200 text-[11px]">
                   <button
+                    onClick={() => onOpenCompanion('canvas')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Spatial Knowledge Canvas in this pane"
+                  >
+                    🎨 Canvas
+                  </button>
+                  <button
+                    onClick={() => onOpenCompanion('matrix')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Multi-Model Matrix in this pane"
+                  >
+                    ⚖️ Matrix
+                  </button>
+                  <button
                     onClick={() => onOpenCompanion('notes')}
                     className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
                     title="Open AI Notes in this pane"

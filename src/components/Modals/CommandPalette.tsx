@@ -425,6 +425,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     {
+      id: 'view-canvas',
+      title: 'Neural Spatial Knowledge Canvas (aksh://canvas)',
+      subtitle: 'Interactive 2D spatial canvas mapping tabs, AI insights, and connected research nodes',
+      category: 'AI Assistant',
+      icon: Network,
+      iconColor: 'text-indigo-600',
+      action: () => {
+        onOpenInternalView('canvas');
+        onClose();
+      },
+    },
+    {
+      id: 'view-matrix',
+      title: 'Multi-Model Intelligence & Benchmarking Matrix (aksh://matrix)',
+      subtitle: 'Parallel side-by-side prompt execution across Gemini 3.7, 2.5 Pro, and 2.5 Flash',
+      category: 'AI Assistant',
+      icon: Scale,
+      iconColor: 'text-blue-600',
+      action: () => {
+        onOpenInternalView('matrix');
+        onClose();
+      },
+    },
+    {
       id: 'ai-organize-tabs',
       title: 'AI Smart Tab Workspaces & Auto-Grouping',
       subtitle: 'Cluster open tabs into semantic workspaces with custom labels',

@@ -558,7 +558,7 @@ export const NewTab: React.FC<NewTabProps> = ({
           className="w-full"
         >
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 justify-items-center">
-            {allShortcuts.slice(0, 13).map((item) => (
+            {allShortcuts.slice(0, 16).map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.url)}
