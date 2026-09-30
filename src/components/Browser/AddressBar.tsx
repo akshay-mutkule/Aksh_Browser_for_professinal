@@ -166,10 +166,99 @@ const evaluateMathExpression = (expr: string): string | null => {
     return !isNaN(v) ? `$${(v * 1.09).toFixed(2)} USD` : null;
   }
 
-  if (/^[\d\s+\-*/().^%]+$/.test(clean) && /[+\-*/^%]/.test(clean)) {
+  // Crypto and Currency conversions
+  const btcToUsd = clean.match(/^([\d.]+)\s*btc\s*(?:to|in)?\s*(?:usd|dollars?)?$/i);
+  if (btcToUsd) {
+    const v = parseFloat(btcToUsd[1]);
+    return !isNaN(v) ? `$${(v * 92450).toLocaleString()} USD` : null;
+  }
+  const ethToUsd = clean.match(/^([\d.]+)\s*eth\s*(?:to|in)?\s*(?:usd|dollars?)?$/i);
+  if (ethToUsd) {
+    const v = parseFloat(ethToUsd[1]);
+    return !isNaN(v) ? `$${(v * 3420).toLocaleString()} USD` : null;
+  }
+  const solToUsd = clean.match(/^([\d.]+)\s*sol\s*(?:to|in)?\s*(?:usd|dollars?)?$/i);
+  if (solToUsd) {
+    const v = parseFloat(solToUsd[1]);
+    return !isNaN(v) ? `$${(v * 185).toLocaleString()} USD` : null;
+  }
+
+  // Data storage units
+  const gbToMb = clean.match(/^([\d.]+)\s*gb\s*(?:to|in)\s*mb$/i);
+  if (gbToMb) {
+    const v = parseFloat(gbToMb[1]);
+    return !isNaN(v) ? `${(v * 1024).toLocaleString()} MB` : null;
+  }
+  const tbToGb = clean.match(/^([\d.]+)\s*tb\s*(?:to|in)\s*gb$/i);
+  if (tbToGb) {
+    const v = parseFloat(tbToGb[1]);
+    return !isNaN(v) ? `${(v * 1024).toLocaleString()} GB` : null;
+  }
+
+  // Mass and Weight
+  const kgToLbs = clean.match(/^([\d.]+)\s*(?:kg|kilos?|kilograms?)\s*(?:to|in)\s*(?:lbs?|pounds?)$/i);
+  if (kgToLbs) {
+    const v = parseFloat(kgToLbs[1]);
+    return !isNaN(v) ? `${(v * 2.20462).toFixed(2)} lbs` : null;
+  }
+  const lbsToKg = clean.match(/^([\d.]+)\s*(?:lbs?|pounds?)\s*(?:to|in)\s*(?:kg|kilos?|kilograms?)$/i);
+  if (lbsToKg) {
+    const v = parseFloat(lbsToKg[1]);
+    return !isNaN(v) ? `${(v / 2.20462).toFixed(2)} kg` : null;
+  }
+
+  // Time in City
+  const timeCityMatch = clean.match(/^time\s*(?:in|for)?\s*([a-zA-Z\s]+)$/i);
+  if (timeCityMatch) {
+    const city = timeCityMatch[1].trim().toLowerCase();
+    const tzMap: Record<string, string> = {
+      tokyo: 'Asia/Tokyo',
+      japan: 'Asia/Tokyo',
+      london: 'Europe/London',
+      uk: 'Europe/London',
+      paris: 'Europe/Paris',
+      france: 'Europe/Paris',
+      berlin: 'Europe/Berlin',
+      germany: 'Europe/Berlin',
+      dubai: 'Asia/Dubai',
+      singapore: 'Asia/Singapore',
+      sydney: 'Australia/Sydney',
+      melbourne: 'Australia/Sydney',
+      'new york': 'America/New_York',
+      nyc: 'America/New_York',
+      sf: 'America/Los_Angeles',
+      'san francisco': 'America/Los_Angeles',
+      california: 'America/Los_Angeles',
+      toronto: 'America/Toronto',
+      delhi: 'Asia/Kolkata',
+      mumbai: 'Asia/Kolkata',
+      india: 'Asia/Kolkata',
+    };
+    if (tzMap[city]) {
+      try {
+        const timeStr = new Intl.DateTimeFormat('en-US', {
+          timeZone: tzMap[city],
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+          weekday: 'short',
+        }).format(new Date());
+        return `🕒 ${timeStr} in ${city.charAt(0).toUpperCase() + city.slice(1)}`;
+      } catch {}
+    }
+  }
+
+  // Math expressions including sqrt, sin, cos
+  const cleanMath = clean.replace(/sqrt\(([^)]+)\)/gi, 'Math.sqrt($1)')
+    .replace(/sin\(([^)]+)\)/gi, 'Math.sin($1)')
+    .replace(/cos\(([^)]+)\)/gi, 'Math.cos($1)')
+    .replace(/log\(([^)]+)\)/gi, 'Math.log10($1)')
+    .replace(/\^/g, '**');
+
+  if (/^[\d\s+\-*/().^%]|Math\./.test(cleanMath) && /[+\-*/^%]|Math\./.test(cleanMath)) {
     try {
-      const sanitized = clean.replace(/\^/g, '**');
-      const result = new Function(`"use strict"; return (${sanitized});`)();
+      const result = new Function(`"use strict"; return (${cleanMath});`)();
       if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
         return Number.isInteger(result) ? String(result) : String(Number(result.toFixed(4)));
       }
