@@ -26,6 +26,7 @@ import { SecurityView } from './components/Views/SecurityView';
 import { AgentStudioView } from './components/Views/AgentStudioView';
 import { CanvasView } from './components/Views/CanvasView';
 import { ModelMatrixView } from './components/Views/ModelMatrixView';
+import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
 import { CommandPalette } from './components/Modals/CommandPalette';
 import { AudioNarrationBar } from './components/Browser/AudioNarrationBar';
@@ -79,6 +80,7 @@ export function App() {
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState<boolean>(true);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const [isVoiceHudOpen, setIsVoiceHudOpen] = useState<boolean>(false);
   const [tabLayout, setTabLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [isVerticalCollapsed, setIsVerticalCollapsed] = useState<boolean>(false);
   const [isSynthesisModalOpen, setIsSynthesisModalOpen] = useState<boolean>(false);
@@ -507,9 +509,9 @@ export function App() {
       } else if (normalizedUrl === 'aksh://reading_list' || normalizedUrl === 'aksh://readlater') {
         resolvedType = 'reading_list';
         title = 'Reading List';
-      } else if (normalizedUrl === 'aksh://history') {
+      } else if (normalizedUrl === 'aksh://history' || normalizedUrl === 'aksh://timeline' || normalizedUrl === 'aksh://journeys') {
         resolvedType = 'history';
-        title = 'Browsing History';
+        title = 'Neural Research Timeline';
       } else if (normalizedUrl === 'aksh://bookmarks') {
         resolvedType = 'bookmarks';
         title = 'Bookmarks Manager';
@@ -1223,6 +1225,11 @@ export function App() {
         e.preventDefault();
         navigateTab(activeTabId, 'aksh://flags');
       }
+      // Voice Assistant HUD: Alt+V
+      if (e.altKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        setIsVoiceHudOpen((prev) => !prev);
+      }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         setIsShortcutsOpen(true);
@@ -1230,6 +1237,7 @@ export function App() {
       if (e.key === 'Escape') {
         setIsShortcutsOpen(false);
         setIsCommandPaletteOpen(false);
+        setIsVoiceHudOpen(false);
         setSelectionHud({ selectedText: '', coords: null });
       }
     };
@@ -1343,6 +1351,8 @@ export function App() {
             onDeleteItem={(id) => setHistory((prev) => prev.filter((h) => h.id !== id))}
             onOpenInNewTab={(url, title) => handleNewTab(url)}
             onOpenInSplit={handleOpenInSplit}
+            onSaveAsNote={handleSaveAsNote}
+            onOpenSessionTabs={(urls) => urls.forEach((u) => handleNewTab(u))}
             onBookmarkItem={(title, url) => {
               if (!bookmarks.some((b) => b.url === url)) {
                 setBookmarks((prev) => [
@@ -1595,6 +1605,7 @@ export function App() {
         workspaces={workspaces}
         activeWorkspaceId={activeWorkspaceId}
         onSelectWorkspace={handleSwitchWorkspace}
+        onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -2160,6 +2171,18 @@ export function App() {
           el?.focus();
           el?.select();
         }}
+      />
+
+      {/* Hands-Free Voice Co-Pilot HUD */}
+      <VoiceAssistantHud
+        isOpen={isVoiceHudOpen}
+        onClose={() => setIsVoiceHudOpen(false)}
+        activeUrl={activeTab?.url}
+        activeTitle={activeTab?.title}
+        onNavigate={(url) => navigateTab(activeTabId, url)}
+        onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
+        onToggleSplitScreen={handleToggleSplitScreen}
+        onOpenQuiz={() => setIsGlobalQuizOpen(true)}
       />
     </div>
   );

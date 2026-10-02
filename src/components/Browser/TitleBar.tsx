@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic } from 'lucide-react';
 import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -34,6 +34,7 @@ interface TitleBarProps {
   workspaces?: Workspace[];
   activeWorkspaceId?: string;
   onSelectWorkspace?: (id: string) => void;
+  onOpenVoiceAssistant?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -67,6 +68,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   workspaces = [],
   activeWorkspaceId,
   onSelectWorkspace,
+  onOpenVoiceAssistant,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -198,6 +200,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           >
             <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden md:inline">Guide</span>
+          </button>
+        )}
+
+        {onOpenVoiceAssistant && (
+          <button
+            onClick={onOpenVoiceAssistant}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+            title="Open Hands-Free Voice Co-Pilot (Alt+V)"
+          >
+            <Mic className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <span className="hidden lg:inline">Voice</span>
           </button>
         )}
 
