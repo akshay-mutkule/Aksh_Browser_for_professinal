@@ -41,7 +41,9 @@ import {
   GraduationCap,
   ShieldAlert,
   Flag,
-  ShieldCheck
+  ShieldCheck,
+  Workflow,
+  Terminal
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -445,6 +447,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-blue-600',
       action: () => {
         onOpenInternalView('matrix');
+        onClose();
+      },
+    },
+    {
+      id: 'view-workflows',
+      title: 'Autonomous Workflow & Macro Studio (aksh://workflows)',
+      subtitle: 'Multi-step web automation, scheduled intelligence pipelines & Gemini agent execution',
+      category: 'Automation',
+      icon: Workflow,
+      iconColor: 'text-indigo-600',
+      action: () => {
+        onOpenInternalView('workflows');
+        onClose();
+      },
+    },
+    {
+      id: 'view-terminal',
+      title: 'Omni Neural Terminal & Browser CLI (` or aksh://terminal)',
+      subtitle: 'Drop-down cyberpunk Quake/Warp shell for direct browser control, crawling & benchmark execution',
+      category: 'Automation',
+      icon: Terminal,
+      iconColor: 'text-cyan-500',
+      action: () => {
+        onOpenInternalView('terminal');
         onClose();
       },
     },

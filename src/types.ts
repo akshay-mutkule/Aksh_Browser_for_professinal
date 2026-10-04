@@ -20,7 +20,9 @@ export type PageContentType =
   | 'security'
   | 'agent'
   | 'canvas'
-  | 'matrix';
+  | 'matrix'
+  | 'workflows'
+  | 'terminal';
 
 export interface Tab {
   id: string;
@@ -342,5 +344,38 @@ export interface SecurityAuditReport {
   };
   score: number; // 0 to 100
 }
+
+export type WorkflowStepType =
+  | 'scrape_url'
+  | 'extract_entities'
+  | 'ai_synthesize'
+  | 'compare_tables'
+  | 'mindmap_generate'
+  | 'export_note'
+  | 'security_audit';
+
+export interface WorkflowStep {
+  id: string;
+  type: WorkflowStepType;
+  title: string;
+  description: string;
+  config: Record<string, any>;
+  status?: 'idle' | 'running' | 'completed' | 'failed';
+  output?: any;
+  durationMs?: number;
+}
+
+export interface WorkflowRecipe {
+  id: string;
+  title: string;
+  description: string;
+  category: 'intelligence' | 'research' | 'security' | 'productivity';
+  icon: string;
+  tags: string[];
+  steps: WorkflowStep[];
+  lastRun?: string;
+  scheduleInterval?: 'manual' | 'hourly' | 'daily';
+}
+
 
 

@@ -30,7 +30,9 @@ import {
   Scissors,
   Zap,
   GraduationCap,
-  ShieldAlert
+  ShieldAlert,
+  Scan,
+  Cpu
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -103,6 +105,10 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCredibilityModal, setShowCredibilityModal] = useState(false);
   const [isBionic, setIsBionic] = useState(tab.isBionicReading || false);
+
+  // AI X-Ray Intelligence & Entity Lens
+  const [showXRay, setShowXRay] = useState(false);
+  const [xRayFilter, setXRayFilter] = useState<'all' | 'entities' | 'tech' | 'metrics'>('all');
 
   // Helper to transform text into bionic reading format (bold first half of each word)
   const toBionicMarkdown = (markdown: string): string => {
@@ -223,6 +229,41 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
     }
     return matches.slice(0, 15);
   }, [tab.headings, mockSite, activeContent]);
+
+  // AI X-Ray Entity & Signal Analysis
+  const xRayAnalysis = useMemo(() => {
+    const text = activeContent || '';
+    const orgCatalog = [
+      'Google', 'OpenAI', 'Anthropic', 'Apple', 'Microsoft', 'Nvidia', 'Meta',
+      'Amazon', 'Tesla', 'GitHub', 'MIT', 'Stanford', 'Berkeley', 'DeepMind',
+      'Hugging Face', 'Linux', 'Apache', 'Mozilla', 'Cloudflare', 'Stripe'
+    ];
+    const techCatalog = [
+      'LLM', 'LLMs', 'Transformer', 'GPT', 'Claude', 'Gemini', 'PyTorch',
+      'TensorFlow', 'React', 'TypeScript', 'Rust', 'Python', 'WebAssembly',
+      'WebGPU', 'Docker', 'Kubernetes', 'HTTP/3', 'Zero-Trust', 'CSP',
+      'Next.js', 'Vite', 'PostgreSQL', 'Redis', 'GraphQL', 'Tailwind CSS'
+    ];
+
+    const detectedOrgs = orgCatalog.filter((org) => new RegExp(`\\b${org}\\b`, 'i').test(text));
+    const detectedTech = techCatalog.filter((tech) => new RegExp(`\\b${tech}\\b`, 'i').test(text));
+    
+    const metricsMatches = text.match(/\b\d+(\.\d+)?%\b|\$\d+[\d,]*(\.\d+)?|\b\d+k?\s+(?:tokens|params|parameters|requests|stars|users|ms|s)\b/gi) || [];
+    const uniqueMetrics = Array.from(new Set(metricsMatches)).slice(0, 8);
+
+    const questions = headings.slice(0, 3).map((h) => ({
+      question: `What are the core conclusions regarding "${h}"?`,
+      cue: `Extracted from section: "${h}".`,
+    }));
+
+    return {
+      orgs: detectedOrgs,
+      tech: detectedTech,
+      metrics: uniqueMetrics,
+      questions,
+      signalScore: Math.min(99, Math.max(76, Math.round(82 + (detectedTech.length * 1.5) + (detectedOrgs.length * 1.2)))),
+    };
+  }, [activeContent, headings]);
 
   // Track scroll progress for reader mode
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -662,6 +703,20 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             <span className="hidden md:inline">Credibility</span>
           </button>
 
+          {/* AI X-Ray Lens & Entity Radar Button */}
+          <button
+            onClick={() => setShowXRay(!showXRay)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              showXRay
+                ? 'bg-purple-600 border-purple-700 text-white shadow-xs'
+                : 'border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-purple-800'
+            }`}
+            title="AI X-Ray Intelligence & Entity Lens"
+          >
+            <Scan className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden sm:inline">AI X-Ray</span>
+          </button>
+
           {/* Bionic Reading Toggle */}
           <button
             onClick={() => setIsBionic(!isBionic)}
@@ -863,6 +918,149 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* AI X-Ray Intelligence & Entity Radar Panel */}
+        {showXRay && (
+          <div className="absolute top-4 right-4 w-96 max-h-[85%] bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200 shadow-2xl p-5 z-30 flex flex-col animate-in fade-in slide-in-from-right-4 duration-150 ring-1 ring-purple-500/10">
+            <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-purple-100 text-purple-700">
+                  <Scan className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">AI X-Ray Entity & Signal Radar</h4>
+                  <p className="text-[10px] text-purple-700 font-medium">
+                    Signal Quality Index: {xRayAnalysis.signalScore}%
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowXRay(false)}
+                className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 my-2.5 bg-slate-100/80 p-1 rounded-xl text-[11px]">
+              {(['all', 'entities', 'tech', 'metrics'] as const).map((tabKey) => (
+                <button
+                  key={tabKey}
+                  onClick={() => setXRayFilter(tabKey)}
+                  className={`flex-1 py-1 rounded-lg font-semibold transition-all capitalize cursor-pointer ${
+                    xRayFilter === tabKey
+                      ? 'bg-white text-purple-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tabKey}
+                </button>
+              ))}
+            </div>
+
+            {/* Entities & Insights Content */}
+            <div className="flex-1 overflow-y-auto space-y-3.5 text-xs text-slate-800 pr-1">
+              {/* Core Questions Answered */}
+              {(xRayFilter === 'all' || xRayFilter === 'entities') && xRayAnalysis.questions.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider block">
+                    Core Inquiries Answered
+                  </span>
+                  <div className="space-y-1.5">
+                    {xRayAnalysis.questions.map((q, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2 rounded-xl bg-purple-50/70 border border-purple-150 text-[11px]"
+                      >
+                        <p className="font-semibold text-purple-950 mb-0.5">{q.question}</p>
+                        <p className="text-[10px] text-purple-700">{q.cue}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Technologies & Frameworks */}
+              {(xRayFilter === 'all' || xRayFilter === 'tech') && xRayAnalysis.tech.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Detected Technologies & Protocols ({xRayAnalysis.tech.length})
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {xRayAnalysis.tech.map((t) => (
+                      <span
+                        key={t}
+                        className="px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono text-[10px] font-semibold"
+                      >
+                        ⚙️ {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Organizations & Entities */}
+              {(xRayFilter === 'all' || xRayFilter === 'entities') && xRayAnalysis.orgs.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Institutions & Organizations ({xRayAnalysis.orgs.length})
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {xRayAnalysis.orgs.map((o) => (
+                      <span
+                        key={o}
+                        className="px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 font-medium text-[10px]"
+                      >
+                        🏛️ {o}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Quantitative Metrics */}
+              {(xRayFilter === 'all' || xRayFilter === 'metrics') && xRayAnalysis.metrics.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Quantitative Figures & Benchmarks ({xRayAnalysis.metrics.length})
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {xRayAnalysis.metrics.map((m) => (
+                      <span
+                        key={m}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-mono text-[10px] font-bold"
+                      >
+                        📊 {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-3 border-t border-purple-100 flex items-center justify-between gap-2 text-xs">
+              <button
+                onClick={onTriggerAiSummary}
+                className="flex items-center gap-1 text-purple-700 hover:text-purple-900 font-semibold cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Deep Ask Co-Pilot</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const summaryNote = `# AI X-Ray Radar: ${tab.title}\n\n**Source URL:** ${tab.url}\n**Signal Score:** ${xRayAnalysis.signalScore}%\n\n### Technologies\n${xRayAnalysis.tech.join(', ') || 'N/A'}\n\n### Entities\n${xRayAnalysis.orgs.join(', ') || 'N/A'}\n\n### Quantitative Benchmarks\n${xRayAnalysis.metrics.join(', ') || 'N/A'}`;
+                  onSaveAsNote(`X-Ray: ${tab.title}`, summaryNote);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs cursor-pointer shadow-xs"
+              >
+                Save X-Ray Note
+              </button>
+            </div>
           </div>
         )}
 

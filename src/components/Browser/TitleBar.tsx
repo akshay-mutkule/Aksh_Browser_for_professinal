@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal } from 'lucide-react';
 import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -35,6 +35,7 @@ interface TitleBarProps {
   activeWorkspaceId?: string;
   onSelectWorkspace?: (id: string) => void;
   onOpenVoiceAssistant?: () => void;
+  onOpenTerminal?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -69,6 +70,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   activeWorkspaceId,
   onSelectWorkspace,
   onOpenVoiceAssistant,
+  onOpenTerminal,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -200,6 +202,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           >
             <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden md:inline">Guide</span>
+          </button>
+        )}
+
+        {onOpenTerminal && (
+          <button
+            onClick={onOpenTerminal}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 shadow-2xs transition-colors cursor-pointer font-mono"
+            title="Open Omni AI Terminal Shell (` or Ctrl+`)"
+          >
+            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden lg:inline">CLI</span>
           </button>
         )}
 

@@ -33,7 +33,9 @@ import {
   Mic,
   MicOff,
   Camera,
-  ExternalLink
+  ExternalLink,
+  Workflow,
+  Terminal
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -320,6 +322,10 @@ export const NewTab: React.FC<NewTabProps> = ({
         return <BookOpen className="w-5 h-5 text-amber-700" />;
       case 'Sparkles':
         return <Sparkles className="w-5 h-5 text-purple-600 fill-purple-600/20" />;
+      case 'Workflow':
+        return <Workflow className="w-5 h-5 text-indigo-600" />;
+      case 'Terminal':
+        return <Terminal className="w-5 h-5 text-cyan-600" />;
       default:
         return <Search className="w-5 h-5 text-blue-600" />;
     }

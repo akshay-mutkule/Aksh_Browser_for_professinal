@@ -26,6 +26,8 @@ import { SecurityView } from './components/Views/SecurityView';
 import { AgentStudioView } from './components/Views/AgentStudioView';
 import { CanvasView } from './components/Views/CanvasView';
 import { ModelMatrixView } from './components/Views/ModelMatrixView';
+import { WorkflowAutomationView } from './components/Views/WorkflowAutomationView';
+import { OmniTerminal } from './components/Browser/OmniTerminal';
 import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
 import { CommandPalette } from './components/Modals/CommandPalette';
@@ -81,6 +83,7 @@ export function App() {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isVoiceHudOpen, setIsVoiceHudOpen] = useState<boolean>(false);
+  const [isOmniTerminalOpen, setIsOmniTerminalOpen] = useState<boolean>(false);
   const [tabLayout, setTabLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [isVerticalCollapsed, setIsVerticalCollapsed] = useState<boolean>(false);
   const [isSynthesisModalOpen, setIsSynthesisModalOpen] = useState<boolean>(false);
@@ -548,6 +551,12 @@ export function App() {
       } else if (normalizedUrl === 'aksh://matrix' || normalizedUrl === 'aksh://models' || normalizedUrl === 'aksh://arena') {
         resolvedType = 'matrix';
         title = 'Multi-Model Intelligence Matrix';
+      } else if (normalizedUrl === 'aksh://workflows' || normalizedUrl === 'aksh://macros' || normalizedUrl === 'aksh://automation' || normalizedUrl === 'aksh://pipeline') {
+        resolvedType = 'workflows';
+        title = 'Autonomous Workflow Studio';
+      } else if (normalizedUrl === 'aksh://terminal' || normalizedUrl === 'aksh://cli' || normalizedUrl === 'aksh://shell') {
+        resolvedType = 'terminal';
+        title = 'Omni Terminal CLI';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1230,6 +1239,14 @@ export function App() {
         e.preventDefault();
         setIsVoiceHudOpen((prev) => !prev);
       }
+      // Omni Terminal CLI: Ctrl+` or ` (when outside input) or Ctrl+Shift+T
+      if (
+        (e.key === '`' && (e.ctrlKey || !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName))) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 't')
+      ) {
+        e.preventDefault();
+        setIsOmniTerminalOpen((prev) => !prev);
+      }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         setIsShortcutsOpen(true);
@@ -1238,6 +1255,7 @@ export function App() {
         setIsShortcutsOpen(false);
         setIsCommandPaletteOpen(false);
         setIsVoiceHudOpen(false);
+        setIsOmniTerminalOpen(false);
         setSelectionHud({ selectedText: '', coords: null });
       }
     };
@@ -1556,6 +1574,14 @@ export function App() {
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'workflows' && (
+          <WorkflowAutomationView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1606,6 +1632,7 @@ export function App() {
         activeWorkspaceId={activeWorkspaceId}
         onSelectWorkspace={handleSwitchWorkspace}
         onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
+        onOpenTerminal={() => setIsOmniTerminalOpen(true)}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -1773,6 +1800,7 @@ export function App() {
                     devtools: 'DevTools & Agent',
                     canvas: 'Knowledge Canvas',
                     matrix: 'Model Matrix',
+                    workflows: 'Workflow Studio',
                   };
                   const newTab: Tab = {
                     id: newId,
@@ -2183,6 +2211,21 @@ export function App() {
         onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
         onToggleSplitScreen={handleToggleSplitScreen}
         onOpenQuiz={() => setIsGlobalQuizOpen(true)}
+      />
+
+      {/* Futuristic Quake/Warp Omni Terminal CLI */}
+      <OmniTerminal
+        isOpen={isOmniTerminalOpen}
+        onClose={() => setIsOmniTerminalOpen(false)}
+        tabs={tabs}
+        activeTab={activeTab}
+        onNavigateTab={(tabId, url) => navigateTab(tabId, url)}
+        onOpenNewTab={(url) => handleNewTab(url)}
+        onCloseTab={(tabId) => handleCloseTab(tabId)}
+        onPinTab={(tabId) => handlePinTab(tabId)}
+        onUpdateSettings={handleUpdateSettings}
+        onToggleAmbientSound={handleToggleAmbientSound}
+        onSaveAsNote={handleSaveAsNote}
       />
     </div>
   );

@@ -206,6 +206,13 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
                     ⚖️ Matrix
                   </button>
                   <button
+                    onClick={() => onOpenCompanion('workflows')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Workflow Automation Studio in this pane"
+                  >
+                    ⚡ Pipeline
+                  </button>
+                  <button
                     onClick={() => onOpenCompanion('notes')}
                     className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
                     title="Open AI Notes in this pane"
