@@ -213,6 +213,20 @@ export const SplitScreenContainer: React.FC<SplitScreenContainerProps> = ({
                     ⚡ Pipeline
                   </button>
                   <button
+                    onClick={() => onOpenCompanion('sandbox')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open AI Code Sandbox & Compiler in this pane"
+                  >
+                    💻 Sandbox
+                  </button>
+                  <button
+                    onClick={() => onOpenCompanion('apibuilder')}
+                    className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                    title="Open Instant API Generator in this pane"
+                  >
+                    🔌 API
+                  </button>
+                  <button
                     onClick={() => onOpenCompanion('notes')}
                     className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
                     title="Open AI Notes in this pane"

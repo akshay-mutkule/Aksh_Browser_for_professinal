@@ -297,6 +297,22 @@ Status: ONLINE & RESPONSIVE`
           break;
         }
 
+        case 'sandbox':
+        case 'compiler':
+        case 'playground': {
+          onOpenNewTab('aksh://sandbox');
+          addLog('success', `Opened AI Live Code Sandbox & Compiler.`);
+          break;
+        }
+
+        case 'api':
+        case 'apibuilder':
+        case 'endpoints': {
+          onOpenNewTab('aksh://apibuilder');
+          addLog('success', `Opened Autonomous Web Scraper & Instant API Generator.`);
+          break;
+        }
+
         case 'tabs': {
           let table = `Idx  | ID          | Status    | Title (URL)\n`;
           table += `-----+-------------+-----------+---------------------------------\n`;

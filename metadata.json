@@ -1,6 +1,6 @@
 {
   "name": "Aksh AI Browser",
-  "description": "Intelligent web research and productivity browser with multi-tab browsing, live web scraping proxy, AI sidebar assistant, webpage summarization, deep research mode, PDF intelligence, and product comparison.",
+  "description": "Next-generation autonomous AI browser with Omni CLI shell, Neural Spatial Knowledge Canvas, Multi-Model Matrix, live Code Sandbox, instant REST API generator, automated workflow pipelines, and multi-agent swarm research.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

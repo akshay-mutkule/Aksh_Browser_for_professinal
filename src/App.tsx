@@ -27,6 +27,8 @@ import { AgentStudioView } from './components/Views/AgentStudioView';
 import { CanvasView } from './components/Views/CanvasView';
 import { ModelMatrixView } from './components/Views/ModelMatrixView';
 import { WorkflowAutomationView } from './components/Views/WorkflowAutomationView';
+import { CodeSandboxView } from './components/Views/CodeSandboxView';
+import { ApiBuilderView } from './components/Views/ApiBuilderView';
 import { OmniTerminal } from './components/Browser/OmniTerminal';
 import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
@@ -557,6 +559,12 @@ export function App() {
       } else if (normalizedUrl === 'aksh://terminal' || normalizedUrl === 'aksh://cli' || normalizedUrl === 'aksh://shell') {
         resolvedType = 'terminal';
         title = 'Omni Terminal CLI';
+      } else if (normalizedUrl === 'aksh://sandbox' || normalizedUrl === 'aksh://compiler' || normalizedUrl === 'aksh://playground') {
+        resolvedType = 'sandbox';
+        title = 'AI Code Sandbox & Compiler';
+      } else if (normalizedUrl === 'aksh://apibuilder' || normalizedUrl === 'aksh://endpoints' || normalizedUrl === 'aksh://api') {
+        resolvedType = 'apibuilder';
+        title = 'Instant API & Endpoint Builder';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1582,6 +1590,22 @@ export function App() {
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'sandbox' && (
+          <CodeSandboxView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'apibuilder' && (
+          <ApiBuilderView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1801,6 +1825,8 @@ export function App() {
                     canvas: 'Knowledge Canvas',
                     matrix: 'Model Matrix',
                     workflows: 'Workflow Studio',
+                    sandbox: 'AI Code Sandbox',
+                    apibuilder: 'API Generator',
                   };
                   const newTab: Tab = {
                     id: newId,

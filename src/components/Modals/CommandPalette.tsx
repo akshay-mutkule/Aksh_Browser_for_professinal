@@ -43,7 +43,8 @@ import {
   Flag,
   ShieldCheck,
   Workflow,
-  Terminal
+  Terminal,
+  Webhook
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -471,6 +472,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-cyan-500',
       action: () => {
         onOpenInternalView('terminal');
+        onClose();
+      },
+    },
+    {
+      id: 'view-sandbox',
+      title: 'AI Live Code Sandbox & Compiler (aksh://sandbox)',
+      subtitle: 'In-browser multi-language live code sandbox with Gemini Code Doctor and Big-O analyzer',
+      category: 'Developer & Code',
+      icon: Code2,
+      iconColor: 'text-cyan-400',
+      action: () => {
+        onOpenInternalView('sandbox');
+        onClose();
+      },
+    },
+    {
+      id: 'view-apibuilder',
+      title: 'Instant API & Endpoint Generator (aksh://apibuilder)',
+      subtitle: 'Transform any web page into a mock REST API, TypeScript SDK types & OpenAPI schema',
+      category: 'Developer & Code',
+      icon: Webhook,
+      iconColor: 'text-purple-400',
+      action: () => {
+        onOpenInternalView('apibuilder');
         onClose();
       },
     },

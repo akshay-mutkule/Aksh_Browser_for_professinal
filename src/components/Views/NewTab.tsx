@@ -35,7 +35,9 @@ import {
   Camera,
   ExternalLink,
   Workflow,
-  Terminal
+  Terminal,
+  Code2,
+  Webhook
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -326,6 +328,10 @@ export const NewTab: React.FC<NewTabProps> = ({
         return <Workflow className="w-5 h-5 text-indigo-600" />;
       case 'Terminal':
         return <Terminal className="w-5 h-5 text-cyan-600" />;
+      case 'Code2':
+        return <Code2 className="w-5 h-5 text-cyan-500" />;
+      case 'Webhook':
+        return <Webhook className="w-5 h-5 text-purple-600" />;
       default:
         return <Search className="w-5 h-5 text-blue-600" />;
     }

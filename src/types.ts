@@ -22,7 +22,9 @@ export type PageContentType =
   | 'canvas'
   | 'matrix'
   | 'workflows'
-  | 'terminal';
+  | 'terminal'
+  | 'sandbox'
+  | 'apibuilder';
 
 export interface Tab {
   id: string;
