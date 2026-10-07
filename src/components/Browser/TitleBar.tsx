@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal, Brain } from 'lucide-react';
 import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -36,6 +36,7 @@ interface TitleBarProps {
   onSelectWorkspace?: (id: string) => void;
   onOpenVoiceAssistant?: () => void;
   onOpenTerminal?: () => void;
+  onOpenVault?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -71,6 +72,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onSelectWorkspace,
   onOpenVoiceAssistant,
   onOpenTerminal,
+  onOpenVault,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -202,6 +204,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           >
             <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden md:inline">Guide</span>
+          </button>
+        )}
+
+        {onOpenVault && (
+          <button
+            onClick={onOpenVault}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+            title="Open Neural Memory Vault & Second Brain (aksh://memory)"
+          >
+            <Brain className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden xl:inline">Vault</span>
           </button>
         )}
 

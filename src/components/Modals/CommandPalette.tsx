@@ -44,7 +44,9 @@ import {
   ShieldCheck,
   Workflow,
   Terminal,
-  Webhook
+  Webhook,
+  Brain,
+  GitCompare
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -74,6 +76,7 @@ interface CommandPaletteProps {
   onOpenWebClipper?: () => void;
   onOpenQuiz?: () => void;
   onOpenCredibility?: () => void;
+  onOpenDiff?: () => void;
   onSaveAsNote?: (title: string, content: string) => void;
 }
 
@@ -102,6 +105,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenWebClipper,
   onOpenQuiz,
   onOpenCredibility,
+  onOpenDiff,
   onSaveAsNote,
 }) => {
   const [query, setQuery] = useState('');
@@ -496,6 +500,42 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-purple-400',
       action: () => {
         onOpenInternalView('apibuilder');
+        onClose();
+      },
+    },
+    {
+      id: 'view-memory',
+      title: 'Neural Memory Vault & Second Brain (aksh://memory)',
+      subtitle: 'Continuous associative knowledge graph, semantic recall & cross-session synthesis',
+      category: 'AI Intelligence',
+      icon: Brain,
+      iconColor: 'text-indigo-400',
+      action: () => {
+        onOpenInternalView('memory');
+        onClose();
+      },
+    },
+    {
+      id: 'view-diff',
+      title: 'Semantic Diff & Page Evolution Studio (aksh://diff)',
+      subtitle: 'Analyze architectural shifts, pricing revisions & specification deltas with AI',
+      category: 'AI Intelligence',
+      icon: GitCompare,
+      iconColor: 'text-cyan-400',
+      action: () => {
+        onOpenInternalView('diff');
+        onClose();
+      },
+    },
+    {
+      id: 'modal-diff-active',
+      title: 'Compare Active Tab With Another Tab (Delta Inspector)',
+      subtitle: 'Quick modal diff comparison between current page and any open tab',
+      category: 'AI Intelligence',
+      icon: GitCompare,
+      iconColor: 'text-cyan-500',
+      action: () => {
+        if (onOpenDiff) onOpenDiff();
         onClose();
       },
     },

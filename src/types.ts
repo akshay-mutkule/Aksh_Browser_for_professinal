@@ -24,7 +24,9 @@ export type PageContentType =
   | 'workflows'
   | 'terminal'
   | 'sandbox'
-  | 'apibuilder';
+  | 'apibuilder'
+  | 'memory'
+  | 'diff';
 
 export interface Tab {
   id: string;
@@ -379,5 +381,40 @@ export interface WorkflowRecipe {
   scheduleInterval?: 'manual' | 'hourly' | 'daily';
 }
 
+export type MemoryCategory = 'concept' | 'entity' | 'research' | 'article' | 'thought' | 'snippet';
 
+export interface NeuralMemoryItem {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  category: MemoryCategory;
+  tags: string[];
+  keyQuotes?: string[];
+  entities?: string[];
+  confidenceScore: number; // 0 to 1
+  retentionStrength: number; // 0 to 100
+  createdAt: number;
+  lastRecalledAt: number;
+  connections?: string[]; // IDs of related memories
+}
 
+export interface SemanticDiffResult {
+  leftTitle: string;
+  rightTitle: string;
+  changeLevel: 'Major Shift' | 'Moderate Revision' | 'Minor Polish';
+  executiveSummary: string;
+  additions: string[];
+  removals: string[];
+  modifications: Array<{ aspect: string; before: string; after: string }>;
+  tacticalVerdict: string;
+}
+
+export interface MemorySynthesisResult {
+  synthesisTitle: string;
+  executiveSummary: string;
+  emergentPatterns: string[];
+  suggestedInquiries: string[];
+  tags: string[];
+}

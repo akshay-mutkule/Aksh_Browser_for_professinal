@@ -29,6 +29,9 @@ import { ModelMatrixView } from './components/Views/ModelMatrixView';
 import { WorkflowAutomationView } from './components/Views/WorkflowAutomationView';
 import { CodeSandboxView } from './components/Views/CodeSandboxView';
 import { ApiBuilderView } from './components/Views/ApiBuilderView';
+import { NeuralVaultView } from './components/Views/NeuralVaultView';
+import { SemanticDiffView } from './components/Views/SemanticDiffView';
+import { FullTerminalView } from './components/Views/FullTerminalView';
 import { OmniTerminal } from './components/Browser/OmniTerminal';
 import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
@@ -53,6 +56,7 @@ import { WebClipperModal } from './components/Modals/WebClipperModal';
 import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerModal';
 import { PageQuizModal } from './components/Modals/PageQuizModal';
 import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
+import { PageDiffModal } from './components/Modals/PageDiffModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag, UserScript } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -243,6 +247,7 @@ export function App() {
   const [isSmartOrganizerOpen, setIsSmartOrganizerOpen] = useState<boolean>(false);
   const [isGlobalQuizOpen, setIsGlobalQuizOpen] = useState<boolean>(false);
   const [isGlobalCredibilityOpen, setIsGlobalCredibilityOpen] = useState<boolean>(false);
+  const [isPageDiffOpen, setIsPageDiffOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -565,6 +570,12 @@ export function App() {
       } else if (normalizedUrl === 'aksh://apibuilder' || normalizedUrl === 'aksh://endpoints' || normalizedUrl === 'aksh://api') {
         resolvedType = 'apibuilder';
         title = 'Instant API & Endpoint Builder';
+      } else if (normalizedUrl === 'aksh://memory' || normalizedUrl === 'aksh://vault' || normalizedUrl === 'aksh://brain') {
+        resolvedType = 'memory';
+        title = 'Neural Memory Vault';
+      } else if (normalizedUrl === 'aksh://diff' || normalizedUrl === 'aksh://compare' || normalizedUrl === 'aksh://delta') {
+        resolvedType = 'diff';
+        title = 'Semantic Diff Studio';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1310,6 +1321,7 @@ export function App() {
             onToggleReaderMode={handleToggleReaderMode}
             onOpenWebClipper={() => setIsClipperOpen(true)}
             onOpenFindInPage={() => setIsFindInPageOpen(true)}
+            onOpenDiff={() => setIsPageDiffOpen(true)}
             findQuery={isFindInPageOpen ? findQuery : ''}
             matchIndex={findMatchIndex}
             caseSensitive={findCaseSensitive}
@@ -1606,6 +1618,33 @@ export function App() {
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'memory' && (
+          <NeuralVaultView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'diff' && (
+          <SemanticDiffView
+            tabs={tabs}
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
+
+        {targetTab.contentType === 'terminal' && (
+          <FullTerminalView
+            tabs={tabs}
+            activeTab={activeTab}
+            onNavigateTab={(tabId, url) => navigateTab(tabId, url)}
+            onOpenNewTab={(url) => handleNewTab(url)}
+            onSaveAsNote={handleSaveAsNote}
+          />
+        )}
       </div>
     );
   };
@@ -1657,6 +1696,7 @@ export function App() {
         onSelectWorkspace={handleSwitchWorkspace}
         onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
         onOpenTerminal={() => setIsOmniTerminalOpen(true)}
+        onOpenVault={() => handleNewTab('aksh://memory')}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -1827,6 +1867,9 @@ export function App() {
                     workflows: 'Workflow Studio',
                     sandbox: 'AI Code Sandbox',
                     apibuilder: 'API Generator',
+                    memory: 'Neural Memory Vault',
+                    diff: 'Semantic Diff Studio',
+                    terminal: 'Omni Terminal Shell',
                   };
                   const newTab: Tab = {
                     id: newId,
@@ -1993,6 +2036,7 @@ export function App() {
         onOpenWebClipper={() => setIsClipperOpen(true)}
         onOpenQuiz={() => setIsGlobalQuizOpen(true)}
         onOpenCredibility={() => setIsGlobalCredibilityOpen(true)}
+        onOpenDiff={() => setIsPageDiffOpen(true)}
         onSaveAsNote={handleSaveAsNote}
       />
 
@@ -2145,6 +2189,17 @@ export function App() {
         pageContent={activeTab?.extractedText || activeTab?.metaDescription || ''}
         onSaveAsNote={handleSaveAsNote}
       />
+
+      {/* Global AI Semantic Diff & Tab Comparison Modal */}
+      {activeTab && (
+        <PageDiffModal
+          isOpen={isPageDiffOpen}
+          onClose={() => setIsPageDiffOpen(false)}
+          activeTab={activeTab}
+          tabs={tabs}
+          onSaveAsNote={handleSaveAsNote}
+        />
+      )}
 
       {/* Floating Focus Ambient Soundscapes Player */}
       <AnimatePresence>

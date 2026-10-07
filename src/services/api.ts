@@ -1,4 +1,4 @@
-import { AIMessage } from '../types';
+import { AIMessage, SemanticDiffResult, MemorySynthesisResult, NeuralMemoryItem } from '../types';
 
 export interface ScrapeResult {
   url: string;
@@ -398,6 +398,39 @@ export async function analyzePageCredibility(
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.error || `HTTP ${res.status}: Failed to analyze credibility`);
+  }
+  return await res.json();
+}
+
+export async function runSemanticDiff(
+  leftTitle: string,
+  leftContent: string,
+  rightTitle: string,
+  rightContent: string
+): Promise<SemanticDiffResult> {
+  const res = await fetch('/api/ai/semantic-diff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ leftTitle, leftContent, rightTitle, rightContent }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to run semantic diff`);
+  }
+  return await res.json();
+}
+
+export async function runMemorySynthesis(
+  memories: NeuralMemoryItem[]
+): Promise<MemorySynthesisResult> {
+  const res = await fetch('/api/ai/memory-synthesis', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ memories }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to synthesize memories`);
   }
   return await res.json();
 }

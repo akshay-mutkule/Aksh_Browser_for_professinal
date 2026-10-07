@@ -32,7 +32,8 @@ import {
   GraduationCap,
   ShieldAlert,
   Scan,
-  Cpu
+  Cpu,
+  GitCompare
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -52,6 +53,7 @@ interface LiveWebViewProps {
   onToggleReaderMode?: () => void;
   onOpenWebClipper?: () => void;
   onOpenFindInPage?: () => void;
+  onOpenDiff?: () => void;
   findQuery?: string;
   matchIndex?: number;
   caseSensitive?: boolean;
@@ -80,6 +82,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   onToggleReaderMode,
   onOpenWebClipper,
   onOpenFindInPage,
+  onOpenDiff,
   findQuery = '',
   matchIndex = 0,
   caseSensitive = false,
@@ -702,6 +705,18 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden md:inline">Credibility</span>
           </button>
+
+          {/* AI Semantic Diff / Tab Delta Inspector */}
+          {onOpenDiff && (
+            <button
+              onClick={onOpenDiff}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50/80 hover:bg-cyan-100 text-cyan-800 font-semibold transition-colors cursor-pointer text-xs shadow-2xs"
+              title="Compare with another tab (Semantic Diff)"
+            >
+              <GitCompare className="w-3.5 h-3.5 text-cyan-600" />
+              <span className="hidden md:inline">Diff</span>
+            </button>
+          )}
 
           {/* AI X-Ray Lens & Entity Radar Button */}
           <button

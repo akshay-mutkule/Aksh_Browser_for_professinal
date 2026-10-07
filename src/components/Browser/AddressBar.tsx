@@ -418,6 +418,10 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
     if (val.startsWith('!')) {
       const bangCommands = [
+        { title: '!vault / !memory - Neural Memory Vault & Second Brain', url: 'aksh://memory', type: 'bang' },
+        { title: '!diff - Semantic Diff & Page Evolution Studio', url: 'aksh://diff', type: 'bang' },
+        { title: '!workflows - Autonomous Workflow & Macro Pipeline Studio', url: 'aksh://workflows', type: 'bang' },
+        { title: '!cli / !term - Omni Terminal Cyberpunk Shell', url: 'aksh://terminal', type: 'bang' },
         { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
         { title: '!agent - Autonomous Web Research Agent Studio', url: 'aksh://agent', type: 'bang' },
         { title: '!scripts - Userscript & Style Injector Studio', url: 'aksh://scripts', type: 'bang' },
