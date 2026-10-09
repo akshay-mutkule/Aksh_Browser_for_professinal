@@ -1,6 +1,6 @@
 {
   "name": "Aksh AI Browser",
-  "description": "Next-generation autonomous AI browser with Omni CLI shell, Neural Spatial Knowledge Canvas, Multi-Model Matrix, live Code Sandbox, instant REST API generator, automated workflow pipelines, and multi-agent swarm research.",
+  "description": "Next-generation cognitive AI browser featuring Neural Memory Vault & Second Brain, Semantic Diff Studio, Omni Terminal Shell, Spatial Knowledge Canvas, Multi-Model Matrix, AI Code Sandbox, and Autonomous Workflows.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

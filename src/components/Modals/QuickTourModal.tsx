@@ -16,7 +16,11 @@ import {
   Layers,
   Code2,
   Camera,
-  Play
+  Play,
+  Brain,
+  GitCompare,
+  Terminal,
+  Webhook
 } from 'lucide-react';
 import { PageContentType } from '../../types';
 
@@ -147,6 +151,48 @@ export const QuickTourModal: React.FC<QuickTourModalProps> = ({
       tryAction: () => {
         onClose();
         onOpenInternalView('devtools');
+      },
+    },
+    {
+      id: 'neural-vault',
+      title: 'Neural Memory & Second Brain',
+      badge: 'Cognitive Vault',
+      icon: Brain,
+      iconColor: 'text-indigo-600',
+      iconBg: 'bg-indigo-50 border-indigo-200',
+      description:
+        'Persistent cognitive memory that indexes your browsing knowledge into an interactive vector constellation graph.',
+      points: [
+        '🌌 Interactive Constellation Graph: Drag, zoom, and inspect interconnected concepts with physics simulation.',
+        '🔍 Semantic Vector Search: Query across all captured reading memories, tags, and citations with cosine similarity.',
+        '⚡ One-Click Page Ingestion: Instantly ingest any open tab into your second brain with auto-extracted entities.',
+        '🧬 Cross-Concept Macro Synthesis: Synthesize multiple memories into overarching executive theses with Gemini.',
+      ],
+      tryLabel: 'Open Neural Vault',
+      tryAction: () => {
+        onClose();
+        onOpenInternalView('memory');
+      },
+    },
+    {
+      id: 'diff-developer',
+      title: 'Semantic Diff & Developer Engine',
+      badge: 'Advanced Suite',
+      icon: GitCompare,
+      iconColor: 'text-cyan-600',
+      iconBg: 'bg-cyan-50 border-cyan-200',
+      description:
+        'AI delta analysis across web pages, in-browser code sandbox REPL, instant API generator, and full Linux-style terminal.',
+      points: [
+        '⚖️ Semantic Diff Studio: Compares any two tabs or texts to reveal factual shifts, additions, and removals.',
+        '⚡ AI Code Sandbox: Live HTML/JS/TypeScript code editor and instant iframe execution preview.',
+        '🔌 Instant API Builder: Transforms web pages into production REST endpoints, OpenAPI specs & TypeScript SDK types.',
+        '💻 Omni Terminal (CLI): Real command-line environment with network diagnostics, curl, DNS lookup, and curl tracer.',
+      ],
+      tryLabel: 'Explore Semantic Diff',
+      tryAction: () => {
+        onClose();
+        onOpenInternalView('diff');
       },
     },
   ];

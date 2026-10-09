@@ -57,7 +57,12 @@ import {
   Mic,
   MicOff,
   Flag,
-  Keyboard
+  Keyboard,
+  Brain,
+  GitCompare,
+  Workflow,
+  Terminal,
+  Webhook
 } from 'lucide-react';
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -1671,6 +1676,114 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                         </div>
                       </button>
                     )}
+
+                    {/* Neural Memory Vault & Second Brain */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('memory');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Brain className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-indigo-950">Neural Memory & Second Brain</div>
+                          <div className="text-[10px] text-slate-400">Cognitive constellation knowledge graph</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Vault</span>
+                    </button>
+
+                    {/* Semantic Diff Studio */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('diff');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <GitCompare className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-cyan-950">Semantic Diff & Page Inspector</div>
+                          <div className="text-[10px] text-slate-400">AI delta analysis across tabs & revisions</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">Diff</span>
+                    </button>
+
+                    {/* AI Code Sandbox */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('sandbox');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Code2 className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-cyan-950">AI Code Sandbox & REPL</div>
+                          <div className="text-[10px] text-slate-400">HTML/TS compiler & sandbox preview</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">REPL</span>
+                    </button>
+
+                    {/* API Generator */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('apibuilder');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Webhook className="w-4 h-4 text-purple-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-purple-950">Instant API & Endpoint Builder</div>
+                          <div className="text-[10px] text-slate-400">Convert pages to mock REST & OpenAPI</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">API</span>
+                    </button>
+
+                    {/* Workflow Studio */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('workflows');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Workflow className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-indigo-950">Workflow Automation Studio</div>
+                          <div className="text-[10px] text-slate-400">Multi-step autonomous automation chains</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Flow</span>
+                    </button>
+
+                    {/* Omni Terminal */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('terminal');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Terminal className="w-4 h-4 text-slate-900 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-slate-900">Omni Developer Terminal (CLI)</div>
+                          <div className="text-[10px] text-slate-400">Full Linux-style tab shell & network diagnostics</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-700 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">CLI</span>
+                    </button>
 
                     <button
                       onClick={() => {
