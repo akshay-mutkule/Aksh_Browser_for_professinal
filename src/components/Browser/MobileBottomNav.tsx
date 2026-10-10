@@ -23,7 +23,11 @@ import {
   Scale,
   X,
   Share2,
-  RotateCw
+  RotateCw,
+  Brain,
+  GitCompare,
+  Code2,
+  Terminal
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 
@@ -214,8 +218,46 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                       <div className="text-[10px] text-indigo-700">Autonomous multi-source synthesis</div>
                     </div>
                   </div>
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-900">
-                    Pro
+                  <span className="text-[10px] font-semibold text-indigo-700 tracking-wider">
+                    PRO
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onOpenInternalView('memory');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full p-3 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200 text-indigo-950 flex items-center justify-between min-h-[48px] transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Brain className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <div className="text-left">
+                      <div className="text-xs font-bold">Neural Memory Vault</div>
+                      <div className="text-[10px] text-indigo-700">Cognitive second brain & knowledge graph</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold text-indigo-700 tracking-wider">
+                    VAULT
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onOpenInternalView('diff');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full p-3 rounded-2xl bg-cyan-50/70 hover:bg-cyan-100/70 border border-cyan-200 text-cyan-950 flex items-center justify-between min-h-[48px] transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <GitCompare className="w-4 h-4 text-cyan-600 shrink-0" />
+                    <div className="text-left">
+                      <div className="text-xs font-bold">Semantic Diff Studio</div>
+                      <div className="text-[10px] text-cyan-700">AI change analysis across tabs</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold text-cyan-700 tracking-wider">
+                    DIFF
                   </span>
                 </button>
 
@@ -234,8 +276,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                         <div className="text-[10px] text-cyan-700">Interactive concept node tree</div>
                       </div>
                     </div>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-200 text-cyan-900">
-                      Graph
+                    <span className="text-[10px] font-semibold text-cyan-700 tracking-wider">
+                      GRAPH
                     </span>
                   </button>
                 )}

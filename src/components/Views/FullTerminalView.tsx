@@ -101,10 +101,11 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
   ask <query>       - Query Gemini AI co-pilot directly
   vault / memory    - Switch to Neural Memory Vault
   diff              - Switch to Semantic Diff Studio
+  sandbox           - Open AI Code Sandbox & REPL
+  api / apibuilder  - Open Instant API Builder
   workflows         - Launch Autonomous Workflow Studio
   matrix            - Open Multi-Model Intelligence Matrix
   bench             - Run browser benchmark diagnostic
-  matrix            - Arena comparison
   sysinfo           - Print client runtime details`
       );
       return;
@@ -158,6 +159,22 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
       if (onOpenNewTab) {
         onOpenNewTab('aksh://workflows');
         appendLog('system', 'Navigating to Autonomous Workflow Studio...');
+      }
+      return;
+    }
+
+    if (commandLower === 'sandbox') {
+      if (onOpenNewTab) {
+        onOpenNewTab('aksh://sandbox');
+        appendLog('system', 'Opening AI Code Sandbox & Live REPL...');
+      }
+      return;
+    }
+
+    if (commandLower === 'api' || commandLower === 'apibuilder') {
+      if (onOpenNewTab) {
+        onOpenNewTab('aksh://apibuilder');
+        appendLog('system', 'Opening Instant API Builder...');
       }
       return;
     }

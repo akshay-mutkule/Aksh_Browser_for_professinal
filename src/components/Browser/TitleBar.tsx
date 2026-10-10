@@ -179,17 +179,14 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         />
       ) : (
         <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-600">
-          <div className="flex items-center gap-2 truncate font-semibold text-slate-800">
+          <div className="flex items-center gap-2 truncate font-medium text-slate-800">
             <Globe className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             <span className="truncate max-w-sm">{activeTab?.title || 'Aksh Browser'}</span>
           </div>
-          <div className="hidden lg:flex items-center gap-3 text-[11px] text-slate-500 font-mono">
-            <span className="flex items-center gap-1 text-emerald-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Engine Active</span>
-            </span>
-            <span>TLS 1.3 Strict</span>
-            <span>Gemini 3.7 Pro</span>
+          <div className="hidden lg:flex items-center gap-2.5 text-[11px] text-slate-500">
+            <span className="text-slate-400 font-mono text-[10px]">Secure Connection</span>
+            <span className="text-slate-300">·</span>
+            <span className="text-slate-600 font-medium">Aksh Engine</span>
           </div>
         </div>
       )}
@@ -199,10 +196,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         {onOpenTour && (
           <button
             onClick={onOpenTour}
-            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
-            title="Open Interactive Guide & Feature Tour"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 hover:bg-white text-slate-700 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+            title="Interactive User Guide & Feature Tour"
           >
-            <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
+            <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden md:inline">Guide</span>
           </button>
         )}
@@ -210,7 +207,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         {onOpenVault && (
           <button
             onClick={onOpenVault}
-            className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 hover:bg-white text-slate-700 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
             title="Open Neural Memory Vault & Second Brain (aksh://memory)"
           >
             <Brain className="w-3.5 h-3.5 text-indigo-600" />
@@ -221,7 +218,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         {onOpenTerminal && (
           <button
             onClick={onOpenTerminal}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 shadow-2xs transition-colors cursor-pointer font-mono"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 shadow-2xs transition-colors cursor-pointer font-mono"
             title="Open Omni AI Terminal Shell (` or Ctrl+`)"
           >
             <Terminal className="w-3.5 h-3.5 text-cyan-400" />
@@ -232,24 +229,24 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         {onOpenVoiceAssistant && (
           <button
             onClick={onOpenVoiceAssistant}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 hover:bg-white text-slate-700 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
             title="Open Hands-Free Voice Co-Pilot (Alt+V)"
           >
-            <Mic className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <Mic className="w-3.5 h-3.5 text-indigo-600" />
             <span className="hidden lg:inline">Voice</span>
           </button>
         )}
 
         <button
           onClick={onToggleAiSidebar}
-          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200 shadow-xs cursor-pointer ${
             isAiSidebarOpen
-              ? 'bg-blue-600 text-white shadow-blue-500/20'
-              : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+              ? 'bg-blue-600 text-white shadow-blue-500/25 ring-2 ring-blue-500/20'
+              : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-slate-400'
           }`}
           title="Toggle Aksh AI Assistant (Ctrl+K)"
         >
-          <Sparkles className={`w-3.5 h-3.5 ${isAiSidebarOpen ? 'animate-pulse text-amber-200' : 'text-blue-600'}`} />
+          <Sparkles className={`w-3.5 h-3.5 ${isAiSidebarOpen ? 'text-amber-200' : 'text-blue-600'}`} />
           <span className="hidden md:inline">Aksh AI</span>
         </button>
 

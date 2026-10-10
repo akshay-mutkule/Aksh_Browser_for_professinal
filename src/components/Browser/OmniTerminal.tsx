@@ -180,6 +180,10 @@ export const OmniTerminal: React.FC<OmniTerminalProps> = ({
   • canvas                   - Open Neural Spatial Knowledge Canvas
   • matrix [prompt]          - Multi-model comparison arena
   • workflows                - Autonomous automation pipeline studio
+  • vault / memory           - Open Neural Memory Vault & Second Brain
+  • diff                     - Open Semantic Diff Studio & Page Inspector
+  • sandbox                  - Open AI Code Sandbox & Live REPL
+  • api / apibuilder         - Open Instant API & Endpoint Generator
   • sound <rain|waves|brown|binaural|stop> - Ambient focus sound generator
   • theme <dark|light|cyber|oled|nord|solarized> - Dynamic browser theme
   • clear                    - Clear terminal buffer
@@ -353,6 +357,32 @@ Status: ONLINE & RESPONSIVE`
           } else {
             addLog('error', 'Usage: tab <switch|new|kill> [index/url]');
           }
+          break;
+        }
+
+        case 'vault':
+        case 'memory': {
+          onOpenNewTab('aksh://memory');
+          addLog('success', 'Navigated to Neural Memory Vault & Second Brain.');
+          break;
+        }
+
+        case 'diff': {
+          onOpenNewTab('aksh://diff');
+          addLog('success', 'Navigated to Semantic Diff Studio.');
+          break;
+        }
+
+        case 'sandbox': {
+          onOpenNewTab('aksh://sandbox');
+          addLog('success', 'Navigated to AI Code Sandbox & Live REPL.');
+          break;
+        }
+
+        case 'api':
+        case 'apibuilder': {
+          onOpenNewTab('aksh://apibuilder');
+          addLog('success', 'Navigated to Instant API & Endpoint Builder.');
           break;
         }
 

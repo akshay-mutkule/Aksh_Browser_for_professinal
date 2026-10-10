@@ -26,7 +26,12 @@ import {
   Cpu,
   Moon,
   Code2,
-  ShieldCheck
+  ShieldCheck,
+  Brain,
+  GitCompare,
+  Workflow,
+  Terminal,
+  Webhook
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -98,6 +103,12 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
     if (tab.contentType === 'scripts') return <Code2 className="w-4 h-4 text-purple-400 shrink-0" />;
     if (tab.contentType === 'security') return <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />;
     if (tab.contentType === 'agent') return <Bot className="w-4 h-4 text-indigo-400 shrink-0" />;
+    if (tab.contentType === 'memory') return <Brain className="w-4 h-4 text-indigo-500 shrink-0" />;
+    if (tab.contentType === 'diff') return <GitCompare className="w-4 h-4 text-cyan-500 shrink-0" />;
+    if (tab.contentType === 'sandbox') return <Code2 className="w-4 h-4 text-cyan-500 shrink-0" />;
+    if (tab.contentType === 'apibuilder') return <Webhook className="w-4 h-4 text-purple-500 shrink-0" />;
+    if (tab.contentType === 'workflows') return <Workflow className="w-4 h-4 text-indigo-500 shrink-0" />;
+    if (tab.contentType === 'terminal') return <Terminal className="w-4 h-4 text-slate-800 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

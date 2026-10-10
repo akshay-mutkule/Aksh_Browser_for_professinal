@@ -753,7 +753,7 @@ export const NewTab: React.FC<NewTabProps> = ({
               >
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-purple-100/70 text-purple-800">
+                    <span className="text-[11px] font-semibold text-purple-700 tracking-wide">
                       {b.tag}
                     </span>
                   </div>

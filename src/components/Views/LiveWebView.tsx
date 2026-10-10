@@ -728,7 +728,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             }`}
             title="AI X-Ray Intelligence & Entity Lens"
           >
-            <Scan className="w-3.5 h-3.5 text-purple-600" />
+            <Scan className={`w-3.5 h-3.5 ${showXRay ? 'text-white' : 'text-purple-600'}`} />
             <span className="hidden sm:inline">AI X-Ray</span>
           </button>
 

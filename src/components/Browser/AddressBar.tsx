@@ -711,16 +711,16 @@ export const AddressBar: React.FC<AddressBarProps> = ({
               className="flex-1 bg-transparent focus:outline-none text-slate-900 placeholder-slate-400 font-mono text-xs"
             />
 
-            {/* Live Search Availability Pill Indicator */}
+            {/* Live Search Availability Indicator */}
             {isFocused && urlInput.trim().length > 1 && (() => {
               const res = resolveSearchOrUrl(urlInput.trim(), { bookmarks, history });
               return res.isAvailableInWeb ? (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold shrink-0 hidden sm:inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 hidden sm:inline-flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span>In Web</span>
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold shrink-0 hidden sm:inline-flex items-center gap-1">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200/60 hidden sm:inline-flex items-center gap-1 shrink-0">
                   <span className="text-[#4285F4] font-bold">G</span>
                   <span>Google</span>
                 </span>
