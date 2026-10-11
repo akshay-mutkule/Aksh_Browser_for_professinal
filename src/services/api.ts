@@ -1,4 +1,4 @@
-import { AIMessage, SemanticDiffResult, MemorySynthesisResult, NeuralMemoryItem } from '../types';
+import { AIMessage, SemanticDiffResult, MemorySynthesisResult, NeuralMemoryItem, GeneratedMicroTool } from '../types';
 
 export interface ScrapeResult {
   url: string;
@@ -434,5 +434,22 @@ export async function runMemorySynthesis(
   }
   return await res.json();
 }
+
+export async function generateMicroTool(
+  prompt: string,
+  category: string = 'developer'
+): Promise<GeneratedMicroTool> {
+  const res = await fetch('/api/ai/generate-microtool', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, category }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to generate tool`);
+  }
+  return await res.json();
+}
+
 
 

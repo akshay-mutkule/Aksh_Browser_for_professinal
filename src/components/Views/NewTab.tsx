@@ -39,7 +39,8 @@ import {
   Code2,
   Webhook,
   Brain,
-  GitCompare
+  GitCompare,
+  Wrench
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -338,6 +339,8 @@ export const NewTab: React.FC<NewTabProps> = ({
         return <Brain className="w-5 h-5 text-indigo-400" />;
       case 'GitCompare':
         return <GitCompare className="w-5 h-5 text-cyan-400" />;
+      case 'Wrench':
+        return <Wrench className="w-5 h-5 text-cyan-400" />;
       default:
         return <Search className="w-5 h-5 text-blue-600" />;
     }

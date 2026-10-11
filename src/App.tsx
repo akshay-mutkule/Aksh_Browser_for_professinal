@@ -32,6 +32,7 @@ import { ApiBuilderView } from './components/Views/ApiBuilderView';
 import { NeuralVaultView } from './components/Views/NeuralVaultView';
 import { SemanticDiffView } from './components/Views/SemanticDiffView';
 import { FullTerminalView } from './components/Views/FullTerminalView';
+import { MicroToolsView } from './components/Views/MicroToolsView';
 import { OmniTerminal } from './components/Browser/OmniTerminal';
 import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
@@ -576,6 +577,9 @@ export function App() {
       } else if (normalizedUrl === 'aksh://diff' || normalizedUrl === 'aksh://compare' || normalizedUrl === 'aksh://delta') {
         resolvedType = 'diff';
         title = 'Semantic Diff Studio';
+      } else if (normalizedUrl === 'aksh://tools' || normalizedUrl === 'aksh://toolbox' || normalizedUrl === 'aksh://utilities' || normalizedUrl === 'aksh://microtools') {
+        resolvedType = 'tools';
+        title = 'Micro-Tool Studio & Utility Lab';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1645,6 +1649,14 @@ export function App() {
             onSaveAsNote={handleSaveAsNote}
           />
         )}
+
+        {targetTab.contentType === 'tools' && (
+          <MicroToolsView
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+          />
+        )}
       </div>
     );
   };
@@ -1870,6 +1882,7 @@ export function App() {
                     memory: 'Neural Memory Vault',
                     diff: 'Semantic Diff Studio',
                     terminal: 'Omni Terminal Shell',
+                    tools: 'Micro-Tool Studio & Utility Lab',
                   };
                   const newTab: Tab = {
                     id: newId,

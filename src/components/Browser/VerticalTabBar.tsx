@@ -31,7 +31,8 @@ import {
   GitCompare,
   Workflow,
   Terminal,
-  Webhook
+  Webhook,
+  Wrench
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -109,6 +110,7 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
     if (tab.contentType === 'apibuilder') return <Webhook className="w-4 h-4 text-purple-500 shrink-0" />;
     if (tab.contentType === 'workflows') return <Workflow className="w-4 h-4 text-indigo-500 shrink-0" />;
     if (tab.contentType === 'terminal') return <Terminal className="w-4 h-4 text-slate-800 shrink-0" />;
+    if (tab.contentType === 'tools') return <Wrench className="w-4 h-4 text-cyan-400 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

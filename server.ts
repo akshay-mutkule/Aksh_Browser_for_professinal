@@ -1658,6 +1658,120 @@ Respond strictly with valid JSON:
   }
 });
 
+// AI Prompt-to-Tool Micro-App Generator
+app.post("/api/ai/generate-microtool", async (req: Request, res: Response) => {
+  try {
+    const { prompt, category = "developer" } = req.body;
+    if (!prompt || typeof prompt !== "string") {
+      res.status(400).json({ error: "Tool prompt description is required" });
+      return;
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      // High-quality deterministic fallback
+      res.json({
+        id: "tool-" + Date.now(),
+        title: "Client-Side String & Token Inspector",
+        description: `Generated micro-tool for: "${prompt}" (Offline Mode)`,
+        category: "developer",
+        code: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { padding: 24px; background: #0f172a; color: #f8fafc; }
+    h2 { font-size: 18px; margin-bottom: 8px; color: #38bdf8; }
+    p { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+    textarea { width: 100%; height: 120px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #f8fafc; padding: 12px; font-family: monospace; font-size: 13px; resize: vertical; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+    .stat { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; }
+    .stat-val { font-size: 20px; font-weight: bold; color: #a855f7; }
+    .stat-lbl { font-size: 11px; text-transform: uppercase; color: #64748b; margin-top: 4px; }
+    button { margin-top: 16px; padding: 10px 18px; background: #38bdf8; color: #0f172a; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #7dd3fc; }
+  </style>
+</head>
+<body>
+  <h2>Text & Token Metrics Analyzer</h2>
+  <p>Live telemetry calculation for characters, words, sentences, reading time, and estimated LLM tokens.</p>
+  <textarea id="input" placeholder="Type or paste any text or code here..."></textarea>
+  <div class="grid">
+    <div class="stat"><div class="stat-val" id="chars">0</div><div class="stat-lbl">Characters</div></div>
+    <div class="stat"><div class="stat-val" id="words">0</div><div class="stat-lbl">Words</div></div>
+    <div class="stat"><div class="stat-val" id="tokens">0</div><div class="stat-lbl">Tokens (~4 chars)</div></div>
+    <div class="stat"><div class="stat-val" id="time">0s</div><div class="stat-lbl">Reading Time</div></div>
+  </div>
+  <button onclick="document.getElementById('input').value=''; update();">Clear Text</button>
+  <script>
+    const el = document.getElementById('input');
+    function update() {
+      const v = el.value;
+      document.getElementById('chars').innerText = v.length;
+      const w = v.trim() ? v.trim().split(/\\s+/).length : 0;
+      document.getElementById('words').innerText = w;
+      document.getElementById('tokens').innerText = Math.ceil(v.length / 4);
+      document.getElementById('time').innerText = Math.ceil(w / 3.3) + 's';
+    }
+    el.addEventListener('input', update);
+    update();
+  </script>
+</body>
+</html>`,
+        createdAt: Date.now()
+      });
+      return;
+    }
+
+    const systemPrompt = `You are an elite web application engineer embedded into the Aksh AI Browser.
+The user wants you to generate a self-contained, fully interactive, beautifully styled Single-Page Micro-Tool / Utility widget based on their prompt: "${prompt}".
+
+Requirements for the generated code:
+1. It MUST be a complete HTML document (<!DOCTYPE html><html><head>...</head><body>...<script>...</script></body></html>).
+2. Modern, clean dark-mode UI styling matching high-end developer tools (#0f172a / #1e293b dark slate theme, vibrant accents like emerald, indigo, cyan, violet).
+3. Completely interactive and self-contained: HTML inputs, sliders, buttons, selectors, reactive vanilla JavaScript DOM updates with zero external script dependencies (pure HTML/CSS/JS).
+4. No network fetches required to work; all calculations, transformations, algorithms, formats or previews happen client-side.
+5. Provide clear input labels, copy buttons, error handling, and clean output displays.
+
+Structure your response strictly as valid JSON with NO markdown code backticks around the JSON:
+{
+  "title": "Clear, concise tool title",
+  "description": "1 sentence describing what this interactive utility does",
+  "category": "developer" | "calculator" | "converter" | "generator" | "design",
+  "code": "<!DOCTYPE html>..."
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: systemPrompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.3,
+      },
+    });
+
+    try {
+      const parsed = JSON.parse(response.text || "{}");
+      res.json({
+        id: "tool-" + Date.now(),
+        title: parsed.title || "Custom AI Micro-Tool",
+        description: parsed.description || `Tool generated for: ${prompt}`,
+        category: parsed.category || category,
+        code: parsed.code || "<h1>Tool generation error</h1>",
+        createdAt: Date.now()
+      });
+    } catch {
+      res.status(500).json({ error: "Failed to parse tool synthesis output" });
+    }
+  } catch (err: unknown) {
+    console.error("Error in /api/ai/generate-microtool:", err);
+    const message = err instanceof Error ? err.message : "Error generating microtool";
+    res.status(500).json({ error: message });
+  }
+});
+
+
 
 // ---------------- VITE MIDDLEWARE / STATIC ASSETS ----------------
 

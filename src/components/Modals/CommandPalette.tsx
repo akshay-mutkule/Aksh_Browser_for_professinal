@@ -46,7 +46,8 @@ import {
   Terminal,
   Webhook,
   Brain,
-  GitCompare
+  GitCompare,
+  Wrench
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -524,6 +525,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-cyan-400',
       action: () => {
         onOpenInternalView('diff');
+        onClose();
+      },
+    },
+    {
+      id: 'view-tools',
+      title: 'Micro-Tool Studio & Utility Lab (aksh://tools)',
+      subtitle: 'JWT, Regex, Hashes, WCAG contrast, epoch conversions & Gemini prompt-to-app generator',
+      category: 'Developer & Code',
+      icon: Wrench,
+      iconColor: 'text-cyan-400',
+      action: () => {
+        onOpenInternalView('tools');
         onClose();
       },
     },

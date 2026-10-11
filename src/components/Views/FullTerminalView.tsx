@@ -101,6 +101,7 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
   ask <query>       - Query Gemini AI co-pilot directly
   vault / memory    - Switch to Neural Memory Vault
   diff              - Switch to Semantic Diff Studio
+  tools / toolbox   - Open Micro-Tool Studio & Utility Lab
   sandbox           - Open AI Code Sandbox & REPL
   api / apibuilder  - Open Instant API Builder
   workflows         - Launch Autonomous Workflow Studio
@@ -175,6 +176,14 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
       if (onOpenNewTab) {
         onOpenNewTab('aksh://apibuilder');
         appendLog('system', 'Opening Instant API Builder...');
+      }
+      return;
+    }
+
+    if (commandLower === 'tools' || commandLower === 'toolbox' || commandLower === 'utilities') {
+      if (onOpenNewTab) {
+        onOpenNewTab('aksh://tools');
+        appendLog('system', 'Opening Micro-Tool Studio & Utility Lab...');
       }
       return;
     }

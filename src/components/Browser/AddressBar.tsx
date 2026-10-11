@@ -62,7 +62,8 @@ import {
   GitCompare,
   Workflow,
   Terminal,
-  Webhook
+  Webhook,
+  Wrench
 } from 'lucide-react';
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -1765,6 +1766,24 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                         </div>
                       </div>
                       <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Flow</span>
+                    </button>
+
+                    {/* Micro-Tool Studio & Utility Lab */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('tools');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Wrench className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-cyan-950">Micro-Tool Studio & Utilities</div>
+                          <div className="text-[10px] text-slate-400">JWT, Regex, WCAG, Hashes & Prompt-to-App</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">Tools</span>
                     </button>
 
                     {/* Omni Terminal */}

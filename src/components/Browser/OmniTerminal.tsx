@@ -386,6 +386,14 @@ Status: ONLINE & RESPONSIVE`
           break;
         }
 
+        case 'tools':
+        case 'toolbox':
+        case 'utilities': {
+          onOpenNewTab('aksh://tools');
+          addLog('success', 'Navigated to Micro-Tool Studio & Utility Lab.');
+          break;
+        }
+
         case 'sound': {
           const soundArg = (args[0] || '').toLowerCase();
           if (['rain', 'waves', 'brown', 'binaural'].includes(soundArg)) {

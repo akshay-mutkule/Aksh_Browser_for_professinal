@@ -20,7 +20,8 @@ import {
   Brain,
   GitCompare,
   Terminal,
-  Webhook
+  Webhook,
+  Wrench
 } from 'lucide-react';
 import { PageContentType } from '../../types';
 
@@ -193,6 +194,27 @@ export const QuickTourModal: React.FC<QuickTourModalProps> = ({
       tryAction: () => {
         onClose();
         onOpenInternalView('diff');
+      },
+    },
+    {
+      id: 'micro-tools',
+      title: 'Micro-Tool Studio & Prompt-to-App Lab',
+      badge: 'Frontier Utilities',
+      icon: Wrench,
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-50 border-amber-200',
+      description:
+        'Zero-latency developer utilities, formatting engines, and on-demand AI Prompt-to-App mini-tool synthesizer.',
+      points: [
+        '🔑 JWT & JSON Studio: Decode headers, claims, exp dates, and format JSON structures offline.',
+        '🎯 Regex Pattern Lab: Real-time match testing, capture group inspection, and instant pattern presets.',
+        '🎨 WCAG 2.2 Color Matrix: Interactive foreground/background contrast calculator with live AA/AAA compliance.',
+        '✨ Prompt-to-App Synthesizer: Ask Gemini to generate any interactive calculator, widget, or tool and run it instantly.',
+      ],
+      tryLabel: 'Open Micro-Tool Studio',
+      tryAction: () => {
+        onClose();
+        onOpenInternalView('tools');
       },
     },
   ];

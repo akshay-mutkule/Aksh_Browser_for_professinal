@@ -26,7 +26,8 @@ export type PageContentType =
   | 'sandbox'
   | 'apibuilder'
   | 'memory'
-  | 'diff';
+  | 'diff'
+  | 'tools';
 
 export interface Tab {
   id: string;
@@ -418,3 +419,14 @@ export interface MemorySynthesisResult {
   suggestedInquiries: string[];
   tags: string[];
 }
+
+export interface GeneratedMicroTool {
+  id: string;
+  title: string;
+  description: string;
+  category: 'developer' | 'calculator' | 'converter' | 'generator' | 'design' | 'custom';
+  code: string;
+  icon?: string;
+  createdAt: number;
+}
+
