@@ -424,9 +424,14 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
     if (val.startsWith('!')) {
       const bangCommands = [
+        { title: '!tools / !util - Micro-Tool Studio & AI Prompt-to-App Lab', url: 'aksh://tools', type: 'bang' },
         { title: '!vault / !memory - Neural Memory Vault & Second Brain', url: 'aksh://memory', type: 'bang' },
         { title: '!diff - Semantic Diff & Page Evolution Studio', url: 'aksh://diff', type: 'bang' },
+        { title: '!sandbox / !repl - Live Code Sandbox & Runtime REPL', url: 'aksh://sandbox', type: 'bang' },
+        { title: '!api - Instant REST Mock API Builder', url: 'aksh://apibuilder', type: 'bang' },
         { title: '!workflows - Autonomous Workflow & Macro Pipeline Studio', url: 'aksh://workflows', type: 'bang' },
+        { title: '!canvas - Neural Spatial Whiteboard & Graph', url: 'aksh://canvas', type: 'bang' },
+        { title: '!matrix - Multi-Model LLM Arena & Benchmark', url: 'aksh://matrix', type: 'bang' },
         { title: '!cli / !term - Omni Terminal Cyberpunk Shell', url: 'aksh://terminal', type: 'bang' },
         { title: '!ai <query> - Gemini 3.7 Deep Research', url: `aksh://research?q=${encodeURIComponent(val.slice(1).trim())}`, type: 'bang' },
         { title: '!agent - Autonomous Web Research Agent Studio', url: 'aksh://agent', type: 'bang' },

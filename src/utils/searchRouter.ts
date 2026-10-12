@@ -169,6 +169,69 @@ export const INTERNAL_TOOL_ROUTES: InternalToolRoute[] = [
     contentType: 'downloads',
     description: 'Manage active and completed downloads',
   },
+  {
+    keywords: ['tools', 'microtools', 'toolbox', 'utilities', 'utility', 'jwt', 'regex', 'hash', 'contrast', 'timestamp', 'calc', 'dev tools', 'encoder', 'decoder'],
+    url: 'aksh://tools',
+    title: 'Micro-Tool Studio & Utility Lab',
+    contentType: 'tools',
+    description: 'Instant micro-utilities and AI prompt-to-app code generator',
+  },
+  {
+    keywords: ['diff', 'semantic diff', 'compare versions', 'delta', 'evolution', 'page diff', 'spec diff'],
+    url: 'aksh://diff',
+    title: 'Semantic Diff Studio',
+    contentType: 'diff',
+    description: 'Multi-version architectural and semantic page evolution analysis',
+  },
+  {
+    keywords: ['memory', 'vault', 'neural vault', 'second brain', 'memories', 'synthesis', 'cognitive memory'],
+    url: 'aksh://memory',
+    title: 'Neural Memory Vault',
+    contentType: 'memory',
+    description: 'Autonomous research memory graphs and multi-session knowledge synthesis',
+  },
+  {
+    keywords: ['terminal', 'shell', 'cli', 'omni terminal', 'bash', 'console shell', 'command line'],
+    url: 'aksh://terminal',
+    title: 'Omni Terminal Shell',
+    contentType: 'terminal',
+    description: 'Full-featured developer CLI, system diagnostics, and autonomous curl suite',
+  },
+  {
+    keywords: ['sandbox', 'code sandbox', 'repl', 'compiler', 'live preview', 'javascript sandbox', 'typescript sandbox'],
+    url: 'aksh://sandbox',
+    title: 'AI Code Sandbox & REPL',
+    contentType: 'sandbox',
+    description: 'Instant live code executor, component preview, and multi-file runner',
+  },
+  {
+    keywords: ['api', 'apibuilder', 'mock api', 'rest api', 'api builder', 'endpoints', 'json server'],
+    url: 'aksh://apibuilder',
+    title: 'Instant API Builder',
+    contentType: 'apibuilder',
+    description: 'Generate, test, and mock realistic REST API endpoints with AI schemas',
+  },
+  {
+    keywords: ['workflows', 'workflow', 'automate', 'automation', 'pipeline', 'workflow studio'],
+    url: 'aksh://workflows',
+    title: 'Autonomous Workflow Studio',
+    contentType: 'workflows',
+    description: 'Visual node graph automation and browser macro pipelines',
+  },
+  {
+    keywords: ['canvas', 'neural canvas', 'whiteboard', 'diagram', 'spatial notes', 'mind graph'],
+    url: 'aksh://canvas',
+    title: 'Neural Spatial Canvas',
+    contentType: 'canvas',
+    description: 'Infinite visual whiteboard for spatial web curation and neural mind maps',
+  },
+  {
+    keywords: ['matrix', 'model matrix', 'benchmark', 'llm comparison', 'model arena'],
+    url: 'aksh://matrix',
+    title: 'Multi-Model Matrix',
+    contentType: 'matrix',
+    description: 'Side-by-side LLM response comparison and frontier benchmarking',
+  },
 ];
 
 export interface CuratedSiteKeywordMap {
@@ -273,6 +336,87 @@ export function resolveSearchOrUrl(
   }
 
   // 1. Bang commands
+  if (trimmed.startsWith('!tools') || trimmed.startsWith('!toolbox') || trimmed.startsWith('!util')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://tools',
+      title: 'Micro-Tool Studio & Utility Lab',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!diff') || trimmed.startsWith('!delta')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://diff',
+      title: 'Semantic Diff Studio',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!memory') || trimmed.startsWith('!vault') || trimmed.startsWith('!brain')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://memory',
+      title: 'Neural Memory Vault',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!terminal') || trimmed.startsWith('!cli') || trimmed.startsWith('!sh')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://terminal',
+      title: 'Omni Terminal Shell',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!sandbox') || trimmed.startsWith('!repl') || trimmed.startsWith('!code')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://sandbox',
+      title: 'AI Code Sandbox & REPL',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!api') || trimmed.startsWith('!mockapi')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://apibuilder',
+      title: 'Instant API Builder',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!workflow') || trimmed.startsWith('!pipe')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://workflows',
+      title: 'Autonomous Workflow Studio',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!canvas')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://canvas',
+      title: 'Neural Spatial Canvas',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!matrix')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://matrix',
+      title: 'Multi-Model Matrix',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
   if (trimmed.startsWith('!ext') || trimmed.startsWith('!extensions')) {
     return {
       isAvailableInWeb: true,
