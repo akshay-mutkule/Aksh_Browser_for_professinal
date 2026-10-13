@@ -13,6 +13,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   if (!isOpen) return null;
 
   const shortcuts = [
+    { key: 'Ctrl + I / ⌘I', desc: 'Toggle Aksh Neural Island Cockpit & Action Matrix' },
+    { key: 'Ctrl + J / ⌘J', desc: 'Toggle AI Co-Pilot Assistant Sidebar' },
     { key: 'Ctrl + K / ⌘K', desc: 'Open Smart Command Palette & Quick Tab Switcher' },
     { key: 'Ctrl + F', desc: 'Find in current page' },
     { key: 'Ctrl + T', desc: 'Open a new browser tab' },

@@ -366,6 +366,25 @@ export const CodeSandboxView: React.FC<CodeSandboxViewProps> = ({
     }
   };
 
+  // Check if pending code was sent from webpage or Neural HUD
+  useEffect(() => {
+    try {
+      const pendingCode = localStorage.getItem('aksh_pending_sandbox_code');
+      if (pendingCode) {
+        localStorage.removeItem('aksh_pending_sandbox_code');
+        setCode(pendingCode);
+        if (pendingCode.trim().startsWith('<') || pendingCode.includes('<!DOCTYPE') || pendingCode.includes('<html')) {
+          setLang('html');
+        } else if (pendingCode.includes('SELECT') || pendingCode.includes('CREATE TABLE')) {
+          setLang('sql');
+        } else {
+          setLang('python');
+        }
+        setConsoleLogs([`[✓] Imported code snippet from active webpage.`]);
+      }
+    } catch {}
+  }, []);
+
   // Run on mount or when language template changes
   useEffect(() => {
     runCode();

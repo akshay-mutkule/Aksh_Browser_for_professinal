@@ -43,6 +43,7 @@ import { SelectionAiHud } from './components/Browser/SelectionAiHud';
 import { SplitScreenContainer } from './components/Browser/SplitScreenContainer';
 import { VerticalTabBar } from './components/Browser/VerticalTabBar';
 import { FindInPageBar } from './components/Browser/FindInPageBar';
+import { NeuralIslandHUD } from './components/Browser/NeuralIslandHUD';
 import { MobileBottomNav } from './components/Browser/MobileBottomNav';
 import { MobileTabsSheet } from './components/Browser/MobileTabsSheet';
 import { CrossTabSynthesisModal } from './components/Modals/CrossTabSynthesisModal';
@@ -250,6 +251,7 @@ export function App() {
   const [isGlobalQuizOpen, setIsGlobalQuizOpen] = useState<boolean>(false);
   const [isGlobalCredibilityOpen, setIsGlobalCredibilityOpen] = useState<boolean>(false);
   const [isPageDiffOpen, setIsPageDiffOpen] = useState<boolean>(false);
+  const [isNeuralIslandOpen, setIsNeuralIslandOpen] = useState<boolean>(false);
   const [ambientState, setAmbientState] = useState<{
     isPlaying: boolean;
     type: SoundscapeType;
@@ -1206,6 +1208,11 @@ export function App() {
         e.preventDefault();
         setIsAiSidebarOpen((prev) => !prev);
       }
+      // Neural Island HUD: Ctrl+I or Cmd+I
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        setIsNeuralIslandOpen((prev) => !prev);
+      }
       // Find in page: Ctrl+F or Cmd+F
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
@@ -1330,6 +1337,11 @@ export function App() {
             onOpenWebClipper={() => setIsClipperOpen(true)}
             onOpenFindInPage={() => setIsFindInPageOpen(true)}
             onOpenDiff={() => setIsPageDiffOpen(true)}
+            onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
+            onOpenSandbox={(snippet) => {
+              if (snippet) localStorage.setItem('aksh_pending_sandbox_code', snippet);
+              navigateTab(targetTab.id, 'aksh://sandbox');
+            }}
             findQuery={isFindInPageOpen ? findQuery : ''}
             matchIndex={findMatchIndex}
             caseSensitive={findCaseSensitive}
@@ -1742,6 +1754,8 @@ export function App() {
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onToggleSplitScreen={handleToggleSplitScreen}
         isSplitScreen={splitScreen.enabled}
+        onToggleNeuralIsland={() => setIsNeuralIslandOpen((prev) => !prev)}
+        isNeuralIslandOpen={isNeuralIslandOpen}
         onTriggerSpeech={handleTriggerSpeech}
         isSpeaking={audioNarration.isOpen}
         isVimMode={isVimMode}
@@ -1859,6 +1873,21 @@ export function App() {
             caseSensitive={findCaseSensitive}
             onToggleCaseSensitive={() => setFindCaseSensitive((prev) => !prev)}
           />
+
+          {/* Neural Island HUD (Dynamic Intelligence Capsule) */}
+          <div className="pt-2 pb-1">
+            <NeuralIslandHUD
+              activeTab={activeTab}
+              isOpen={isNeuralIslandOpen}
+              onToggleOpen={() => setIsNeuralIslandOpen((prev) => !prev)}
+              onNavigateUrl={(url) => navigateTab(activeTabId, url)}
+              onTriggerAiSummary={() => setIsAiSidebarOpen(true)}
+              onTriggerSpeech={handleTriggerSpeech}
+              onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
+              onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+              isAmbientPlaying={ambientState.isPlaying}
+            />
+          </div>
 
           {splitScreen.enabled ? (
             <SplitScreenContainer

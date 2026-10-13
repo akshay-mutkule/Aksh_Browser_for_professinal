@@ -59,6 +59,7 @@ import {
   Flag,
   Keyboard,
   Brain,
+  BrainCircuit,
   GitCompare,
   Workflow,
   Terminal,
@@ -88,6 +89,8 @@ interface AddressBarProps {
   onOpenInternalView: (view: PageContentType) => void;
   onOpenCommandPalette: () => void;
   onToggleSplitScreen: () => void;
+  onToggleNeuralIsland?: () => void;
+  isNeuralIslandOpen?: boolean;
   isSplitScreen: boolean;
   onTriggerSpeech: () => void;
   isSpeaking: boolean;
@@ -293,6 +296,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   onOpenInternalView,
   onOpenCommandPalette,
   onToggleSplitScreen,
+  onToggleNeuralIsland,
+  isNeuralIslandOpen = false,
   isSplitScreen,
   onTriggerSpeech,
   isSpeaking,
@@ -1076,6 +1081,21 @@ export const AddressBar: React.FC<AddressBarProps> = ({
             }}
           />
         </div>
+
+        {/* Aksh Neural Island Capsule HUD Toggle */}
+        {onToggleNeuralIsland && (
+          <button
+            onClick={onToggleNeuralIsland}
+            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+              isNeuralIslandOpen
+                ? 'bg-cyan-100 text-cyan-800 border border-cyan-300 shadow-2xs'
+                : 'text-slate-600 hover:text-cyan-700 hover:bg-slate-100'
+            }`}
+            title="Aksh Neural Island Cockpit (Ctrl+I)"
+          >
+            <BrainCircuit className="w-4 h-4 text-cyan-600" />
+          </button>
+        )}
 
         {/* Split Screen Toggle */}
         <button

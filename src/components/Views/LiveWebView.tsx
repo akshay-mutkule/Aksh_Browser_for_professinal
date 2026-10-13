@@ -33,7 +33,10 @@ import {
   ShieldAlert,
   Scan,
   Cpu,
-  GitCompare
+  GitCompare,
+  Play,
+  Table,
+  BrainCircuit
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -54,6 +57,8 @@ interface LiveWebViewProps {
   onOpenWebClipper?: () => void;
   onOpenFindInPage?: () => void;
   onOpenDiff?: () => void;
+  onOpenDataExtractor?: () => void;
+  onOpenSandbox?: (initialCode?: string) => void;
   findQuery?: string;
   matchIndex?: number;
   caseSensitive?: boolean;
@@ -83,12 +88,15 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   onOpenWebClipper,
   onOpenFindInPage,
   onOpenDiff,
+  onOpenDataExtractor,
+  onOpenSandbox,
   findQuery = '',
   matchIndex = 0,
   caseSensitive = false,
   onMatchesFound,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [vaultSaved, setVaultSaved] = useState(false);
   const [showExtractedInspector, setShowExtractedInspector] = useState(false);
   const [showOutline, setShowOutline] = useState(false);
   const [showTranslateMenu, setShowTranslateMenu] = useState(false);
@@ -210,6 +218,39 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
     const minutes = Math.max(1, Math.ceil(words / 200));
     return { words, minutes };
   }, [activeContent, mockSite]);
+
+  const handleSaveToVault = () => {
+    try {
+      const savedRaw = localStorage.getItem('aksh_neural_vault_memories');
+      const memories = savedRaw ? JSON.parse(savedRaw) : [];
+      let domain = 'web';
+      try {
+        domain = new URL(tab.url).hostname;
+      } catch {}
+
+      const newMemory = {
+        id: 'mem-' + Date.now(),
+        title: tab.title || 'Indexed Document',
+        summary: activeContent ? activeContent.slice(0, 240) + '...' : `Indexed reference from ${tab.url}`,
+        sourceUrl: tab.url,
+        sourceTitle: tab.title,
+        category: 'research' as const,
+        tags: ['WebSnap', 'NeuralVault', domain],
+        keyQuotes: activeContent ? [activeContent.slice(0, 160)] : [],
+        entities: [domain, 'Live Document'],
+        confidenceScore: 0.96,
+        retentionStrength: 92,
+        createdAt: Date.now(),
+        lastRecalledAt: Date.now(),
+        connections: [],
+      };
+      localStorage.setItem('aksh_neural_vault_memories', JSON.stringify([newMemory, ...memories]));
+      setVaultSaved(true);
+      setTimeout(() => setVaultSaved(false), 2200);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Extract structured headings for Table of Contents
   const headings = useMemo(() => {
@@ -1216,7 +1257,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             {/* Extracted Body with Structured Markdown */}
             {activeContent ? (
               <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs space-y-5 text-slate-800 text-sm md:text-base leading-relaxed">
-                <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
+                <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
                   <ReactMarkdown
                     components={{
                       a: ({ href, children, ...props }) => (
@@ -1236,6 +1277,41 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                           <ArrowUpRight className="w-3.5 h-3.5 inline-block opacity-70 shrink-0" />
                         </a>
                       ),
+                      pre: ({ children, ...props }) => {
+                        const rawCode = String((children as any)?.props?.children || children || '');
+                        return (
+                          <div className="relative group my-4 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
+                            <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 font-mono">
+                              <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                                <Code className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>Code Snippet</span>
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                {onOpenSandbox && (
+                                  <button
+                                    onClick={() => onOpenSandbox(rawCode)}
+                                    className="px-2 py-0.5 rounded-md bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 font-semibold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Open and run in Code Sandbox"
+                                  >
+                                    <Play className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
+                                    <span>Run in Sandbox</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleCopyText(rawCode)}
+                                  className="px-2 py-0.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
+                                >
+                                  <Copy className="w-2.5 h-2.5" />
+                                  <span>Copy</span>
+                                </button>
+                              </div>
+                            </div>
+                            <pre className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed bg-slate-950" {...props}>
+                              {children}
+                            </pre>
+                          </div>
+                        );
+                      },
                     }}
                   >
                     {displayContent}
@@ -1264,24 +1340,46 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={onTriggerAiSummary}
-                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <Zap className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Executive Brief</span>
                 </button>
                 <button
                   onClick={() => setShowQuizModal(true)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Comprehension Quiz</span>
                 </button>
                 <button
                   onClick={() => setShowCredibilityModal(true)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <ShieldAlert className="w-3.5 h-3.5 text-blue-600" />
                   <span>Check Bias & Rigor</span>
+                </button>
+                {onOpenDataExtractor && (
+                  <button
+                    onClick={onOpenDataExtractor}
+                    className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    title="Extract structured tables and data"
+                  >
+                    <Table className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Extract Tables</span>
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveToVault}
+                  className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+                    vaultSaved
+                      ? 'bg-emerald-100 border-emerald-300 text-emerald-900'
+                      : 'bg-white hover:bg-purple-50 border-purple-200 text-purple-800'
+                  }`}
+                  title="Index document to Neural Memory Vault"
+                >
+                  {vaultSaved ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <BrainCircuit className="w-3.5 h-3.5 text-purple-600" />}
+                  <span>{vaultSaved ? 'Indexed to Vault!' : 'Add to Vault'}</span>
                 </button>
               </div>
             </div>
