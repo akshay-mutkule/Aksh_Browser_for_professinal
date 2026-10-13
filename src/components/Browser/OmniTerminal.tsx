@@ -373,24 +373,20 @@ Status: ONLINE & RESPONSIVE`
           break;
         }
 
-        case 'sandbox': {
-          onOpenNewTab('aksh://sandbox');
-          addLog('success', 'Navigated to AI Code Sandbox & Live REPL.');
-          break;
-        }
-
-        case 'api':
-        case 'apibuilder': {
-          onOpenNewTab('aksh://apibuilder');
-          addLog('success', 'Navigated to Instant API & Endpoint Builder.');
-          break;
-        }
-
         case 'tools':
         case 'toolbox':
         case 'utilities': {
           onOpenNewTab('aksh://tools');
           addLog('success', 'Navigated to Micro-Tool Studio & Utility Lab.');
+          break;
+        }
+
+        case 'network':
+        case 'radar':
+        case 'traffic':
+        case 'proxy': {
+          onOpenNewTab('aksh://network');
+          addLog('success', 'Navigated to Network Radar & Mock Proxy Studio.');
           break;
         }
 

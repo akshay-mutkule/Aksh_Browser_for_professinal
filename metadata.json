@@ -1,6 +1,6 @@
 {
   "name": "Aksh AI Browser",
-  "description": "Next-generation cognitive AI browser featuring Micro-Tool Studio & Prompt-to-App Engine, Neural Memory Vault & Second Brain, Semantic Diff Studio, Omni Terminal Shell, Spatial Knowledge Canvas, and AI Code Sandbox.",
+  "description": "Next-generation cognitive AI browser featuring Network Intelligence Radar & Mock Proxy Studio, Micro-Tool Studio & Prompt-to-App Engine, Neural Memory Vault & Second Brain, Semantic Diff Studio, Omni Terminal Shell, and AI Code Sandbox.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

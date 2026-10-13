@@ -1,4 +1,4 @@
-import { AIMessage, SemanticDiffResult, MemorySynthesisResult, NeuralMemoryItem, GeneratedMicroTool } from '../types';
+import { AIMessage, SemanticDiffResult, MemorySynthesisResult, NeuralMemoryItem, GeneratedMicroTool, NetworkTrafficItem, NetworkAuditFinding } from '../types';
 
 export interface ScrapeResult {
   url: string;
@@ -450,6 +450,28 @@ export async function generateMicroTool(
   }
   return await res.json();
 }
+
+export interface NetworkAuditResponse {
+  securityScore: number;
+  overview: string;
+  findings: NetworkAuditFinding[];
+}
+
+export async function runNetworkAudit(
+  items: NetworkTrafficItem[]
+): Promise<NetworkAuditResponse> {
+  const res = await fetch('/api/ai/network-audit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}: Failed to perform network audit`);
+  }
+  return await res.json();
+}
+
 
 
 

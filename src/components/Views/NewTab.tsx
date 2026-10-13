@@ -341,6 +341,8 @@ export const NewTab: React.FC<NewTabProps> = ({
         return <GitCompare className="w-5 h-5 text-cyan-400" />;
       case 'Wrench':
         return <Wrench className="w-5 h-5 text-cyan-400" />;
+      case 'Radio':
+        return <Radio className="w-5 h-5 text-blue-500" />;
       default:
         return <Search className="w-5 h-5 text-blue-600" />;
     }

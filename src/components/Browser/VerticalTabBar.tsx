@@ -32,7 +32,8 @@ import {
   Workflow,
   Terminal,
   Webhook,
-  Wrench
+  Wrench,
+  Radio
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -111,6 +112,7 @@ export const VerticalTabBar: React.FC<VerticalTabBarProps> = ({
     if (tab.contentType === 'workflows') return <Workflow className="w-4 h-4 text-indigo-500 shrink-0" />;
     if (tab.contentType === 'terminal') return <Terminal className="w-4 h-4 text-slate-800 shrink-0" />;
     if (tab.contentType === 'tools') return <Wrench className="w-4 h-4 text-cyan-400 shrink-0" />;
+    if (tab.contentType === 'network') return <Radio className="w-4 h-4 text-blue-400 shrink-0" />;
     if (tab.favicon) {
       return (
         <img

@@ -232,6 +232,13 @@ export const INTERNAL_TOOL_ROUTES: InternalToolRoute[] = [
     contentType: 'matrix',
     description: 'Side-by-side LLM response comparison and frontier benchmarking',
   },
+  {
+    keywords: ['network', 'traffic', 'proxy', 'interceptor', 'curl', 'radar', 'throttle', 'mock', 'packets', 'status code'],
+    url: 'aksh://network',
+    title: 'Network Radar & Proxy Studio',
+    contentType: 'network',
+    description: 'Live traffic stream, mock response rules, simulated latency throttles & AI privacy audit',
+  },
 ];
 
 export interface CuratedSiteKeywordMap {
@@ -413,6 +420,15 @@ export function resolveSearchOrUrl(
       isAvailableInWeb: true,
       targetUrl: 'aksh://matrix',
       title: 'Multi-Model Matrix',
+      sourceType: 'bang',
+      badge: 'In Web',
+    };
+  }
+  if (trimmed.startsWith('!network') || trimmed.startsWith('!traffic') || trimmed.startsWith('!proxy')) {
+    return {
+      isAvailableInWeb: true,
+      targetUrl: 'aksh://network',
+      title: 'Network Radar & Proxy Studio',
       sourceType: 'bang',
       badge: 'In Web',
     };

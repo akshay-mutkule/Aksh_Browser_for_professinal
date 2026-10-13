@@ -541,6 +541,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     {
+      id: 'view-network',
+      title: 'Network Radar & Proxy Interceptor Studio (aksh://network)',
+      subtitle: 'Live traffic stream, mock response rules, simulated latency throttles & AI privacy audit',
+      category: 'Developer & Code',
+      icon: Radio,
+      iconColor: 'text-blue-400',
+      action: () => {
+        onOpenInternalView('network');
+        onClose();
+      },
+    },
+    {
       id: 'modal-diff-active',
       title: 'Compare Active Tab With Another Tab (Delta Inspector)',
       subtitle: 'Quick modal diff comparison between current page and any open tab',

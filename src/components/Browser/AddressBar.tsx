@@ -63,7 +63,8 @@ import {
   Workflow,
   Terminal,
   Webhook,
-  Wrench
+  Wrench,
+  Radio
 } from 'lucide-react';
 import { Tab, PageContentType, BrowserSettings, BrowserExtension, Bookmark, HistoryItem } from '../../types';
 import { SecurityShieldPopover } from './SecurityShieldPopover';
@@ -424,6 +425,7 @@ export const AddressBar: React.FC<AddressBarProps> = ({
 
     if (val.startsWith('!')) {
       const bangCommands = [
+        { title: '!network / !traffic - Network Radar & Mock Proxy Studio', url: 'aksh://network', type: 'bang' },
         { title: '!tools / !util - Micro-Tool Studio & AI Prompt-to-App Lab', url: 'aksh://tools', type: 'bang' },
         { title: '!vault / !memory - Neural Memory Vault & Second Brain', url: 'aksh://memory', type: 'bang' },
         { title: '!diff - Semantic Diff & Page Evolution Studio', url: 'aksh://diff', type: 'bang' },
@@ -1789,6 +1791,24 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                         </div>
                       </div>
                       <span className="text-[10px] text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">Tools</span>
+                    </button>
+
+                    {/* Network Radar & Interceptor Studio */}
+                    <button
+                      onClick={() => {
+                        onOpenInternalView('network');
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Radio className="w-4 h-4 text-blue-600 shrink-0" />
+                        <div className="text-left">
+                          <div className="font-semibold text-blue-950">Network Radar & Proxy Studio</div>
+                          <div className="text-[10px] text-slate-400">Traffic stream, mock rules, cURL & audit</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">Net</span>
                     </button>
 
                     {/* Omni Terminal */}

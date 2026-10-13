@@ -27,7 +27,8 @@ export type PageContentType =
   | 'apibuilder'
   | 'memory'
   | 'diff'
-  | 'tools';
+  | 'tools'
+  | 'network';
 
 export interface Tab {
   id: string;
@@ -428,5 +429,53 @@ export interface GeneratedMicroTool {
   code: string;
   icon?: string;
   createdAt: number;
+}
+
+export interface NetworkTrafficItem {
+  id: string;
+  url: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+  status: number;
+  statusText: string;
+  type: 'fetch' | 'xhr' | 'document' | 'script' | 'stylesheet' | 'image' | 'media' | 'websocket';
+  sizeBytes: number;
+  durationMs: number;
+  timestamp: string;
+  requestHeaders: Record<string, string>;
+  responseHeaders: Record<string, string>;
+  requestBody?: string;
+  responseBody?: string;
+  timing: {
+    dns: number;
+    tcp: number;
+    tls: number;
+    ttfb: number;
+    download: number;
+  };
+  securityWarnings?: string[];
+  tabId?: string;
+  tabTitle?: string;
+}
+
+export interface NetworkMockRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  urlPattern: string;
+  method: 'ALL' | 'GET' | 'POST' | 'PUT' | 'DELETE';
+  overrideStatus: number;
+  responseBody: string;
+  delayMs: number;
+  injectHeaders: Record<string, string>;
+}
+
+export interface NetworkAuditFinding {
+  id: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  title: string;
+  description: string;
+  recommendation: string;
+  affectedUrl: string;
+  category: 'Credentials' | 'CORS' | 'Transport' | 'Tracking' | 'Headers';
 }
 

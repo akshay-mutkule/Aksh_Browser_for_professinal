@@ -102,6 +102,7 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
   vault / memory    - Switch to Neural Memory Vault
   diff              - Switch to Semantic Diff Studio
   tools / toolbox   - Open Micro-Tool Studio & Utility Lab
+  network / radar   - Open Network Radar & Mock Proxy Studio
   sandbox           - Open AI Code Sandbox & REPL
   api / apibuilder  - Open Instant API Builder
   workflows         - Launch Autonomous Workflow Studio
@@ -184,6 +185,14 @@ export const FullTerminalView: React.FC<FullTerminalViewProps> = ({
       if (onOpenNewTab) {
         onOpenNewTab('aksh://tools');
         appendLog('system', 'Opening Micro-Tool Studio & Utility Lab...');
+      }
+      return;
+    }
+
+    if (commandLower === 'network' || commandLower === 'radar' || commandLower === 'traffic' || commandLower === 'proxy') {
+      if (onOpenNewTab) {
+        onOpenNewTab('aksh://network');
+        appendLog('system', 'Opening Network Radar & Mock Proxy Studio...');
       }
       return;
     }
