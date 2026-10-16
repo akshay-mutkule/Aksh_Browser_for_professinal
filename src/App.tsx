@@ -2092,6 +2092,7 @@ export function App() {
         onOpenQuiz={() => setIsGlobalQuizOpen(true)}
         onOpenCredibility={() => setIsGlobalCredibilityOpen(true)}
         onOpenDiff={() => setIsPageDiffOpen(true)}
+        onToggleNeuralIsland={() => setIsNeuralIslandOpen((prev) => !prev)}
         onSaveAsNote={handleSaveAsNote}
       />
 

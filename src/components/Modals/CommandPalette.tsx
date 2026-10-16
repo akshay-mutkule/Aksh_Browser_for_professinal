@@ -47,7 +47,8 @@ import {
   Webhook,
   Brain,
   GitCompare,
-  Wrench
+  Wrench,
+  BrainCircuit
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -78,6 +79,7 @@ interface CommandPaletteProps {
   onOpenQuiz?: () => void;
   onOpenCredibility?: () => void;
   onOpenDiff?: () => void;
+  onToggleNeuralIsland?: () => void;
   onSaveAsNote?: (title: string, content: string) => void;
 }
 
@@ -107,6 +109,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenQuiz,
   onOpenCredibility,
   onOpenDiff,
+  onToggleNeuralIsland,
   onSaveAsNote,
 }) => {
   const [query, setQuery] = useState('');
@@ -323,6 +326,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     // AI Tools
+    {
+      id: 'neural-island',
+      title: 'Toggle Neural Island Dynamic HUD (Ctrl+I)',
+      subtitle: 'Dynamic intelligence cockpit with real-time page signals, copilot & actions',
+      category: 'AI Intelligence',
+      icon: BrainCircuit,
+      iconColor: 'text-cyan-500',
+      action: () => {
+        if (onToggleNeuralIsland) onToggleNeuralIsland();
+        onClose();
+      },
+    },
     {
       id: 'ai-sidebar',
       title: 'Open Aksh AI Co-Pilot',

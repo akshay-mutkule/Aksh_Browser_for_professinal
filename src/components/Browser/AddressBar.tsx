@@ -1673,6 +1673,25 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                       <Sparkles className="w-3 h-3 text-indigo-600" />
                     </div>
 
+                    {onToggleNeuralIsland && (
+                      <button
+                        onClick={() => {
+                          onToggleNeuralIsland();
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <BrainCircuit className="w-4 h-4 text-cyan-600 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-semibold text-cyan-950">Neural Island Dynamic Cockpit</div>
+                            <div className="text-[10px] text-slate-400">Contextual page signals, telemetry & prompt bar</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-cyan-700 font-bold bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-200">Ctrl+I</span>
+                      </button>
+                    )}
+
                     {onOpenDataExtractor && (
                       <button
                         onClick={() => {
