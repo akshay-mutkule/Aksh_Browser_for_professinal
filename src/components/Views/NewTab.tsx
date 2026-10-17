@@ -40,7 +40,10 @@ import {
   Webhook,
   Brain,
   GitCompare,
-  Wrench
+  Wrench,
+  Menu,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -120,6 +123,16 @@ export const NewTab: React.FC<NewTabProps> = ({
   const [showAddShortcut, setShowAddShortcut] = useState(false);
   const [newShortcutTitle, setNewShortcutTitle] = useState('');
   const [newShortcutUrl, setNewShortcutUrl] = useState('');
+
+  // Three horizontal lines collapsible drawer state (keeps home page neat & clean by default)
+  const [showExtendedDrawer, setShowExtendedDrawer] = useState(() => {
+    try {
+      return localStorage.getItem('aksh_show_extended_hometab') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [drawerCategory, setDrawerCategory] = useState<'all' | 'apps' | 'radar' | 'scratchpad' | 'trending'>('all');
 
   // Quick Scratchpad state
   const [scratchpadText, setScratchpadText] = useState(() => {
@@ -357,6 +370,28 @@ export const NewTab: React.FC<NewTabProps> = ({
 
   const allShortcuts = [...SPEED_DIAL_SHORTCUTS, ...customShortcuts];
 
+  const PRIMARY_DEFAULT_IDS = [
+    'app-search',
+    'app-research',
+    'app-memory',
+    'app-notes',
+    'app-sandbox',
+    'app-bookmarks',
+    'app-history',
+    'app-devtools',
+  ];
+
+  const primaryShortcuts = React.useMemo(() => {
+    const list: typeof allShortcuts = [];
+    customShortcuts.forEach((cs) => list.push(cs));
+    for (const s of SPEED_DIAL_SHORTCUTS) {
+      if (PRIMARY_DEFAULT_IDS.includes(s.id) && !list.some((item) => item.url === s.url)) {
+        list.push(s);
+      }
+    }
+    return list.slice(0, 8);
+  }, [customShortcuts]);
+
   return (
     <div className="h-full overflow-y-auto bg-slate-50/60 flex flex-col items-center justify-start px-4 py-8 select-none">
       <div className="w-full max-w-3xl flex flex-col items-center space-y-6 my-auto">
@@ -551,44 +586,22 @@ export const NewTab: React.FC<NewTabProps> = ({
           })()}
         </motion.div>
 
-        {/* AI Suggested Trending Research Chips */}
+        {/* Neat & Clean Speed Dial Row (Top 8 Favorite Shortcuts) */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.08 }}
-          className="w-full flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar justify-center flex-wrap"
+          className="w-full flex justify-center"
         >
-          <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-indigo-500" />
-            Trending:
-          </span>
-          {trendingPrompts.map((prompt, idx) => (
-            <button
-              key={idx}
-              onClick={() => onNavigate(`aksh://research?q=${encodeURIComponent(prompt)}`)}
-              className="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-indigo-600 transition-all cursor-pointer shadow-2xs text-[11px] whitespace-nowrap"
-            >
-              {prompt}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Application Shortcuts Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.1 }}
-          className="w-full"
-        >
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 justify-items-center">
-            {allShortcuts.map((item) => (
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 sm:gap-3.5 justify-items-center">
+            {primaryShortcuts.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.url)}
-                className="flex flex-col items-center gap-1.5 group w-20 cursor-pointer"
+                className="flex flex-col items-center gap-1.5 group w-18 cursor-pointer"
                 title={`${item.title} (${item.url})`}
               >
-                <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
+                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/90 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
                   {getShortcutIcon(item.icon)}
                 </div>
                 <span className="text-[11px] text-slate-600 group-hover:text-blue-600 truncate w-full text-center font-medium transition-colors">
@@ -596,202 +609,372 @@ export const NewTab: React.FC<NewTabProps> = ({
                 </span>
               </button>
             ))}
+          </div>
+        </motion.div>
 
-            {/* Add Custom Shortcut Button */}
-            <button
-              onClick={() => setShowAddShortcut(true)}
-              className="flex flex-col items-center gap-1.5 group w-20 cursor-pointer"
-              title="Add Custom Shortcut"
+        {/* Three Horizontal Lines Menu Button (Under the clean home page) */}
+        <div className="flex flex-col items-center pt-1 pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showExtendedDrawer;
+              setShowExtendedDrawer(next);
+              try {
+                localStorage.setItem('aksh_show_extended_hometab', String(next));
+              } catch {}
+            }}
+            className={`flex items-center gap-2.5 px-4 py-2 rounded-full border transition-all cursor-pointer group shadow-2xs ${
+              showExtendedDrawer
+                ? 'bg-blue-50/90 border-blue-200 text-blue-700 shadow-xs'
+                : 'bg-white hover:bg-slate-100/80 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
+            }`}
+            title="Three horizontal lines: Open extra tools, feeds & widgets drawer"
+          >
+            {/* Three Horizontal Lines Icon (Menu) */}
+            <Menu className={`w-4 h-4 transition-colors ${showExtendedDrawer ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} />
+            <span className="text-xs font-semibold">
+              {showExtendedDrawer ? 'Hide Extra Tools Drawer' : 'More Apps, Feeds & Tools'}
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                showExtendedDrawer ? 'rotate-180 text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Collapsible Drawer (Contains all extra / secondary tools & feeds under three horizontal lines) */}
+        <AnimatePresence>
+          {showExtendedDrawer && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="w-full space-y-6 pt-2 overflow-hidden"
             >
-              <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-dashed border-slate-300 group-hover:border-blue-500 group-hover:bg-blue-50 transition-all flex items-center justify-center text-slate-400 group-hover:text-blue-600">
-                <Plus className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] text-slate-500 group-hover:text-blue-600 font-medium">
-                Add Tile
-              </span>
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Recent History & Instant Scratchpad Row */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.15 }}
-          className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"
-        >
-          {/* Recent History Quick Jump */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5">
-            <div className="flex items-center justify-between font-bold text-slate-700">
-              <span className="flex items-center gap-1.5">
-                <History className="w-3.5 h-3.5 text-purple-600" />
-                <span>Jump Back In</span>
-              </span>
-              <button
-                onClick={() => onNavigate('aksh://history')}
-                className="text-[11px] text-indigo-600 hover:underline font-normal cursor-pointer"
-              >
-                View all
-              </button>
-            </div>
-
-            <div className="space-y-1.5">
-              {history && history.length > 0 ? (
-                history.slice(0, 3).map((h) => (
-                  <button
-                    key={h.id}
-                    onClick={() => onNavigate(h.url)}
-                    className="w-full text-left p-2 rounded-xl hover:bg-slate-50 flex items-center justify-between transition-colors group cursor-pointer"
-                  >
-                    <div className="truncate pr-2">
-                      <p className="font-medium text-slate-800 group-hover:text-blue-600 truncate">
-                        {h.title || h.url}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-mono truncate">{h.url}</p>
-                    </div>
-                    <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))
-              ) : (
-                <div className="py-4 text-center text-slate-400 italic text-[11px]">
-                  Recently visited pages will appear here.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Scratchpad */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2 flex flex-col justify-between">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between font-bold text-slate-700">
-                <span className="flex items-center gap-1.5">
-                  <StickyNote className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Quick Scratchpad</span>
-                </span>
-                {scratchpadSaved && (
-                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Saved
-                  </span>
-                )}
-              </div>
-              <textarea
-                value={scratchpadText}
-                onChange={(e) => {
-                  setScratchpadText(e.target.value);
-                  localStorage.setItem('aksh_quick_scratchpad', e.target.value);
-                }}
-                placeholder="Jot down a quick thought, link, or note..."
-                rows={3}
-                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 resize-none font-sans"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[10px] text-slate-400">Auto-saved to device</span>
-              <button
-                onClick={handleSaveScratchpad}
-                disabled={!scratchpadText.trim()}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition-colors cursor-pointer disabled:opacity-40"
-              >
-                Save to AI Notes
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* AI Daily Intelligence Radar Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.2 }}
-          className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3"
-        >
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                <Flame className="w-3.5 h-3.5 text-purple-600" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-800">AI Daily Intelligence Radar</h4>
-                <p className="text-[10px] text-slate-400">Curated frontier research & technology insights</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {onSaveAsNote && (
+              {/* Category Filter Pills Inside Drawer */}
+              <div className="flex items-center justify-center gap-1.5 flex-wrap text-xs pb-1">
                 <button
-                  onClick={handleSaveBriefingToNotes}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Save Daily Briefing to AI Notes"
+                  type="button"
+                  onClick={() => setDrawerCategory('all')}
+                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    drawerCategory === 'all'
+                      ? 'bg-slate-900 text-white font-semibold shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
                 >
-                  {briefingSaved ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-600" />
-                      <span className="text-emerald-600">Saved</span>
-                    </>
-                  ) : (
-                    <>
-                      <BookmarkCheck className="w-3 h-3" />
-                      <span>Save Briefing</span>
-                    </>
-                  )}
+                  All Items ({allShortcuts.length} Apps + Feeds)
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerCategory('apps')}
+                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    drawerCategory === 'apps'
+                      ? 'bg-blue-600 text-white font-semibold shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  Apps & Tools ({allShortcuts.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerCategory('radar')}
+                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    drawerCategory === 'radar'
+                      ? 'bg-purple-600 text-white font-semibold shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  AI Daily Radar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerCategory('scratchpad')}
+                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    drawerCategory === 'scratchpad'
+                      ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  Scratchpad & History
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrawerCategory('trending')}
+                  className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+                    drawerCategory === 'trending'
+                      ? 'bg-indigo-600 text-white font-semibold shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}
+                >
+                  Trending Topics
+                </button>
+              </div>
+
+              {/* 1. Trending Prompts (when all or trending) */}
+              {(drawerCategory === 'all' || drawerCategory === 'trending') && (
+                <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar justify-center flex-wrap">
+                  <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-indigo-500" />
+                    Trending:
+                  </span>
+                  {trendingPrompts.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => onNavigate(`aksh://research?q=${encodeURIComponent(prompt)}`)}
+                      className="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-indigo-600 transition-all cursor-pointer shadow-2xs text-[11px] whitespace-nowrap"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               )}
 
-              <button
-                onClick={handleRefreshBriefing}
-                disabled={isGeneratingBriefing}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-50"
-                title="Generate Fresh Daily Intelligence"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingBriefing ? 'animate-spin text-purple-600' : ''}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Briefing Items Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {briefings.map((b) => (
-              <div
-                key={b.id}
-                className="p-3 rounded-xl bg-slate-50/80 hover:bg-purple-50/40 border border-slate-200/80 hover:border-purple-200 transition-all flex flex-col justify-between space-y-2 group"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-purple-700 tracking-wide">
-                      {b.tag}
+              {/* 2. Full Application Suite Grid (when all or apps) */}
+              {(drawerCategory === 'all' || drawerCategory === 'apps') && (
+                <div className="w-full p-4 rounded-2xl bg-white/70 border border-slate-200/90 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-blue-600" />
+                      <span>All Applications & Developer Tools</span>
                     </span>
-                  </div>
-                  <h5 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-purple-900 transition-colors">
-                    {b.title}
-                  </h5>
-                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                    {b.summary}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 pt-1">
-                  <button
-                    onClick={() => onOpenResearch(b.query)}
-                    className="flex-1 py-1 px-2 rounded-lg bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-[10px] font-semibold text-purple-700 flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3 text-purple-600" />
-                    <span>Deep Research</span>
-                  </button>
-                  {b.sourceUrl && (
                     <button
-                      onClick={() => onNavigate(b.sourceUrl!)}
-                      className="p-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-[10px] transition-colors cursor-pointer"
-                      title="Open Source"
+                      onClick={() => setShowAddShortcut(true)}
+                      className="text-blue-600 hover:underline flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
                     >
-                      <ArrowRight className="w-3 h-3" />
+                      <Plus className="w-3 h-3" />
+                      <span>Add Tile</span>
                     </button>
-                  )}
+                  </div>
+
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 justify-items-center">
+                    {allShortcuts.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => onNavigate(item.url)}
+                        className="flex flex-col items-center gap-1.5 group w-20 cursor-pointer"
+                        title={`${item.title} (${item.url})`}
+                      >
+                        <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
+                          {getShortcutIcon(item.icon)}
+                        </div>
+                        <span className="text-[11px] text-slate-600 group-hover:text-blue-600 truncate w-full text-center font-medium transition-colors">
+                          {item.title}
+                        </span>
+                      </button>
+                    ))}
+
+                    {/* Add Custom Shortcut Button */}
+                    <button
+                      onClick={() => setShowAddShortcut(true)}
+                      className="flex flex-col items-center gap-1.5 group w-20 cursor-pointer"
+                      title="Add Custom Shortcut"
+                    >
+                      <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-dashed border-slate-300 group-hover:border-blue-500 group-hover:bg-blue-50 transition-all flex items-center justify-center text-slate-400 group-hover:text-blue-600">
+                        <Plus className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] text-slate-500 group-hover:text-blue-600 font-medium">
+                        Add Tile
+                      </span>
+                    </button>
+                  </div>
                 </div>
+              )}
+
+              {/* 3. Recent History & Instant Scratchpad Row (when all or scratchpad) */}
+              {(drawerCategory === 'all' || drawerCategory === 'scratchpad') && (
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  {/* Recent History Quick Jump */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2.5">
+                    <div className="flex items-center justify-between font-bold text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <History className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Jump Back In</span>
+                      </span>
+                      <button
+                        onClick={() => onNavigate('aksh://history')}
+                        className="text-[11px] text-indigo-600 hover:underline font-normal cursor-pointer"
+                      >
+                        View all
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {history && history.length > 0 ? (
+                        history.slice(0, 3).map((h) => (
+                          <button
+                            key={h.id}
+                            onClick={() => onNavigate(h.url)}
+                            className="w-full text-left p-2 rounded-xl hover:bg-slate-50 flex items-center justify-between transition-colors group cursor-pointer"
+                          >
+                            <div className="truncate pr-2">
+                              <p className="font-medium text-slate-800 group-hover:text-blue-600 truncate">
+                                {h.title || h.url}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-mono truncate">{h.url}</p>
+                            </div>
+                            <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-blue-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        ))
+                      ) : (
+                        <div className="py-4 text-center text-slate-400 italic text-[11px]">
+                          Recently visited pages will appear here.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Scratchpad */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between font-bold text-slate-700">
+                        <span className="flex items-center gap-1.5">
+                          <StickyNote className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Quick Scratchpad</span>
+                        </span>
+                        {scratchpadSaved && (
+                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Saved
+                          </span>
+                        )}
+                      </div>
+                      <textarea
+                        value={scratchpadText}
+                        onChange={(e) => {
+                          setScratchpadText(e.target.value);
+                          localStorage.setItem('aksh_quick_scratchpad', e.target.value);
+                        }}
+                        placeholder="Jot down a quick thought, link, or note..."
+                        rows={3}
+                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 resize-none font-sans"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] text-slate-400">Auto-saved to device</span>
+                      <button
+                        onClick={handleSaveScratchpad}
+                        disabled={!scratchpadText.trim()}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition-colors cursor-pointer disabled:opacity-40"
+                      >
+                        Save to AI Notes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. AI Daily Intelligence Radar Card (when all or radar) */}
+              {(drawerCategory === 'all' || drawerCategory === 'radar') && (
+                <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                        <Flame className="w-3.5 h-3.5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-800">AI Daily Intelligence Radar</h4>
+                        <p className="text-[10px] text-slate-400">Curated frontier research & technology insights</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {onSaveAsNote && (
+                        <button
+                          onClick={handleSaveBriefingToNotes}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Save Daily Briefing to AI Notes"
+                        >
+                          {briefingSaved ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-600">Saved</span>
+                            </>
+                          ) : (
+                            <>
+                              <BookmarkCheck className="w-3 h-3" />
+                              <span>Save Briefing</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={handleRefreshBriefing}
+                        disabled={isGeneratingBriefing}
+                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Generate Fresh Daily Intelligence"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingBriefing ? 'animate-spin text-purple-600' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Briefing Items Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {briefings.map((b) => (
+                      <div
+                        key={b.id}
+                        className="p-3 rounded-xl bg-slate-50/80 hover:bg-purple-50/40 border border-slate-200/80 hover:border-purple-200 transition-all flex flex-col justify-between space-y-2 group"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-purple-700 tracking-wide">
+                              {b.tag}
+                            </span>
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-purple-900 transition-colors">
+                            {b.title}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                            {b.summary}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <button
+                            onClick={() => onOpenResearch(b.query)}
+                            className="flex-1 py-1 px-2 rounded-lg bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-[10px] font-semibold text-purple-700 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-600" />
+                            <span>Deep Research</span>
+                          </button>
+                          {b.sourceUrl && (
+                            <button
+                              onClick={() => onNavigate(b.sourceUrl!)}
+                              className="p-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-[10px] transition-colors cursor-pointer"
+                              title="Open Source"
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Quick Collapse Button */}
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExtendedDrawer(false);
+                    try {
+                      localStorage.setItem('aksh_show_extended_hometab', 'false');
+                    } catch {}
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-700 flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer"
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                  <span>Collapse back to neat view</span>
+                </button>
               </div>
-            ))}
-          </div>
-        </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Discreet Tour & Guide Link */}
         {onOpenTour && (
