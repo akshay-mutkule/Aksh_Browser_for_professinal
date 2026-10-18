@@ -43,7 +43,8 @@ import {
   Wrench,
   Menu,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Bot
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
@@ -105,7 +106,7 @@ export const NewTab: React.FC<NewTabProps> = ({
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
-  const [searchMode, setSearchMode] = useState<'google' | 'ai' | 'scholar' | 'news'>('google');
+  const [searchMode, setSearchMode] = useState<'google' | 'ai' | 'agent' | 'scholar' | 'news'>('google');
   const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [greeting, setGreeting] = useState<string>('Welcome');
@@ -133,6 +134,7 @@ export const NewTab: React.FC<NewTabProps> = ({
     }
   });
   const [drawerCategory, setDrawerCategory] = useState<'all' | 'apps' | 'radar' | 'scratchpad' | 'trending'>('all');
+  const [drawerFilter, setDrawerFilter] = useState('');
 
   // Quick Scratchpad state
   const [scratchpadText, setScratchpadText] = useState(() => {
@@ -253,6 +255,12 @@ export const NewTab: React.FC<NewTabProps> = ({
     const q = searchInput.trim();
     if (!q) return;
 
+    if (searchMode === 'agent' || q.startsWith('!agent ') || q.startsWith('!swarm ') || q.startsWith('!auto ')) {
+      const cleanQ = q.replace(/^!(agent|swarm|auto)\s+/, '');
+      onNavigate(cleanQ ? `aksh://agent?goal=${encodeURIComponent(cleanQ)}` : 'aksh://agent');
+      return;
+    }
+
     if (searchMode === 'ai' || isAiMode || q.startsWith('!ai ') || q.startsWith('!gemini ')) {
       const cleanQ = q.replace(/^!(ai|gemini)\s+/, '');
       onNavigate(`aksh://research?q=${encodeURIComponent(cleanQ)}`);
@@ -271,6 +279,47 @@ export const NewTab: React.FC<NewTabProps> = ({
 
     if (q.startsWith('!mindmap ') || q.startsWith('!m ')) {
       onNavigate(`aksh://mindmap?topic=${encodeURIComponent(q.replace(/^!(mindmap|m)\s+/, ''))}`);
+      return;
+    }
+
+    if (q.startsWith('!code') || q.startsWith('!sandbox') || q.startsWith('!repl')) {
+      onNavigate('aksh://sandbox');
+      return;
+    }
+
+    if (q.startsWith('!term') || q.startsWith('!cli') || q.startsWith('!sh')) {
+      onNavigate('aksh://terminal');
+      return;
+    }
+
+    if (q.startsWith('!vault') || q.startsWith('!memory')) {
+      const cleanQ = q.replace(/^!(vault|memory)\s*/, '');
+      onNavigate(cleanQ ? `aksh://memory?q=${encodeURIComponent(cleanQ)}` : 'aksh://memory');
+      return;
+    }
+
+    if (q.startsWith('!diff')) {
+      onNavigate('aksh://diff');
+      return;
+    }
+
+    if (q.startsWith('!tools') || q.startsWith('!toolbox')) {
+      onNavigate('aksh://tools');
+      return;
+    }
+
+    if (q.startsWith('!network') || q.startsWith('!radar')) {
+      onNavigate('aksh://network');
+      return;
+    }
+
+    if (q.startsWith('!api')) {
+      onNavigate('aksh://apibuilder');
+      return;
+    }
+
+    if (q.startsWith('!matrix') || q.startsWith('!models')) {
+      onNavigate('aksh://matrix');
       return;
     }
 
@@ -416,7 +465,7 @@ export const NewTab: React.FC<NewTabProps> = ({
         </motion.div>
 
         {/* Search Engine Mode Switcher Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-2xl text-xs font-semibold">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-2xl text-xs font-semibold flex-wrap justify-center">
           <button
             onClick={() => {
               setSearchMode('google');
@@ -445,6 +494,21 @@ export const NewTab: React.FC<NewTabProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Gemini 3.7 Research</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSearchMode('agent');
+              setIsAiMode(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              searchMode === 'agent'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Agent Swarm</span>
           </button>
 
           <button
@@ -498,13 +562,15 @@ export const NewTab: React.FC<NewTabProps> = ({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={
-                searchMode === 'ai' || isAiMode
+                searchMode === 'agent'
+                  ? 'Assign goal to Autonomous Agent Swarm (e.g. Plan quantum research, compare frameworks)...'
+                  : searchMode === 'ai' || isAiMode
                   ? 'Ask Gemini 3.7 anything or enter deep research topic...'
                   : searchMode === 'scholar'
                   ? 'Search academic papers, journals, citations...'
                   : searchMode === 'news'
                   ? 'Search breaking global news and live headlines...'
-                  : 'Search Google or type a web address...'
+                  : 'Search Google or type a web address (Try !agent, !code, !vault)...'
               }
               className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-base focus:outline-none py-2 px-1"
               autoFocus
@@ -545,8 +611,31 @@ export const NewTab: React.FC<NewTabProps> = ({
             </div>
           </form>
 
-          {/* Live Search Routing Indicator (Available in web vs Direct to Google) */}
+          {/* Live Search Routing Indicator (Available in web vs Direct to Google vs Autonomous Agent) */}
           {searchInput.trim().length > 1 && (() => {
+            if (searchMode === 'agent') {
+              return (
+                <div className="mt-2.5 px-4 py-2 rounded-xl bg-violet-50/80 border border-violet-200 text-xs flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center shrink-0">
+                      <Bot className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="font-bold text-violet-800">Autonomous Agent Swarm:</span>
+                    <span className="text-slate-700 truncate max-w-xs">
+                      Will orchestrate multi-agent workflow for &quot;{searchInput.trim()}&quot;
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-colors cursor-pointer shrink-0 ml-2"
+                  >
+                    Deploy Agents ↵
+                  </button>
+                </div>
+              );
+            }
+
             const res = resolveSearchOrUrl(searchInput, { bookmarks, history });
             return (
               <div className="mt-2.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs flex items-center justify-between shadow-xs">
@@ -734,22 +823,38 @@ export const NewTab: React.FC<NewTabProps> = ({
               {/* 2. Full Application Suite Grid (when all or apps) */}
               {(drawerCategory === 'all' || drawerCategory === 'apps') && (
                 <div className="w-full p-4 rounded-2xl bg-white/70 border border-slate-200/90 shadow-2xs space-y-3">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1 gap-2 flex-wrap">
                     <span className="flex items-center gap-1.5">
                       <Layers className="w-4 h-4 text-blue-600" />
-                      <span>All Applications & Developer Tools</span>
+                      <span>All Applications & Developer Tools ({allShortcuts.length})</span>
                     </span>
-                    <button
-                      onClick={() => setShowAddShortcut(true)}
-                      className="text-blue-600 hover:underline flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Add Tile</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={drawerFilter}
+                        onChange={(e) => setDrawerFilter(e.target.value)}
+                        placeholder="Filter tools..."
+                        className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 w-28 sm:w-36 font-normal"
+                      />
+                      <button
+                        onClick={() => setShowAddShortcut(true)}
+                        className="text-blue-600 hover:underline flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Tile</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 justify-items-center">
-                    {allShortcuts.map((item) => (
+                    {allShortcuts
+                      .filter(
+                        (item) =>
+                          !drawerFilter.trim() ||
+                          item.title.toLowerCase().includes(drawerFilter.toLowerCase()) ||
+                          item.url.toLowerCase().includes(drawerFilter.toLowerCase())
+                      )
+                      .map((item) => (
                       <button
                         key={item.id}
                         onClick={() => onNavigate(item.url)}

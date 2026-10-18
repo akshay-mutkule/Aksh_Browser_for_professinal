@@ -36,12 +36,19 @@ import {
   GitCompare,
   Play,
   Table,
-  BrainCircuit
+  BrainCircuit,
+  Bot,
+  Send,
+  CornerDownLeft,
+  Minimize2,
+  ChevronUp,
+  RefreshCw,
+  MessageSquare
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
 import { SAMPLE_WEBSITES } from '../../data/mockWebsites';
-import { translateText, factCheckClaim } from '../../services/api';
+import { translateText, factCheckClaim, sendAIChat } from '../../services/api';
 import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
 import { PageQuizModal } from '../Modals/PageQuizModal';
 import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
@@ -51,7 +58,7 @@ interface LiveWebViewProps {
   tab: Tab;
   onNavigate: (url: string) => void;
   onTriggerAiSummary: () => void;
-  onSaveAsNote: (title: string, content: string) => void;
+  onSaveAsNote: (title: string, content: string, sourceUrl?: string, tags?: string[]) => void;
   onTriggerSpeech?: () => void;
   onToggleReaderMode?: () => void;
   onOpenWebClipper?: () => void;
@@ -120,6 +127,26 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   // AI X-Ray Intelligence & Entity Lens
   const [showXRay, setShowXRay] = useState(false);
   const [xRayFilter, setXRayFilter] = useState<'all' | 'entities' | 'tech' | 'metrics'>('all');
+
+  // AI Neural Audience Lens / Perspective Shifter
+  type NeuralLensMode = 'original' | 'eli5' | 'executive' | 'architect' | 'critique';
+  const [lensMode, setLensMode] = useState<NeuralLensMode>('original');
+  const [lensContent, setLensContent] = useState<string | null>(null);
+  const [isLensLoading, setIsLensLoading] = useState(false);
+  const [cachedLenses, setCachedLenses] = useState<Record<string, string>>({});
+
+  // Floating In-Page Copilot Capsule State
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [copilotInput, setCopilotInput] = useState('');
+  const [copilotMessages, setCopilotMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string; id: string }>>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      text: '👋 Hi! I am your live in-page copilot. Ask me anything about this page or choose one of the quick prompts below.',
+    },
+  ]);
+  const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+  const copilotEndRef = useRef<HTMLDivElement>(null);
 
   // Helper to transform text into bionic reading format (bold first half of each word)
   const toBionicMarkdown = (markdown: string): string => {
@@ -205,19 +232,118 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const mockSite = SAMPLE_WEBSITES[tab.url];
 
-  // Raw content determination
+  // Raw content determination (with active lens support)
+  const currentBaseContent = lensContent || translatedText || tab.extractedText || '';
   const activeContent = translatedText || tab.extractedText || '';
   const displayContent = useMemo(() => {
-    return isBionic ? toBionicMarkdown(activeContent) : activeContent;
-  }, [activeContent, isBionic]);
+    return isBionic ? toBionicMarkdown(currentBaseContent) : currentBaseContent;
+  }, [currentBaseContent, isBionic]);
 
   // Calculate Reading Stats (words & estimated minutes)
   const readingStats = useMemo(() => {
-    const text = activeContent || (mockSite ? mockSite.extractedText : '');
+    const text = currentBaseContent || (mockSite ? mockSite.extractedText : '');
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const minutes = Math.max(1, Math.ceil(words / 200));
     return { words, minutes };
-  }, [activeContent, mockSite]);
+  }, [currentBaseContent, mockSite]);
+
+  const handleSelectLens = async (mode: NeuralLensMode) => {
+    if (mode === 'original') {
+      setLensMode('original');
+      setLensContent(null);
+      return;
+    }
+    setLensMode(mode);
+    const cacheKey = `${tab.url}_${mode}`;
+    if (cachedLenses[cacheKey]) {
+      setLensContent(cachedLenses[cacheKey]);
+      return;
+    }
+
+    setIsLensLoading(true);
+    try {
+      const pageText = tab.extractedText || '';
+      let prompt = '';
+      if (mode === 'eli5') {
+        prompt = `Rewrite this webpage content as "Explain Like I'm 5": Use vivid everyday metaphors, conversational language, zero technical jargon, and keep it friendly yet accurate:\n\n${pageText.slice(0, 4500)}`;
+      } else if (mode === 'executive') {
+        prompt = `Rewrite this webpage content as an Executive Briefing:
+- Executive Summary (1 paragraph)
+- Top 3 Strategic Implications
+- Key Metrics & Quantitative Data Points
+- Potential Risks & Tradeoffs
+- 4 Prioritized Recommended Action Steps:\n\n${pageText.slice(0, 4500)}`;
+      } else if (mode === 'architect') {
+        prompt = `Rewrite this webpage content as a Senior Systems Architect Technical Deep-Dive:
+- Architectural Breakdown & Component Interactions
+- Performance, Scalability & Big-O Tradeoffs
+- Security & Failure Modes
+- Technical Implementation Considerations:\n\n${pageText.slice(0, 4500)}`;
+      } else if (mode === 'critique') {
+        prompt = `Provide an adversarial critical audit of this webpage:
+- Unverified Claims or Potential Biases
+- Counter-Arguments & Alternate Perspectives
+- What the author omitted or glossed over
+- Epistemic Rigor Score (1-100):\n\n${pageText.slice(0, 4500)}`;
+      }
+
+      const res = await sendAIChat(prompt, [], {
+        url: tab.url,
+        title: tab.title,
+        textContent: pageText.slice(0, 4000),
+      });
+
+      setLensContent(res.reply);
+      setCachedLenses((prev) => ({ ...prev, [cacheKey]: res.reply }));
+    } catch (err) {
+      console.error(err);
+      setLensContent('⚠️ Failed to adapt page content with AI. Please try again.');
+    } finally {
+      setIsLensLoading(false);
+    }
+  };
+
+  const handleSendCopilot = async (textToSend?: string) => {
+    const q = (textToSend || copilotInput).trim();
+    if (!q || isCopilotLoading) return;
+
+    const userMsg = { id: `user-${Date.now()}`, role: 'user' as const, text: q };
+    setCopilotMessages((prev) => [...prev, userMsg]);
+    if (!textToSend) setCopilotInput('');
+    setIsCopilotLoading(true);
+
+    try {
+      const history = copilotMessages.slice(-6).map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        content: m.text,
+      }));
+
+      const res = await sendAIChat(q, history, {
+        url: tab.url,
+        title: tab.title,
+        textContent: (tab.extractedText || '').slice(0, 4000),
+      });
+
+      setCopilotMessages((prev) => [
+        ...prev,
+        { id: `ai-${Date.now()}`, role: 'assistant', text: res.reply },
+      ]);
+    } catch (err) {
+      setCopilotMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          role: 'assistant',
+          text: err instanceof Error ? err.message : 'Error communicating with Gemini Copilot.',
+        },
+      ]);
+    } finally {
+      setIsCopilotLoading(false);
+      setTimeout(() => {
+        copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  };
 
   const handleSaveToVault = () => {
     try {
@@ -903,6 +1029,101 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
         </div>
       )}
 
+      {/* AI Cognitive Lens Bar (Perspective & Depth Shifter) */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-4 py-2 border-b border-indigo-900/60 flex items-center justify-between flex-wrap gap-2 text-xs shadow-inner shrink-0 z-10 select-none">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 font-bold text-indigo-300">
+            <BrainCircuit className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span className="text-slate-100 font-semibold tracking-wide">Cognitive Lens:</span>
+          </div>
+          <div className="flex items-center gap-1 bg-white/10 p-0.5 rounded-xl border border-white/10">
+            <button
+              onClick={() => handleSelectLens('original')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                lensMode === 'original'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Original
+            </button>
+            <button
+              onClick={() => handleSelectLens('eli5')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                lensMode === 'eli5'
+                  ? 'bg-amber-400 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+              title="Explain Like I'm 5 (Plain English & Metaphors)"
+            >
+              <span>👶 ELI5</span>
+            </button>
+            <button
+              onClick={() => handleSelectLens('executive')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                lensMode === 'executive'
+                  ? 'bg-emerald-400 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+              title="Executive Briefing (Strategic takeaways, risks & metrics)"
+            >
+              <span>💼 Executive</span>
+            </button>
+            <button
+              onClick={() => handleSelectLens('architect')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                lensMode === 'architect'
+                  ? 'bg-purple-400 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+              title="Senior Systems Architect (Deep technical architecture & tradeoffs)"
+            >
+              <span>🔬 Architect</span>
+            </button>
+            <button
+              onClick={() => handleSelectLens('critique')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                lensMode === 'critique'
+                  ? 'bg-rose-400 text-slate-950 font-bold shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+              title="Critical & Adversarial Audit (Missing facts & counter-points)"
+            >
+              <span>⚖️ Critique</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isLensLoading && (
+            <span className="flex items-center gap-1.5 text-[11px] text-cyan-300 font-mono animate-pulse">
+              <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />
+              Synthesizing perspective with Gemini 3.7...
+            </span>
+          )}
+          {lensMode !== 'original' && lensContent && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleCopyText(lensContent)}
+                className="px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-slate-200 text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                title="Copy adapted text"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+              <button
+                onClick={() => onSaveAsNote(`${lensMode.toUpperCase()} Lens: ${tab.title}`, lensContent, tab.url)}
+                className="px-2 py-0.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Save adapted note"
+              >
+                <StickyNote className="w-3 h-3" />
+                <span>Save Note</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Main Viewport Content Area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto bg-slate-50 relative">
         {/* Floating Table of Contents Outline Sidebar */}
@@ -1120,8 +1341,51 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           </div>
         )}
 
-        {/* If the URL is Google Search or Google Home, render dedicated Google Search Page */}
-        {(tab.url.includes('google.com/search') ||
+        {/* Active Neural Lens Perspective View */}
+        {lensMode !== 'original' ? (
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-200 shadow-xs flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
+                  {lensMode === 'eli5' ? '👶' : lensMode === 'executive' ? '💼' : lensMode === 'architect' ? '🔬' : '⚖️'}
+                </div>
+                <div>
+                  <h3 className="text-sm md:text-base font-bold text-indigo-950">
+                    {lensMode === 'eli5' && "Explain Like I'm 5 (ELI5) Lens Active"}
+                    {lensMode === 'executive' && 'Executive Briefing & Strategic Decision Lens Active'}
+                    {lensMode === 'architect' && 'Senior Systems Architect Technical Deep-Dive Active'}
+                    {lensMode === 'critique' && 'Adversarial Critical Audit & Rigor Lens Active'}
+                  </h3>
+                  <p className="text-xs text-indigo-800/80">
+                    Grounded on active page &bull; Real-time cognitive adaptation by Gemini 3.7 Flash
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleSelectLens('original')}
+                className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-indigo-100/60 border border-indigo-200 text-indigo-700 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+              >
+                Restore Original Page
+              </button>
+            </div>
+
+            {isLensLoading ? (
+              <div className="bg-white p-12 rounded-2xl border border-slate-200 shadow-xs text-center space-y-4">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">Synthesizing Lens Perspective...</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Gemini 3.7 is analyzing the entire page, extracting core semantic relationships, and adapting tone & depth.
+                </p>
+              </div>
+            ) : lensContent ? (
+              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs space-y-5 text-slate-800 text-sm md:text-base leading-relaxed">
+                <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:leading-relaxed prose-a:text-blue-600 prose-code:font-mono prose-code:text-xs">
+                  <ReactMarkdown>{lensContent}</ReactMarkdown>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (tab.url.includes('google.com/search') ||
           tab.url.includes('google.com/?q=') ||
           tab.url.replace(/\/+$/, '') === 'https://www.google.com' ||
           tab.url.replace(/\/+$/, '') === 'http://www.google.com' ||
@@ -1380,6 +1644,14 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
                 >
                   {vaultSaved ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <BrainCircuit className="w-3.5 h-3.5 text-purple-600" />}
                   <span>{vaultSaved ? 'Indexed to Vault!' : 'Add to Vault'}</span>
+                </button>
+                <button
+                  onClick={() => onNavigate('aksh://agent')}
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-purple-50 border border-purple-200 text-purple-900 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  title="Launch autonomous multi-agent research swarm on this page"
+                >
+                  <Bot className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Launch Agent</span>
                 </button>
               </div>
             </div>
