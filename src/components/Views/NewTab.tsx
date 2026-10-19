@@ -126,13 +126,7 @@ export const NewTab: React.FC<NewTabProps> = ({
   const [newShortcutUrl, setNewShortcutUrl] = useState('');
 
   // Three horizontal lines collapsible drawer state (keeps home page neat & clean by default)
-  const [showExtendedDrawer, setShowExtendedDrawer] = useState(() => {
-    try {
-      return localStorage.getItem('aksh_show_extended_hometab') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [showExtendedDrawer, setShowExtendedDrawer] = useState(false);
   const [drawerCategory, setDrawerCategory] = useState<'all' | 'apps' | 'radar' | 'scratchpad' | 'trending'>('all');
   const [drawerFilter, setDrawerFilter] = useState('');
 
@@ -445,40 +439,45 @@ export const NewTab: React.FC<NewTabProps> = ({
     <div className="h-full overflow-y-auto bg-slate-50/60 flex flex-col items-center justify-start px-4 py-8 select-none">
       <div className="w-full max-w-3xl flex flex-col items-center space-y-6 my-auto">
         
-        {/* Live Clock & Gentle Greeting */}
+        {/* Minimalist Google / Browser Header */}
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="flex flex-col items-center space-y-1 text-center"
+          className="flex flex-col items-center space-y-1.5 text-center select-none pt-2"
         >
+          <div className="text-5xl sm:text-6xl font-medium tracking-tight font-sans flex items-center justify-center">
+            <span className="text-[#4285F4]">G</span>
+            <span className="text-[#EA4335]">o</span>
+            <span className="text-[#FBBC05]">o</span>
+            <span className="text-[#4285F4]">g</span>
+            <span className="text-[#34A853]">l</span>
+            <span className="text-[#EA4335]">e</span>
+          </div>
           {currentTime && (
-            <div className="text-4xl sm:text-5xl font-extralight tracking-tight text-slate-800 font-mono">
-              {currentTime}
+            <div className="text-xs text-slate-400 font-medium flex items-center gap-2">
+              <span className="font-mono">{currentTime}</span>
+              <span>•</span>
+              <span>{greeting}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-            <span>{greeting}, Explorer</span>
-            <span>•</span>
-            <span className="text-indigo-600 font-semibold">Gemini 3.7 Active</span>
-          </div>
         </motion.div>
 
-        {/* Search Engine Mode Switcher Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-2xl text-xs font-semibold flex-wrap justify-center">
+        {/* Minimalist Search Mode Switcher */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-full border border-slate-200/80 text-[11px] font-medium text-slate-500 shadow-2xs">
           <button
             onClick={() => {
               setSearchMode('google');
               setIsAiMode(false);
             }}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'google' && !isAiMode
-                ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-slate-900 font-semibold shadow-xs'
+                : 'hover:text-slate-800'
             }`}
           >
-            <span className="text-[#4285F4] font-bold">G</span>
-            <span>Google Search</span>
+            <span className="text-[#4285F4] font-bold text-xs">G</span>
+            <span>Google</span>
           </button>
 
           <button
@@ -486,14 +485,14 @@ export const NewTab: React.FC<NewTabProps> = ({
               setSearchMode('ai');
               setIsAiMode(true);
             }}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'ai' || isAiMode
-                ? 'bg-purple-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                : 'hover:text-purple-700'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Gemini 3.7 Research</span>
+            <Sparkles className="w-3 h-3 text-purple-300" />
+            <span>Gemini AI</span>
           </button>
 
           <button
@@ -501,44 +500,14 @@ export const NewTab: React.FC<NewTabProps> = ({
               setSearchMode('agent');
               setIsAiMode(false);
             }}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'agent'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold shadow-xs'
+                : 'hover:text-indigo-700'
             }`}
           >
-            <Bot className="w-3.5 h-3.5" />
+            <Bot className="w-3 h-3" />
             <span>Agent Swarm</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setSearchMode('scholar');
-              setIsAiMode(false);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-              searchMode === 'scholar'
-                ? 'bg-white text-blue-700 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Scholar</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setSearchMode('news');
-              setIsAiMode(false);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-              searchMode === 'news'
-                ? 'bg-white text-emerald-700 shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>News</span>
           </button>
         </div>
 
@@ -551,10 +520,10 @@ export const NewTab: React.FC<NewTabProps> = ({
         >
           <form
             onSubmit={handleSearch}
-            className="w-full relative flex items-center bg-white border border-slate-200 hover:border-slate-300 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-2xl p-1.5 shadow-sm transition-all"
+            className="w-full relative flex items-center bg-white border border-slate-200/90 hover:border-slate-300 hover:shadow-md focus-within:border-blue-500 focus-within:shadow-md focus-within:ring-4 focus-within:ring-blue-500/10 rounded-full px-4 py-2.5 shadow-xs transition-all"
           >
-            <div className="pl-3.5 pr-2 text-slate-400 shrink-0">
-              <Search className="w-5 h-5 text-blue-600" />
+            <div className="pr-2.5 text-slate-400 shrink-0">
+              <Search className="w-4 h-4 text-slate-400" />
             </div>
 
             <input
@@ -563,25 +532,21 @@ export const NewTab: React.FC<NewTabProps> = ({
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={
                 searchMode === 'agent'
-                  ? 'Assign goal to Autonomous Agent Swarm (e.g. Plan quantum research, compare frameworks)...'
+                  ? 'Assign goal to Autonomous Agent Swarm...'
                   : searchMode === 'ai' || isAiMode
                   ? 'Ask Gemini 3.7 anything or enter deep research topic...'
-                  : searchMode === 'scholar'
-                  ? 'Search academic papers, journals, citations...'
-                  : searchMode === 'news'
-                  ? 'Search breaking global news and live headlines...'
-                  : 'Search Google or type a web address (Try !agent, !code, !vault)...'
+                  : 'Search Google or type a web address...'
               }
-              className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-base focus:outline-none py-2 px-1"
+              className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-sm focus:outline-none py-1"
               autoFocus
             />
 
-            <div className="flex items-center gap-1.5 pr-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {/* Voice Search Button */}
               <button
                 type="button"
                 onClick={handleTriggerVoiceSearch}
-                className={`p-2 rounded-xl transition-colors cursor-pointer ${
+                className={`p-2 rounded-full transition-colors cursor-pointer ${
                   isListeningVoice
                     ? 'bg-rose-100 text-rose-600 animate-pulse'
                     : 'hover:bg-slate-100 text-slate-500 hover:text-blue-600'
@@ -595,7 +560,7 @@ export const NewTab: React.FC<NewTabProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('https://www.google.com/search?q=visual+search+google+lens')}
-                className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
                 title="Google Lens Visual Search"
               >
                 <Camera className="w-4 h-4 text-[#EA4335]" />
@@ -603,10 +568,10 @@ export const NewTab: React.FC<NewTabProps> = ({
 
               <button
                 type="submit"
-                className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0"
+                className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-colors cursor-pointer shadow-xs shrink-0 ml-1"
                 title="Search"
               >
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </form>
@@ -702,31 +667,25 @@ export const NewTab: React.FC<NewTabProps> = ({
         </motion.div>
 
         {/* Three Horizontal Lines Menu Button (Under the clean home page) */}
-        <div className="flex flex-col items-center pt-1 pb-1">
+        <div className="flex flex-col items-center pt-2 pb-1">
           <button
             type="button"
-            onClick={() => {
-              const next = !showExtendedDrawer;
-              setShowExtendedDrawer(next);
-              try {
-                localStorage.setItem('aksh_show_extended_hometab', String(next));
-              } catch {}
-            }}
-            className={`flex items-center gap-2.5 px-4 py-2 rounded-full border transition-all cursor-pointer group shadow-2xs ${
+            onClick={() => setShowExtendedDrawer(!showExtendedDrawer)}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all cursor-pointer group shadow-2xs ${
               showExtendedDrawer
-                ? 'bg-blue-50/90 border-blue-200 text-blue-700 shadow-xs'
-                : 'bg-white hover:bg-slate-100/80 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                : 'bg-white hover:bg-slate-100 border-slate-200/90 text-slate-600 hover:text-slate-900 hover:border-slate-300'
             }`}
-            title="Three horizontal lines: Open extra tools, feeds & widgets drawer"
+            title="Three horizontal lines: Open extra apps, feeds & tools drawer"
           >
             {/* Three Horizontal Lines Icon (Menu) */}
-            <Menu className={`w-4 h-4 transition-colors ${showExtendedDrawer ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} />
-            <span className="text-xs font-semibold">
-              {showExtendedDrawer ? 'Hide Extra Tools Drawer' : 'More Apps, Feeds & Tools'}
+            <Menu className={`w-4 h-4 transition-colors ${showExtendedDrawer ? 'text-white' : 'text-slate-500 group-hover:text-blue-600'}`} />
+            <span className="text-xs font-medium">
+              {showExtendedDrawer ? 'Close Extra Apps & Feeds' : 'More Apps & Tools'}
             </span>
             <ChevronDown
               className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                showExtendedDrawer ? 'rotate-180 text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
+                showExtendedDrawer ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-slate-600'
               }`}
             />
           </button>
