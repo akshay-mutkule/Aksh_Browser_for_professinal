@@ -23,7 +23,10 @@ import {
   Eye,
   Activity,
   Terminal,
-  Cpu
+  Cpu,
+  Bot,
+  Workflow,
+  Scale
 } from 'lucide-react';
 import { Tab, NeuralMemoryItem } from '../../types';
 import { sendAIChat } from '../../services/api';
@@ -445,6 +448,66 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
                   {vaultSaved ? 'Indexed to Vault!' : 'Save to Vault'}
                 </div>
                 <div className="text-[9px] text-slate-400">Neural second brain</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenInternalView('agent');
+                  onToggleOpen();
+                }}
+                className="p-2.5 rounded-2xl bg-violet-950/40 hover:bg-violet-900/50 border border-violet-700/30 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Bot className="w-4 h-4 text-violet-400 group-hover:scale-110" />
+                  <span className="text-[9px] font-mono text-violet-400 font-bold">SWARM</span>
+                </div>
+                <div className="text-[11px] font-semibold text-slate-200">Agent Studio</div>
+                <div className="text-[9px] text-slate-400">Autonomous multi-agent</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenInternalView('terminal');
+                  onToggleOpen();
+                }}
+                className="p-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700/50 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Terminal className="w-4 h-4 text-emerald-400 group-hover:scale-110" />
+                  <span className="text-[9px] font-mono text-emerald-400 font-bold">BASH</span>
+                </div>
+                <div className="text-[11px] font-semibold text-slate-200">Omni Terminal</div>
+                <div className="text-[9px] text-slate-400">System CLI & curl suite</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenInternalView('matrix');
+                  onToggleOpen();
+                }}
+                className="p-2.5 rounded-2xl bg-blue-950/40 hover:bg-blue-900/50 border border-blue-700/30 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Scale className="w-4 h-4 text-blue-400 group-hover:scale-110" />
+                  <span className="text-[9px] font-mono text-blue-400 font-bold">ARENA</span>
+                </div>
+                <div className="text-[11px] font-semibold text-slate-200">Model Matrix</div>
+                <div className="text-[9px] text-slate-400">Side-by-side LLM benchmark</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenInternalView('workflows');
+                  onToggleOpen();
+                }}
+                className="p-2.5 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-700/30 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Workflow className="w-4 h-4 text-indigo-400 group-hover:scale-110" />
+                  <span className="text-[9px] font-mono text-indigo-400 font-bold">FLOW</span>
+                </div>
+                <div className="text-[11px] font-semibold text-slate-200">Workflow Studio</div>
+                <div className="text-[9px] text-slate-400">Node graph automation</div>
               </button>
             </div>
 

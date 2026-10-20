@@ -638,6 +638,53 @@ export const NewTab: React.FC<NewTabProps> = ({
               </div>
             );
           })()}
+
+          {/* Contextual Intelligence Chips (Only when AI or Agent mode is selected, keeping Google mode pristine) */}
+          {searchInput.trim().length === 0 && (searchMode === 'ai' || searchMode === 'agent') && (
+            <div className="flex items-center justify-center gap-1.5 flex-wrap pt-2 text-xs animate-in fade-in duration-150">
+              {searchMode === 'agent' ? (
+                <>
+                  <span className="text-[10px] font-semibold text-violet-700 flex items-center gap-1">
+                    <Bot className="w-3 h-3 text-violet-600" /> Swarm Goals:
+                  </span>
+                  {[
+                    'Audit web security & privacy leaks',
+                    'Synthesize quantum error papers',
+                    'Competitive analysis of AI browsers',
+                  ].map((goal, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onNavigate(`aksh://agent?goal=${encodeURIComponent(goal)}`)}
+                      className="px-2.5 py-0.5 rounded-full bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 text-[11px] font-medium transition-all cursor-pointer shadow-2xs hover:scale-105"
+                    >
+                      {goal}
+                    </button>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] font-semibold text-purple-700 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-purple-600" /> Frontier Topics:
+                  </span>
+                  {[
+                    'Quantum computing roadmap 2026',
+                    'Transformer self-attention explained',
+                    'Model Context Protocol MCP guide',
+                  ].map((topic, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onNavigate(`aksh://research?q=${encodeURIComponent(topic)}`)}
+                      className="px-2.5 py-0.5 rounded-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-[11px] font-medium transition-all cursor-pointer shadow-2xs hover:scale-105"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Neat & Clean Speed Dial Row (Top 8 Favorite Shortcuts) */}
