@@ -26,7 +26,8 @@ import {
   Cpu,
   Bot,
   Workflow,
-  Scale
+  Scale,
+  Mic
 } from 'lucide-react';
 import { Tab, NeuralMemoryItem } from '../../types';
 import { sendAIChat } from '../../services/api';
@@ -41,6 +42,8 @@ interface NeuralIslandHUDProps {
   onOpenDataExtractor: () => void;
   onOpenInternalView: (view: string) => void;
   isAmbientPlaying?: boolean;
+  onToggleVoiceHud?: () => void;
+  onToggleOmniTerminal?: () => void;
 }
 
 export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
@@ -53,6 +56,8 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
   onOpenDataExtractor,
   onOpenInternalView,
   isAmbientPlaying = false,
+  onToggleVoiceHud,
+  onToggleOmniTerminal,
 }) => {
   const [quickPrompt, setQuickPrompt] = useState('');
   const [isPrompting, setIsPrompting] = useState(false);
@@ -234,6 +239,26 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
               >
                 {vaultSaved ? <Check className="w-3 h-3 text-emerald-400" /> : <BookmarkPlus className="w-3 h-3 text-purple-400" />}
               </button>
+
+              {onToggleVoiceHud && (
+                <button
+                  onClick={onToggleVoiceHud}
+                  className="p-1 rounded-full hover:bg-slate-800 text-slate-300 hover:text-rose-400 transition-colors cursor-pointer"
+                  title="Hands-Free Voice Co-Pilot (Alt+V)"
+                >
+                  <Mic className="w-3 h-3 text-rose-400" />
+                </button>
+              )}
+
+              {onToggleOmniTerminal && (
+                <button
+                  onClick={onToggleOmniTerminal}
+                  className="p-1 rounded-full hover:bg-slate-800 text-slate-300 hover:text-emerald-400 transition-colors cursor-pointer"
+                  title="Omni Terminal Shell (~)"
+                >
+                  <Terminal className="w-3 h-3 text-emerald-400" />
+                </button>
+              )}
             </div>
 
             {/* Expand Indicator */}

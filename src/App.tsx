@@ -1761,6 +1761,8 @@ export function App() {
         isVimMode={isVimMode}
         onToggleVimMode={handleToggleVimMode}
         onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
+        onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
+        onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
         tabLayout={tabLayout}
         onToggleTabLayout={() => {
           const next = tabLayout === 'horizontal' ? 'vertical' : 'horizontal';
@@ -1886,6 +1888,8 @@ export function App() {
               onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
               onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
               isAmbientPlaying={ambientState.isPlaying}
+              onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
+              onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
             />
           </div>
 

@@ -97,6 +97,8 @@ interface AddressBarProps {
   isVimMode?: boolean;
   onToggleVimMode?: () => void;
   onOpenCrossTabSynthesis?: () => void;
+  onToggleVoiceHud?: () => void;
+  onToggleOmniTerminal?: () => void;
   tabLayout?: 'horizontal' | 'vertical';
   onToggleTabLayout?: () => void;
   onOpenFindInPage?: () => void;
@@ -304,6 +306,8 @@ export const AddressBar: React.FC<AddressBarProps> = ({
   isVimMode = false,
   onToggleVimMode,
   onOpenCrossTabSynthesis,
+  onToggleVoiceHud,
+  onToggleOmniTerminal,
   tabLayout = 'horizontal',
   onToggleTabLayout,
   onOpenFindInPage,
@@ -563,6 +567,18 @@ export const AddressBar: React.FC<AddressBarProps> = ({
       return;
     } else if (target.startsWith('!sound') || target.startsWith('!ambient')) {
       onToggleAmbientSound?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!voice')) {
+      onToggleVoiceHud?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!term') || target.startsWith('!cli') || target.startsWith('!sh') || target.startsWith('!terminal')) {
+      onToggleOmniTerminal?.();
+      setIsFocused(false);
+      return;
+    } else if (target.startsWith('!synth') || target.startsWith('!dossier') || target.startsWith('!synthesis')) {
+      onOpenCrossTabSynthesis?.();
       setIsFocused(false);
       return;
     } else if (target.startsWith('!zen') || target.startsWith('!focus')) {
@@ -1150,6 +1166,28 @@ export const AddressBar: React.FC<AddressBarProps> = ({
             <span className="hidden sm:inline">Guide</span>
           </button>
         )}
+
+        {/* Hands-Free Voice Co-Pilot Quick Button */}
+        {onToggleVoiceHud && (
+          <button
+            onClick={onToggleVoiceHud}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+            title="Hands-Free Voice Co-Pilot (Alt+V)"
+          >
+            <Mic className="w-4 h-4 text-rose-500" />
+          </button>
+        )}
+
+        {/* Omni Terminal Quake CLI Quick Button */}
+        {onToggleOmniTerminal && (
+          <button
+            onClick={onToggleOmniTerminal}
+            className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+            title="Omni Terminal Shell (~)"
+          >
+            <Terminal className="w-4 h-4 text-emerald-600" />
+          </button>
+        )}
       </div>
 
       {/* Main Browser Menu */}
@@ -1721,6 +1759,63 @@ export const AddressBar: React.FC<AddressBarProps> = ({
                           <div className="font-semibold text-indigo-950">Focus Ambient Soundscapes</div>
                           <div className="text-[10px] text-slate-400">{isAmbientPlaying ? 'Pause soundscape' : 'Rain, ocean waves & brown noise'}</div>
                         </div>
+                      </button>
+                    )}
+
+                    {onToggleVoiceHud && (
+                      <button
+                        onClick={() => {
+                          onToggleVoiceHud();
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Mic className="w-4 h-4 text-rose-600 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-semibold text-rose-950">Hands-Free Voice Co-Pilot</div>
+                            <div className="text-[10px] text-slate-400">Conversational browser control & live AI</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Alt+V</span>
+                      </button>
+                    )}
+
+                    {onToggleOmniTerminal && (
+                      <button
+                        onClick={() => {
+                          onToggleOmniTerminal();
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Terminal className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-semibold text-emerald-950">Omni Terminal Quake Shell</div>
+                            <div className="text-[10px] text-slate-400">Developer CLI, system diagnostics & curl</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">~</span>
+                      </button>
+                    )}
+
+                    {onOpenCrossTabSynthesis && (
+                      <button
+                        onClick={() => {
+                          onOpenCrossTabSynthesis();
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3.5 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Layers className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <div className="text-left">
+                            <div className="font-semibold text-indigo-950">Cross-Tab Synthesis Dossier</div>
+                            <div className="text-[10px] text-slate-400">Synthesize all open tabs into a research brief</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">Dossier</span>
                       </button>
                     )}
 
