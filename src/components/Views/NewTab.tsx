@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -44,11 +44,13 @@ import {
   Menu,
   ChevronDown,
   ChevronUp,
-  Bot
+  Bot,
+  Calculator
 } from 'lucide-react';
 import { SPEED_DIAL_SHORTCUTS } from '../../data/mockWebsites';
 import { Bookmark as BookmarkType, HistoryItem } from '../../types';
 import { resolveSearchOrUrl } from '../../utils/searchRouter';
+import { evaluateSmartOmni, SmartOmniResult } from '../../utils/smartOmni';
 
 interface BriefingItem {
   id: string;
@@ -94,6 +96,9 @@ interface NewTabProps {
   onOpenPdf: (pdfId: string) => void;
   onOpenTour?: () => void;
   onSaveAsNote?: (title: string, content: string, sourceUrl?: string) => void;
+  onToggleVoiceHud?: () => void;
+  onToggleOmniTerminal?: () => void;
+  onOpenCrossTabSynthesis?: () => void;
 }
 
 export const NewTab: React.FC<NewTabProps> = ({
@@ -103,6 +108,9 @@ export const NewTab: React.FC<NewTabProps> = ({
   onOpenResearch,
   onOpenTour,
   onSaveAsNote,
+  onToggleVoiceHud,
+  onToggleOmniTerminal,
+  onOpenCrossTabSynthesis,
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
@@ -110,6 +118,12 @@ export const NewTab: React.FC<NewTabProps> = ({
   const [isListeningVoice, setIsListeningVoice] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [greeting, setGreeting] = useState<string>('Welcome');
+  const [copiedResult, setCopiedResult] = useState(false);
+
+  // Real-time instant evaluator for math, units, timezones, and bang commands
+  const smartOmniResult = useMemo(() => {
+    return evaluateSmartOmni(searchInput);
+  }, [searchInput]);
 
   // Custom Speed Dials (combines defaults with any user-added ones stored locally)
   const [customShortcuts, setCustomShortcuts] = useState<Array<{ id: string; title: string; url: string; icon: string }>>(() => {
@@ -249,6 +263,23 @@ export const NewTab: React.FC<NewTabProps> = ({
     const q = searchInput.trim();
     if (!q) return;
 
+    // Check smart omni bang or action
+    if (smartOmniResult) {
+      if (smartOmniResult.targetUrl === 'action:voice') {
+        if (onToggleVoiceHud) onToggleVoiceHud();
+        else handleTriggerVoiceSearch();
+        return;
+      }
+      if (smartOmniResult.targetUrl === 'action:synth') {
+        if (onOpenCrossTabSynthesis) onOpenCrossTabSynthesis();
+        return;
+      }
+      if (smartOmniResult.type === 'bang' && smartOmniResult.targetUrl) {
+        onNavigate(smartOmniResult.targetUrl);
+        return;
+      }
+    }
+
     if (searchMode === 'agent' || q.startsWith('!agent ') || q.startsWith('!swarm ') || q.startsWith('!auto ')) {
       const cleanQ = q.replace(/^!(agent|swarm|auto)\s+/, '');
       onNavigate(cleanQ ? `aksh://agent?goal=${encodeURIComponent(cleanQ)}` : 'aksh://agent');
@@ -282,6 +313,10 @@ export const NewTab: React.FC<NewTabProps> = ({
     }
 
     if (q.startsWith('!term') || q.startsWith('!cli') || q.startsWith('!sh')) {
+      if (onToggleOmniTerminal) {
+        onToggleOmniTerminal();
+        return;
+      }
       onNavigate('aksh://terminal');
       return;
     }
@@ -323,6 +358,10 @@ export const NewTab: React.FC<NewTabProps> = ({
   };
 
   const handleTriggerVoiceSearch = () => {
+    if (onToggleVoiceHud) {
+      onToggleVoiceHud();
+      return;
+    }
     setIsListeningVoice(true);
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRec) {
@@ -576,8 +615,101 @@ export const NewTab: React.FC<NewTabProps> = ({
             </div>
           </form>
 
-          {/* Live Search Routing Indicator (Available in web vs Direct to Google vs Autonomous Agent) */}
+          {/* Live Search Routing & Smart Omni Evaluator (Only visible while user types) */}
           {searchInput.trim().length > 1 && (() => {
+            // 1. Bang Command Preview
+            if (smartOmniResult && smartOmniResult.type === 'bang') {
+              return (
+                <div className="mt-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-50 via-purple-50 to-indigo-50 border border-violet-200/80 text-xs flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className="w-6 h-6 rounded-lg bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <Zap className="w-3.5 h-3.5 fill-white" />
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-violet-950">{smartOmniResult.title}</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-violet-200/70 text-violet-800 rounded">
+                          Bang Shortcut
+                        </span>
+                      </div>
+                      <p className="text-slate-600 truncate text-[11px]">{smartOmniResult.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (smartOmniResult.targetUrl === 'action:voice') {
+                        if (onToggleVoiceHud) onToggleVoiceHud();
+                        else handleTriggerVoiceSearch();
+                      } else if (smartOmniResult.targetUrl === 'action:synth') {
+                        if (onOpenCrossTabSynthesis) onOpenCrossTabSynthesis();
+                      } else if (smartOmniResult.targetUrl) {
+                        onNavigate(smartOmniResult.targetUrl);
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-colors cursor-pointer shrink-0 ml-3"
+                  >
+                    Execute Bang ↵
+                  </button>
+                </div>
+              );
+            }
+
+            // 2. Instant Math, Unit, Currency, or Timezone Calculation
+            if (
+              smartOmniResult &&
+              (smartOmniResult.type === 'math' ||
+                smartOmniResult.type === 'unit' ||
+                smartOmniResult.type === 'currency' ||
+                smartOmniResult.type === 'timezone')
+            ) {
+              return (
+                <div className="mt-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200/90 text-xs flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      {smartOmniResult.type === 'timezone' ? (
+                        <Clock className="w-3.5 h-3.5" />
+                      ) : smartOmniResult.type === 'unit' ? (
+                        <Scale className="w-3.5 h-3.5" />
+                      ) : (
+                        <Calculator className="w-3.5 h-3.5" />
+                      )}
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-emerald-950">{smartOmniResult.title}:</span>
+                        <span className="font-bold text-emerald-800 text-sm font-mono">{smartOmniResult.value}</span>
+                      </div>
+                      {smartOmniResult.description && (
+                        <span className="text-emerald-700/80 text-[11px]">{smartOmniResult.description}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(smartOmniResult.value);
+                        setCopiedResult(true);
+                        setTimeout(() => setCopiedResult(false), 2000);
+                      }}
+                      className="px-3 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      {copiedResult ? 'Copied!' : 'Copy'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSearch}
+                      className="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors cursor-pointer"
+                    >
+                      Search Google ↵
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // 3. Autonomous Agent Swarm Search
             if (searchMode === 'agent') {
               return (
                 <div className="mt-2.5 px-4 py-2 rounded-xl bg-violet-50/80 border border-violet-200 text-xs flex items-center justify-between shadow-xs">
@@ -601,6 +733,7 @@ export const NewTab: React.FC<NewTabProps> = ({
               );
             }
 
+            // 4. Live Search Router: In Web vs Direct to Google
             const res = resolveSearchOrUrl(searchInput, { bookmarks, history });
             return (
               <div className="mt-2.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs flex items-center justify-between shadow-xs">

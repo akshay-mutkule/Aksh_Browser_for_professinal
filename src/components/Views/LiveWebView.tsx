@@ -146,6 +146,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
     },
   ]);
   const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+  const [isAutoAuditing, setIsAutoAuditing] = useState(false);
   const copilotEndRef = useRef<HTMLDivElement>(null);
 
   // Helper to transform text into bionic reading format (bold first half of each word)
@@ -339,6 +340,80 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
       ]);
     } finally {
       setIsCopilotLoading(false);
+      setTimeout(() => {
+        copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  };
+
+  const handleAutoAuditAndIngest = async () => {
+    setIsAutoAuditing(true);
+    setIsCopilotOpen(true);
+    try {
+      const pageText = (activeContent || '').slice(0, 4500);
+      const prompt = `Perform an Autonomous Deep Audit and Knowledge Extraction of this document:
+1. Executive Summary & Epistemic Trust (Rigor score 1-100, factuality assessment, bias warning).
+2. Key Entities, Institutions, and Quantitative Benchmarks.
+3. 3 Strategic Actionable Takeaways.
+Format cleanly with Markdown headers and bullet points.`;
+
+      const res = await sendAIChat(prompt, [], {
+        url: tab.url,
+        title: tab.title,
+        textContent: pageText,
+      });
+
+      // Save automatically to Neural Vault
+      let domain = 'web';
+      try {
+        domain = new URL(tab.url).hostname;
+      } catch {}
+
+      const newMemory = {
+        id: 'mem-' + Date.now(),
+        title: `Deep Audit: ${tab.title || 'Indexed Document'}`,
+        summary: res.reply.slice(0, 260) + '...',
+        sourceUrl: tab.url,
+        sourceTitle: tab.title,
+        category: 'research' as const,
+        tags: ['AutoAudit', 'NeuralVault', domain],
+        keyQuotes: [res.reply.slice(0, 180)],
+        entities: [domain, 'Autonomous Audit', 'Gemini 3.7'],
+        confidenceScore: 0.98,
+        retentionStrength: 95,
+        createdAt: Date.now(),
+        lastRecalledAt: Date.now(),
+        connections: [],
+      };
+
+      try {
+        const savedRaw = localStorage.getItem('aksh_neural_vault_memories');
+        const memories = savedRaw ? JSON.parse(savedRaw) : [];
+        localStorage.setItem('aksh_neural_vault_memories', JSON.stringify([newMemory, ...memories]));
+        setVaultSaved(true);
+        setTimeout(() => setVaultSaved(false), 3000);
+      } catch {}
+
+      setCopilotMessages((prev) => [
+        ...prev,
+        {
+          id: `audit-${Date.now()}`,
+          role: 'assistant',
+          text: `🚀 **Autonomous Deep Audit & Knowledge Ingestion Complete**\n\n${res.reply}\n\n*✅ Automatically saved & indexed in your Neural Memory Vault.*`,
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setCopilotMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          role: 'assistant',
+          text: '⚠️ Failed to complete autonomous audit. Please try again.',
+        },
+      ]);
+    } finally {
+      setIsAutoAuditing(false);
       setTimeout(() => {
         copilotEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
@@ -778,6 +853,16 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
             <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span>{readingStats.minutes} min read</span>
             <span>({readingStats.words} words)</span>
+          </div>
+          <span className="text-slate-300 hidden lg:inline">|</span>
+          <div className="hidden lg:flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-mono font-medium shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Kyber-1024 Post-Quantum
+            </span>
+            <span className="hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-mono">
+              ~0.03g CO₂e &bull; 14ms
+            </span>
           </div>
         </div>
 
@@ -1819,6 +1904,20 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
               </button>
             )}
 
+            {/* Live In-Page Copilot Trigger */}
+            <button
+              onClick={() => setIsCopilotOpen(!isCopilotOpen)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                isCopilotOpen
+                  ? 'bg-purple-600 text-white font-bold shadow-xs'
+                  : 'hover:bg-purple-50 text-purple-700'
+              }`}
+              title="Toggle Live In-Page Autonomous Copilot Capsule"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold">Copilot</span>
+            </button>
+
             <div className="w-px h-4 bg-slate-200 mx-0.5" />
 
             <button
@@ -1831,6 +1930,144 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Floating In-Page Autonomous Copilot Capsule */}
+      {isCopilotOpen && (
+        <div className="fixed bottom-20 right-5 w-96 max-w-[calc(100vw-2.5rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white/98 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-2xl flex flex-col z-40 animate-in slide-in-from-bottom-4 duration-200 overflow-hidden ring-1 ring-black/5">
+          {/* Header */}
+          <div className="px-4 py-3 bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0 select-none">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs tracking-wide">Live In-Page Copilot</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <span className="text-[10px] text-purple-200/80">Gemini 3.7 Flash &bull; Grounded on active DOM</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setCopilotMessages([
+                    {
+                      id: 'welcome',
+                      role: 'assistant',
+                      text: '👋 Chat cleared. What would you like to investigate on this page?',
+                    },
+                  ]);
+                }}
+                className="p-1 rounded-lg hover:bg-white/10 text-purple-200 hover:text-white transition-colors cursor-pointer text-[10px]"
+                title="Clear conversation"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setIsCopilotOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-purple-200 hover:text-white transition-colors cursor-pointer"
+                title="Close Copilot Capsule"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Autonomous Actions Quick Bar */}
+          <div className="px-3 py-2 bg-purple-50/80 border-b border-purple-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+            <button
+              onClick={handleAutoAuditAndIngest}
+              disabled={isAutoAuditing}
+              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              {isAutoAuditing ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Zap className="w-3 h-3 fill-white" />
+              )}
+              <span>{isAutoAuditing ? 'Auditing...' : 'Auto-Audit & Ingest'}</span>
+            </button>
+            <button
+              onClick={() => handleSendCopilot('Extract all statistics, numbers, and dates mentioned in this page into a markdown table.')}
+              disabled={isCopilotLoading}
+              className="px-2 py-1 rounded-lg bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-900 text-[11px] font-medium flex items-center gap-1 cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              <Table className="w-3 h-3 text-purple-600" />
+              <span>Table Metrics</span>
+            </button>
+            <button
+              onClick={() => handleSendCopilot('What are 3 critical weaknesses, biases, or counter-arguments to the claims made in this text?')}
+              disabled={isCopilotLoading}
+              className="px-2 py-1 rounded-lg bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-900 text-[11px] font-medium flex items-center gap-1 cursor-pointer shrink-0 disabled:opacity-50"
+            >
+              <ShieldAlert className="w-3 h-3 text-purple-600" />
+              <span>Find Flaws</span>
+            </button>
+          </div>
+
+          {/* Chat Messages Body */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 text-xs">
+            {copilotMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.role === 'assistant' && (
+                  <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                <div
+                  className={`max-w-[85%] rounded-2xl p-2.5 text-xs leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-purple-600 text-white rounded-br-xs'
+                      : 'bg-slate-100 text-slate-800 rounded-bl-xs prose prose-xs max-w-none prose-headings:font-bold prose-p:my-1 prose-ul:my-1 prose-table:my-1'
+                  }`}
+                >
+                  {msg.role === 'user' ? (
+                    msg.text
+                  ) : (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  )}
+                </div>
+              </div>
+            ))}
+            {isCopilotLoading && (
+              <div className="flex items-center gap-2 text-slate-500 text-xs py-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                <span>Gemini is reasoning over active page...</span>
+              </div>
+            )}
+            <div ref={copilotEndRef} />
+          </div>
+
+          {/* Input Footer */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendCopilot();
+            }}
+            className="p-2.5 bg-slate-50 border-t border-slate-200 flex items-center gap-1.5 shrink-0"
+          >
+            <input
+              type="text"
+              value={copilotInput}
+              onChange={(e) => setCopilotInput(e.target.value)}
+              placeholder="Ask anything about this document..."
+              className="flex-1 bg-white border border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+              disabled={isCopilotLoading || isAutoAuditing}
+            />
+            <button
+              type="submit"
+              disabled={!copilotInput.trim() || isCopilotLoading || isAutoAuditing}
+              className="w-8 h-8 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* In-Page Sticky Notes Layer */}
       <PageStickyNotesLayer

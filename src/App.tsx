@@ -1323,6 +1323,9 @@ export function App() {
             }}
             onOpenTour={() => setIsTourOpen(true)}
             onSaveAsNote={handleSaveAsNote}
+            onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
+            onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
+            onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
           />
         )}
 
