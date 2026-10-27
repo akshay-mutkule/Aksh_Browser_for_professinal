@@ -43,7 +43,8 @@ import {
   Minimize2,
   ChevronUp,
   RefreshCw,
-  MessageSquare
+  MessageSquare,
+  Crosshair
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -127,6 +128,15 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   // AI X-Ray Intelligence & Entity Lens
   const [showXRay, setShowXRay] = useState(false);
   const [xRayFilter, setXRayFilter] = useState<'all' | 'entities' | 'tech' | 'metrics'>('all');
+
+  // AI Interactive Focus Inspector Mode
+  const [isFocusInspectorActive, setIsFocusInspectorActive] = useState(false);
+  const [focusedSectionContent, setFocusedSectionContent] = useState<string | null>(null);
+  const [focusInspectionResult, setFocusInspectionResult] = useState<{
+    type: 'explain' | 'factcheck' | 'critique' | 'translate' | 'code';
+    text: string;
+    loading: boolean;
+  } | null>(null);
 
   // AI Neural Audience Lens / Perspective Shifter
   type NeuralLensMode = 'original' | 'eli5' | 'executive' | 'architect' | 'critique';
@@ -301,6 +311,43 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
       setLensContent('⚠️ Failed to adapt page content with AI. Please try again.');
     } finally {
       setIsLensLoading(false);
+    }
+  };
+
+  const handleInspectSection = async (
+    sectionText: string,
+    action: 'explain' | 'factcheck' | 'critique' | 'translate' | 'code'
+  ) => {
+    setFocusedSectionContent(sectionText);
+    setFocusInspectionResult({ type: action, text: '', loading: true });
+
+    try {
+      let prompt = '';
+      if (action === 'explain') {
+        prompt = `Explain this excerpt in concise, plain English with 2 key points:\n\n"${sectionText.slice(0, 1500)}"`;
+      } else if (action === 'factcheck') {
+        prompt = `Fact-check this claim or technical assertion. Evaluate veracity, caveats, and evidence:\n\n"${sectionText.slice(0, 1500)}"`;
+      } else if (action === 'critique') {
+        prompt = `Provide an adversarial critical evaluation of this point: what counter-arguments, tradeoffs, or missing facts exist?\n\n"${sectionText.slice(0, 1500)}"`;
+      } else if (action === 'translate') {
+        prompt = `Translate this excerpt into Spanish, French, and Japanese concisely:\n\n"${sectionText.slice(0, 1500)}"`;
+      } else if (action === 'code') {
+        prompt = `Extract all programming code, APIs, or formulas from this excerpt into clean, executable syntax:\n\n"${sectionText.slice(0, 1500)}"`;
+      }
+
+      const res = await sendAIChat(prompt, [], {
+        url: tab.url,
+        title: tab.title,
+        textContent: sectionText.slice(0, 2000),
+      });
+
+      setFocusInspectionResult({ type: action, text: res.reply, loading: false });
+    } catch {
+      setFocusInspectionResult({
+        type: action,
+        text: '⚠️ Intelligence request timed out. Please try again.',
+        loading: false,
+      });
     }
   };
 
@@ -984,6 +1031,26 @@ Format cleanly with Markdown headers and bullet points.`;
             <span className="hidden sm:inline">AI X-Ray</span>
           </button>
 
+          {/* AI Interactive Focus Lens Button */}
+          <button
+            onClick={() => {
+              setIsFocusInspectorActive(!isFocusInspectorActive);
+              if (isFocusInspectorActive) {
+                setFocusedSectionContent(null);
+                setFocusInspectionResult(null);
+              }
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isFocusInspectorActive
+                ? 'bg-cyan-600 border-cyan-700 text-white shadow-xs'
+                : 'border-cyan-200 bg-cyan-50/80 hover:bg-cyan-100 text-cyan-800'
+            }`}
+            title="AI Interactive Focus Lens (Click any paragraph to analyze with Gemini)"
+          >
+            <Crosshair className={`w-3.5 h-3.5 ${isFocusInspectorActive ? 'text-white' : 'text-cyan-600'}`} />
+            <span className="hidden sm:inline">Focus Lens</span>
+          </button>
+
           {/* Bionic Reading Toggle */}
           <button
             onClick={() => setIsBionic(!isBionic)}
@@ -1208,6 +1275,35 @@ Format cleanly with Markdown headers and bullet points.`;
           )}
         </div>
       </div>
+
+      {/* AI Interactive Focus Lens Active Bar */}
+      {isFocusInspectorActive && (
+        <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 text-white px-4 py-2 border-b border-cyan-500/40 flex items-center justify-between flex-wrap gap-2 text-xs z-10 shrink-0 select-none animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+            </span>
+            <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+              <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AI Focus Lens Active</span>
+            </span>
+            <span className="text-slate-300 text-[11px] hidden sm:inline">
+              &bull; Click any section or paragraph below to trigger instant concept breakdown, fact-check, critique, or translation
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setIsFocusInspectorActive(false);
+              setFocusedSectionContent(null);
+              setFocusInspectionResult(null);
+            }}
+            className="px-2.5 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 text-xs transition-colors cursor-pointer"
+          >
+            Exit Focus Lens
+          </button>
+        </div>
+      )}
 
       {/* Main Viewport Content Area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto bg-slate-50 relative">
@@ -1526,7 +1622,53 @@ Format cleanly with Markdown headers and bullet points.`;
             {/* Content Sections */}
             <div className="space-y-6">
               {mockSite.content.sections.map((section, idx) => (
-                <section key={idx} className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+                <section
+                  key={idx}
+                  className={`space-y-4 bg-white p-6 rounded-2xl border shadow-xs transition-all relative group ${
+                    isFocusInspectorActive
+                      ? 'border-cyan-300 ring-2 ring-cyan-400/20 hover:border-cyan-500 hover:shadow-md'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  {isFocusInspectorActive && (
+                    <div className="flex items-center justify-between gap-1 bg-slate-900/95 text-white px-3 py-1.5 rounded-xl text-[11px] shadow-lg border border-cyan-400/40 animate-in fade-in duration-150">
+                      <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                        <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Section #{idx + 1}: {section.heading || 'Passage'}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleInspectSection(section.body || section.heading || '', 'explain')}
+                          className="px-2 py-0.5 rounded hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer"
+                        >
+                          ⚡ Explain
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInspectSection(section.body || section.heading || '', 'factcheck')}
+                          className="px-2 py-0.5 rounded hover:bg-white/20 text-emerald-300 hover:text-emerald-200 transition-colors cursor-pointer"
+                        >
+                          🔍 Fact-Check
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInspectSection(section.body || section.heading || '', 'critique')}
+                          className="px-2 py-0.5 rounded hover:bg-white/20 text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
+                        >
+                          💡 Critique
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInspectSection(section.body || section.heading || '', 'translate')}
+                          className="px-2 py-0.5 rounded hover:bg-white/20 text-indigo-300 hover:text-indigo-200 transition-colors cursor-pointer"
+                        >
+                          🌐 Translate
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {section.heading && (
                     <h2 className="text-xl md:text-2xl font-bold text-slate-900 border-b border-slate-100 pb-2">
                       {section.heading}
@@ -1605,7 +1747,49 @@ Format cleanly with Markdown headers and bullet points.`;
 
             {/* Extracted Body with Structured Markdown */}
             {activeContent ? (
-              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs space-y-5 text-slate-800 text-sm md:text-base leading-relaxed">
+              <div
+                className={`bg-white p-6 sm:p-8 rounded-2xl border shadow-xs space-y-5 text-slate-800 text-sm md:text-base leading-relaxed ${
+                  isFocusInspectorActive ? 'border-cyan-300 ring-2 ring-cyan-400/20' : 'border-slate-200'
+                }`}
+              >
+                {isFocusInspectorActive && (
+                  <div className="flex items-center justify-between gap-1 bg-slate-900/95 text-white px-3 py-1.5 rounded-xl text-[11px] shadow-lg border border-cyan-400/40 mb-3 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                      <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Focus Lens: Full Document Analysis</span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handleInspectSection(activeContent.slice(0, 1800), 'explain')}
+                        className="px-2 py-0.5 rounded hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        ⚡ Explain Concept
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInspectSection(activeContent.slice(0, 1800), 'factcheck')}
+                        className="px-2 py-0.5 rounded hover:bg-white/20 text-emerald-300 hover:text-emerald-200 transition-colors cursor-pointer"
+                      >
+                        🔍 Fact-Check
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInspectSection(activeContent.slice(0, 1800), 'critique')}
+                        className="px-2 py-0.5 rounded hover:bg-white/20 text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
+                      >
+                        💡 Critique
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInspectSection(activeContent.slice(0, 1800), 'code')}
+                        className="px-2 py-0.5 rounded hover:bg-white/20 text-cyan-300 hover:text-cyan-200 transition-colors cursor-pointer"
+                      >
+                        ⚙️ Extract Code
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
                   <ReactMarkdown
                     components={{
@@ -2099,6 +2283,78 @@ Format cleanly with Markdown headers and bullet points.`;
         pageContent={activeContent || ''}
         onSaveAsNote={onSaveAsNote}
       />
+
+      {/* AI Interactive Focus Lens Result Modal */}
+      {focusInspectionResult && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92vw] max-w-2xl bg-white/95 backdrop-blur-xl border border-cyan-500/40 rounded-3xl shadow-2xl p-5 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200 ring-1 ring-black/10">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-cyan-600 text-white flex items-center justify-center shadow-xs">
+                <Crosshair className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-xs text-slate-900 capitalize">
+                  Focus Lens:{' '}
+                  {focusInspectionResult.type === 'explain' && 'Concept Breakdown'}
+                  {focusInspectionResult.type === 'factcheck' && 'Epistemic Fact-Check'}
+                  {focusInspectionResult.type === 'critique' && 'Adversarial Critique & Counterpoint'}
+                  {focusInspectionResult.type === 'translate' && 'Multi-Language Translation'}
+                  {focusInspectionResult.type === 'code' && 'Code & Formula Extraction'}
+                </span>
+                <p className="text-[10px] text-slate-500">Gemini 3.7 reasoning on selected passage</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setFocusInspectionResult(null)}
+              className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="py-3 text-xs leading-relaxed text-slate-800 max-h-56 overflow-y-auto">
+            {focusInspectionResult.loading ? (
+              <div className="flex items-center gap-2 text-slate-500 py-3">
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-600" />
+                <span>Synthesizing deep focus analysis...</span>
+              </div>
+            ) : (
+              <div className="prose prose-xs max-w-none text-slate-800">
+                <ReactMarkdown>{focusInspectionResult.text}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+            <span className="text-[10px] text-slate-400 font-mono">Grounded on DOM element</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(focusInspectionResult.text);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs cursor-pointer flex items-center gap-1"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSaveAsNote(`Focus Lens: ${tab.title}`, focusInspectionResult.text, tab.url);
+                  setFocusInspectionResult(null);
+                }}
+                className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-xs cursor-pointer shadow-xs flex items-center gap-1"
+              >
+                <StickyNote className="w-3.5 h-3.5" />
+                <span>Save to Notes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -296,7 +296,13 @@ export interface ReadingListItem {
 
 export type ResponsiveDevice = 'responsive' | 'iphone15' | 'pixel8' | 'ipad' | 'desktop';
 
-export type AIModelId = 'gemini-3.7-flash' | 'gemini-2.5-flash' | 'gemini-2.5-pro';
+export type AIModelId =
+  | 'gemini-3.7-flash'
+  | 'gemini-3.7-thinking'
+  | 'gemini-2.5-flash'
+  | 'gemini-2.5-pro'
+  | 'claude-3.7-sonnet'
+  | 'gpt-4o';
 
 export interface PageAnnotation {
   id: string;

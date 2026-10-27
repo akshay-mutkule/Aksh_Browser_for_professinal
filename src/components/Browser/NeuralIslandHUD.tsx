@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -29,7 +29,7 @@ import {
   Scale,
   Mic
 } from 'lucide-react';
-import { Tab, NeuralMemoryItem } from '../../types';
+import { Tab, NeuralMemoryItem, AIModelId } from '../../types';
 import { sendAIChat } from '../../services/api';
 
 interface NeuralIslandHUDProps {
@@ -44,6 +44,7 @@ interface NeuralIslandHUDProps {
   isAmbientPlaying?: boolean;
   onToggleVoiceHud?: () => void;
   onToggleOmniTerminal?: () => void;
+  onOpenCrossTabSynthesis?: () => void;
 }
 
 export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
@@ -58,8 +59,10 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
   isAmbientPlaying = false,
   onToggleVoiceHud,
   onToggleOmniTerminal,
+  onOpenCrossTabSynthesis,
 }) => {
   const [quickPrompt, setQuickPrompt] = useState('');
+  const [selectedModel, setSelectedModel] = useState<AIModelId>('gemini-3.7-flash');
   const [isPrompting, setIsPrompting] = useState(false);
   const [promptResponse, setPromptResponse] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -76,6 +79,13 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
   const pageText = activeTab?.extractedText || activeTab?.pdfData?.text || '';
   const wordCount = pageText ? pageText.trim().split(/\s+/).length : 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 220));
+
+  const cognitiveLoad = useMemo(() => {
+    if (wordCount === 0) return 'Idle';
+    if (wordCount < 400) return 'Light (Grade 8)';
+    if (wordCount < 1200) return 'Balanced (Grade 10)';
+    return 'Deep (Graduate 14+)';
+  }, [wordCount]);
 
   const handleAskAI = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -95,7 +105,7 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
         [],
         webpageCtx,
         'general',
-        'gemini-3.7-flash'
+        selectedModel
       );
       setPromptResponse(res.reply);
     } catch (err) {
@@ -324,6 +334,40 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
               </button>
             </form>
 
+            {/* Model Selector & Cognitive Load Telemetry */}
+            <div className="flex flex-wrap items-center justify-between gap-1.5 px-0.5 text-[10px]">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 font-mono text-[9px] uppercase tracking-wider">Model:</span>
+                {(
+                  [
+                    { id: 'gemini-3.7-flash', label: 'Gemini 3.7 Flash' },
+                    { id: 'gemini-3.7-thinking', label: '3.7 Thinking' },
+                    { id: 'claude-3.7-sonnet', label: 'Claude 3.7' },
+                    { id: 'gpt-4o', label: 'GPT-4o' },
+                  ] as const
+                ).map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedModel(m.id)}
+                    className={`px-2 py-0.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                      selectedModel === m.id
+                        ? 'bg-cyan-500/20 border-cyan-400/60 text-cyan-200 shadow-xs'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[9px]">
+                <span className="text-slate-400">Load:</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-slate-800/80 border border-slate-700/60 text-slate-300">
+                  {cognitiveLoad}
+                </span>
+              </div>
+            </div>
+
             {/* AI Response Display */}
             {promptResponse && (
               <div className="bg-slate-900/80 border border-cyan-500/20 rounded-2xl p-3.5 text-xs text-slate-200 max-h-48 overflow-y-auto space-y-2">
@@ -348,6 +392,23 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
 
             {/* Supercharged Action Matrix */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {onOpenCrossTabSynthesis && (
+                <button
+                  onClick={() => {
+                    onOpenCrossTabSynthesis();
+                    onToggleOpen();
+                  }}
+                  className="p-2.5 rounded-2xl bg-teal-950/40 hover:bg-teal-900/50 border border-teal-700/30 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <Sparkles className="w-4 h-4 text-teal-400 group-hover:scale-110" />
+                    <span className="text-[9px] font-mono text-teal-400 font-bold">SYNTH</span>
+                  </div>
+                  <div className="text-[11px] font-semibold text-slate-200">Tab Dossier</div>
+                  <div className="text-[9px] text-slate-400">Multi-tab executive synthesis</div>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   onTriggerAiSummary();

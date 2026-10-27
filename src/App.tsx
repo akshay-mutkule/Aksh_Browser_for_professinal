@@ -1893,6 +1893,7 @@ export function App() {
               isAmbientPlaying={ambientState.isPlaying}
               onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
               onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
+              onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
             />
           </div>
 
