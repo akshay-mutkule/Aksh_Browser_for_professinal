@@ -44,7 +44,10 @@ import {
   ChevronUp,
   RefreshCw,
   MessageSquare,
-  Crosshair
+  Crosshair,
+  FastForward,
+  Pause,
+  RotateCcw
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -158,6 +161,23 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [isCopilotLoading, setIsCopilotLoading] = useState(false);
   const [isAutoAuditing, setIsAutoAuditing] = useState(false);
   const copilotEndRef = useRef<HTMLDivElement>(null);
+
+  // Instant RSVP Speed-Reader Mode (Spritz style Rapid Serial Visual Presentation)
+  const [showSpeedReader, setShowSpeedReader] = useState(false);
+  const [speedReaderWpm, setSpeedReaderWpm] = useState<number>(350);
+  const [speedReaderPlaying, setSpeedReaderPlaying] = useState<boolean>(true);
+  const [speedReaderIndex, setSpeedReaderIndex] = useState<number>(0);
+
+  // Floating In-Page Selection Action HUD
+  const [selectionPopup, setSelectionPopup] = useState<{
+    text: string;
+    x: number;
+    y: number;
+    visible: boolean;
+  } | null>(null);
+  const [selectionExplainLoading, setSelectionExplainLoading] = useState(false);
+  const [selectionResult, setSelectionResult] = useState<{ title: string; content: string } | null>(null);
+  const [selectionSavedToVault, setSelectionSavedToVault] = useState(false);
 
   // Helper to transform text into bionic reading format (bold first half of each word)
   const toBionicMarkdown = (markdown: string): string => {
@@ -349,6 +369,146 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
         loading: false,
       });
     }
+  };
+
+  // RSVP Speed Reader word array
+  const speedReaderWords = useMemo(() => {
+    const raw = activeContent || (mockSite ? mockSite.extractedText : '') || tab.title || '';
+    const cleaned = raw
+      .replace(/[#*`_~>[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned ? cleaned.split(' ').filter(Boolean) : [];
+  }, [activeContent, mockSite, tab.title]);
+
+  useEffect(() => {
+    if (!showSpeedReader || !speedReaderPlaying || speedReaderWords.length === 0) return;
+    const intervalMs = Math.round((60 / speedReaderWpm) * 1000);
+    const timer = setInterval(() => {
+      setSpeedReaderIndex((prev) => {
+        if (prev >= speedReaderWords.length - 1) {
+          setSpeedReaderPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [showSpeedReader, speedReaderPlaying, speedReaderWpm, speedReaderWords.length]);
+
+  // Keyboard navigation for RSVP Speed Reader
+  useEffect(() => {
+    if (!showSpeedReader) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setSpeedReaderPlaying((p) => !p);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setSpeedReaderIndex((i) => Math.max(0, i - 15));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setSpeedReaderIndex((i) => Math.min(speedReaderWords.length - 1, i + 15));
+      } else if (e.key === 'Escape') {
+        setShowSpeedReader(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSpeedReader, speedReaderWords.length]);
+
+  const handleSelectionMouseUp = () => {
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      const text = sel.toString().trim();
+      if (text.length >= 3 && text.length <= 1200) {
+        try {
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          if (rect && rect.width > 0) {
+            setSelectionPopup({
+              text,
+              x: Math.max(160, Math.min(window.innerWidth - 180, rect.left + rect.width / 2)),
+              y: Math.max(70, rect.top - 14),
+              visible: true,
+            });
+            setSelectionResult(null);
+            setSelectionSavedToVault(false);
+          }
+        } catch {}
+      }
+    }, 15);
+  };
+
+  const handleExplainSelection = async (text: string) => {
+    setSelectionExplainLoading(true);
+    setSelectionResult({ title: 'AI Concept Breakdown', content: 'Analyzing with Gemini...' });
+    try {
+      const res = await sendAIChat(
+        `Explain this excerpt in concise, plain English (maximum 2 sentences):\n"${text}"`,
+        [],
+        { url: tab.url, title: tab.title }
+      );
+      setSelectionResult({ title: 'AI Concept Breakdown', content: res.reply });
+    } catch {
+      setSelectionResult({ title: 'AI Concept Breakdown', content: 'Failed to explain concept.' });
+    } finally {
+      setSelectionExplainLoading(false);
+    }
+  };
+
+  const handleFactCheckSelection = async (text: string) => {
+    setSelectionExplainLoading(true);
+    setSelectionResult({ title: 'Epistemic Fact Check', content: 'Verifying with Gemini...' });
+    try {
+      const res = await sendAIChat(
+        `Evaluate this claim: is it factual, disputed, or misleading? Provide 2 brief points with source veracity:\n"${text}"`,
+        [],
+        { url: tab.url, title: tab.title }
+      );
+      setSelectionResult({ title: 'Epistemic Fact Check', content: res.reply });
+    } catch {
+      setSelectionResult({ title: 'Epistemic Fact Check', content: 'Failed to fact check.' });
+    } finally {
+      setSelectionExplainLoading(false);
+    }
+  };
+
+  const handleSaveSelectionToVault = (textToSave: string) => {
+    try {
+      let domain = 'web';
+      try {
+        domain = new URL(tab.url).hostname;
+      } catch {}
+      const newMemory = {
+        id: 'quote-' + Date.now(),
+        title: `Quote from ${tab.title}`,
+        summary: textToSave,
+        sourceUrl: tab.url,
+        sourceTitle: tab.title,
+        category: 'quote' as const,
+        tags: ['Highlight', 'Quote', domain],
+        keyQuotes: [textToSave],
+        entities: [domain, 'Highlight'],
+        confidenceScore: 0.99,
+        retentionStrength: 100,
+        createdAt: Date.now(),
+        lastRecalledAt: Date.now(),
+        connections: [],
+      };
+      const savedRaw = localStorage.getItem('aksh_neural_vault_memories');
+      const memories = savedRaw ? JSON.parse(savedRaw) : [];
+      localStorage.setItem('aksh_neural_vault_memories', JSON.stringify([newMemory, ...memories]));
+      setSelectionSavedToVault(true);
+      setTimeout(() => setSelectionSavedToVault(false), 2500);
+    } catch {}
+  };
+
+  const handleAskCopilotSelection = (text: string) => {
+    setCopilotInput(`Regarding: "${text}" - `);
+    setIsCopilotOpen(true);
+    setSelectionPopup(null);
   };
 
   const handleSendCopilot = async (textToSend?: string) => {
@@ -838,7 +998,7 @@ Format cleanly with Markdown headers and bullet points.`;
         </div>
 
         {/* Reader Article Body */}
-        <article className={`max-w-2xl mx-auto px-6 py-10 ${fontStyle} ${fontSizeStyles}`}>
+        <article onMouseUp={handleSelectionMouseUp} className={`max-w-2xl mx-auto px-6 py-10 ${fontStyle} ${fontSizeStyles}`}>
           <div className="space-y-4 pb-6 border-b border-slate-200/40">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{tab.title}</h1>
             <div className="flex items-center gap-3 text-xs opacity-75 font-sans">
@@ -887,7 +1047,7 @@ Format cleanly with Markdown headers and bullet points.`;
 
   // Standard Web Page Viewport
   return (
-    <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative select-text">
+    <div onMouseUp={handleSelectionMouseUp} className="h-full flex flex-col bg-slate-50 overflow-hidden relative select-text">
       {/* Top Interactive Page Toolbar */}
       <div className="h-10 px-4 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 shadow-2xs z-20 shrink-0">
         <div className="flex items-center gap-2.5 truncate">
@@ -1063,6 +1223,19 @@ Format cleanly with Markdown headers and bullet points.`;
           >
             <Zap className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Bionic</span>
+          </button>
+
+          {/* RSVP Speed Reader Mode */}
+          <button
+            onClick={() => {
+              setShowSpeedReader(true);
+              setSpeedReaderPlaying(true);
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-purple-800 text-xs font-semibold transition-colors cursor-pointer"
+            title="RSVP Rapid Serial Visual Presentation Speed Reader"
+          >
+            <FastForward className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden sm:inline">Speed Read</span>
           </button>
 
           {/* Audio Listen */}
@@ -2351,6 +2524,264 @@ Format cleanly with Markdown headers and bullet points.`;
                 <StickyNote className="w-3.5 h-3.5" />
                 <span>Save to Notes</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating In-Page Selection Action HUD */}
+      {selectionPopup && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${selectionPopup.x}px`,
+            top: `${selectionPopup.y}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+          className="z-50 flex flex-col items-center animate-in fade-in zoom-in-95 duration-150"
+        >
+          <div className="flex items-center gap-1 bg-slate-900/95 backdrop-blur-md text-slate-200 border border-cyan-500/40 rounded-2xl p-1.5 shadow-2xl text-xs">
+            <button
+              onClick={() => handleExplainSelection(selectionPopup.text)}
+              disabled={selectionExplainLoading}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl hover:bg-slate-800 text-cyan-300 font-medium transition-colors cursor-pointer"
+              title="Explain selected concept"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Explain</span>
+            </button>
+            <div className="w-px h-3.5 bg-slate-700" />
+            <button
+              onClick={() => handleFactCheckSelection(selectionPopup.text)}
+              disabled={selectionExplainLoading}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl hover:bg-slate-800 text-emerald-300 font-medium transition-colors cursor-pointer"
+              title="Fact-check statement"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Fact-Check</span>
+            </button>
+            <div className="w-px h-3.5 bg-slate-700" />
+            <button
+              onClick={() => handleSaveSelectionToVault(selectionPopup.text)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl hover:bg-slate-800 text-purple-300 font-medium transition-colors cursor-pointer"
+              title="Save quote to Neural Memory Vault"
+            >
+              {selectionSavedToVault ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Vaulted!</span>
+                </>
+              ) : (
+                <>
+                  <BrainCircuit className="w-3.5 h-3.5" />
+                  <span>Vault</span>
+                </>
+              )}
+            </button>
+            <div className="w-px h-3.5 bg-slate-700" />
+            <button
+              onClick={() => handleAskCopilotSelection(selectionPopup.text)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl hover:bg-slate-800 text-amber-300 font-medium transition-colors cursor-pointer"
+              title="Ask In-Page Copilot"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Copilot</span>
+            </button>
+            <div className="w-px h-3.5 bg-slate-700" />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`> ${selectionPopup.text}\n\n— From [${tab.title}](${tab.url})`);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="p-1 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              title="Copy markdown quote"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={() => {
+                setSelectionPopup(null);
+                setSelectionResult(null);
+              }}
+              className="p-1 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Inline Selection Result Card */}
+          {selectionResult && (
+            <div className="mt-2 w-80 bg-slate-900/95 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3.5 text-xs text-slate-200 shadow-2xl space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-cyan-300 border-b border-slate-800 pb-1.5">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {selectionResult.title}
+                </span>
+                <button
+                  onClick={() => setSelectionResult(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="text-[11px] leading-relaxed max-h-48 overflow-y-auto font-sans">
+                {selectionExplainLoading ? (
+                  <div className="flex items-center gap-2 py-2 text-slate-400">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                    <span>Gemini is synthesizing explanation...</span>
+                  </div>
+                ) : (
+                  <div className="prose prose-invert prose-xs">
+                    <ReactMarkdown>{selectionResult.content}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+              {!selectionExplainLoading && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      onSaveAsNote(`Insight: ${tab.title}`, selectionResult.content, tab.url);
+                      setSelectionResult(null);
+                      setSelectionPopup(null);
+                    }}
+                    className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <StickyNote className="w-3 h-3" />
+                    <span>Save to Cornell Notes</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectionResult.content);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* RSVP Speed Reader Modal (Spritz-style Rapid Serial Visual Presentation) */}
+      {showSpeedReader && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-slate-900 border border-purple-500/30 rounded-3xl p-6 shadow-2xl flex flex-col space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <FastForward className="w-5 h-5 text-purple-400" />
+                <span className="font-semibold text-slate-100 text-sm">RSVP Speed Reader</span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-950/80 border border-purple-700/50 text-purple-300 text-[10px] font-mono">
+                  {speedReaderWpm} WPM
+                </span>
+              </div>
+              <button
+                onClick={() => setShowSpeedReader(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Word Display Box with Center Focus Crosshairs */}
+            <div className="relative py-14 bg-slate-950/80 rounded-2xl border border-slate-800/80 flex items-center justify-center overflow-hidden select-none">
+              {/* Vertical Guide Crosshair Lines */}
+              <div className="absolute top-2 bottom-2 left-1/2 -translate-x-1/2 w-px bg-purple-500/20 pointer-events-none" />
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-2 h-1 bg-purple-400 rounded-full pointer-events-none" />
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-2 h-1 bg-purple-400 rounded-full pointer-events-none" />
+
+              {/* Centered Word with ORP Highlight */}
+              {speedReaderWords.length > 0 ? (
+                (() => {
+                  const word = speedReaderWords[speedReaderIndex] || '';
+                  const len = word.length;
+                  const orpIdx = len <= 1 ? 0 : len <= 5 ? 1 : len <= 9 ? 2 : len <= 13 ? 3 : 4;
+                  const prefix = word.slice(0, orpIdx);
+                  const focusChar = word[orpIdx] || '';
+                  const suffix = word.slice(orpIdx + 1);
+
+                  return (
+                    <div className="font-mono text-3xl sm:text-4xl tracking-wide flex items-center">
+                      <span className="text-slate-400 text-right w-36 sm:w-44">{prefix}</span>
+                      <span className="text-amber-400 font-bold px-0.5 underline decoration-purple-500 underline-offset-4">{focusChar}</span>
+                      <span className="text-slate-100 text-left w-36 sm:w-44">{suffix}</span>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-slate-500 text-xs italic">No readable text found on page.</div>
+              )}
+            </div>
+
+            {/* Progress Bar & ETA */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                <span>
+                  Word {speedReaderIndex + 1} of {speedReaderWords.length}
+                </span>
+                <span>
+                  ~{Math.max(1, Math.ceil((speedReaderWords.length - speedReaderIndex) / (speedReaderWpm / 60)))}s remaining
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-100"
+                  style={{
+                    width: `${speedReaderWords.length > 0 ? ((speedReaderIndex + 1) / speedReaderWords.length) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Playback Controls & WPM Selector */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setSpeedReaderIndex((prev) => Math.max(0, prev - 15))}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer"
+                  title="Rewind 15 words"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setSpeedReaderPlaying(!speedReaderPlaying)}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  {speedReaderPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+                  <span>{speedReaderPlaying ? 'Pause' : 'Start (Space)'}</span>
+                </button>
+                <button
+                  onClick={() => setSpeedReaderIndex((prev) => Math.min(speedReaderWords.length - 1, prev + 15))}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition-colors cursor-pointer"
+                  title="Forward 15 words"
+                >
+                  <FastForward className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Speed Preset Buttons */}
+              <div className="flex items-center gap-1">
+                {[250, 350, 450, 600, 750].map((wpm) => (
+                  <button
+                    key={wpm}
+                    onClick={() => setSpeedReaderWpm(wpm)}
+                    className={`px-2 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
+                      speedReaderWpm === wpm
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 font-bold'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    {wpm}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
