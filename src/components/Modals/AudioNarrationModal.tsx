@@ -15,7 +15,9 @@ import {
   User,
   Users,
   FastForward,
-  Loader2
+  Rewind,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { generatePodcastScript } from '../../services/api';
 
@@ -26,6 +28,12 @@ interface AudioNarrationModalProps {
   text: string;
   sourceUrl?: string;
   onSaveAsNote: (title: string, content: string, sourceUrl?: string) => void;
+}
+
+interface DialogueTurn {
+  id: number;
+  speaker: 'Alex' | 'Sam' | 'Narrator';
+  text: string;
 }
 
 export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
@@ -44,13 +52,60 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [copied, setCopied] = useState(false);
-  
-  // Podcast mode state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Podcast state
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
   const [podcastScript, setPodcastScript] = useState<string | null>(null);
-  const [podcastSpokenText, setPodcastSpokenText] = useState<string | null>(null);
+  const [dialogueTurns, setDialogueTurns] = useState<DialogueTurn[]>([]);
+  const [currentTurnIndex, setCurrentTurnIndex] = useState<number>(-1);
 
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const turnIndexRef = useRef<number>(-1);
+  turnIndexRef.current = currentTurnIndex;
+
+  const isPlayingRef = useRef<boolean>(false);
+  isPlayingRef.current = isPlaying;
+
+  const scriptScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Parse podcast script into dialogue turns
+  const parseScriptIntoTurns = (rawScript: string): DialogueTurn[] => {
+    const lines = rawScript.split('\n').map((l) => l.trim()).filter(Boolean);
+    const turns: DialogueTurn[] = [];
+
+    lines.forEach((line, idx) => {
+      if (line.toLowerCase().startsWith('alex:')) {
+        turns.push({
+          id: idx,
+          speaker: 'Alex',
+          text: line.replace(/^alex:/i, '').trim(),
+        });
+      } else if (line.toLowerCase().startsWith('sam:') || line.toLowerCase().startsWith('maya:')) {
+        turns.push({
+          id: idx,
+          speaker: 'Sam',
+          text: line.replace(/^(sam|maya):/i, '').trim(),
+        });
+      } else {
+        // Fallback / narration
+        turns.push({
+          id: idx,
+          speaker: 'Narrator',
+          text: line,
+        });
+      }
+    });
+
+    return turns.length > 0
+      ? turns
+      : [
+          {
+            id: 0,
+            speaker: 'Alex',
+            text: rawScript.slice(0, 300),
+          },
+        ];
+  };
 
   // Initialize Voices
   useEffect(() => {
@@ -60,7 +115,6 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
       const avail = window.speechSynthesis.getVoices();
       setVoices(avail);
       if (avail.length > 0 && !selectedVoice) {
-        // Prefer natural / English voices
         const naturalOrEn = avail.find(
           (v) => (v.name.includes('Natural') || v.lang.startsWith('en')) && v.localService
         ) || avail[0];
@@ -78,25 +132,115 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
     };
   }, []);
 
-  // Cleanup speech on modal close or unmount
+  // Stop playback when modal closes
   useEffect(() => {
-    if (!isOpen && window.speechSynthesis) {
+    if (!isOpen && typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
       setIsPlaying(false);
       setIsPaused(false);
+      setCurrentTurnIndex(-1);
     }
   }, [isOpen]);
 
+  // Scroll active turn into view
+  useEffect(() => {
+    if (currentTurnIndex >= 0 && scriptScrollRef.current) {
+      const el = document.getElementById(`turn-${currentTurnIndex}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [currentTurnIndex]);
+
   if (!isOpen) return null;
 
-  const currentTextToRead = activeTab === 'podcast' && podcastSpokenText ? podcastSpokenText : text;
-
-  const handlePlay = () => {
+  // Speak a single turn in Podcast mode
+  const playPodcastTurn = (turnIdx: number, turnsList: DialogueTurn[] = dialogueTurns) => {
     if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis is not supported in this browser environment.');
+      setErrorMessage('Speech synthesis is not supported in this browser.');
       return;
     }
 
+    if (turnIdx >= turnsList.length) {
+      setIsPlaying(false);
+      setCurrentTurnIndex(-1);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setCurrentTurnIndex(turnIdx);
+    setIsPlaying(true);
+    setIsPaused(false);
+
+    const turn = turnsList[turnIdx];
+    const utterance = new SpeechSynthesisUtterance(turn.text);
+    utterance.rate = rate;
+
+    // Distinct character voice styling
+    if (turn.speaker === 'Alex') {
+      utterance.pitch = Math.max(0.7, pitch * 0.9);
+      // Try to select male / deep voice if available
+      const alexVoice = voices.find((v) => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('george'));
+      if (alexVoice) utterance.voice = alexVoice;
+      else if (selectedVoice) {
+        const sel = voices.find((v) => v.name === selectedVoice);
+        if (sel) utterance.voice = sel;
+      }
+    } else if (turn.speaker === 'Sam') {
+      utterance.pitch = Math.min(1.4, pitch * 1.22);
+      // Try to select female / dynamic voice if available
+      const samVoice = voices.find((v) => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha') || v.name.toLowerCase().includes('natural'));
+      if (samVoice) utterance.voice = samVoice;
+      else if (selectedVoice) {
+        const sel = voices.find((v) => v.name === selectedVoice);
+        if (sel) utterance.voice = sel;
+      }
+    } else {
+      utterance.pitch = pitch;
+      if (selectedVoice) {
+        const sel = voices.find((v) => v.name === selectedVoice);
+        if (sel) utterance.voice = sel;
+      }
+    }
+
+    utterance.onend = () => {
+      if (turnIdx + 1 < turnsList.length) {
+        setTimeout(() => {
+          playPodcastTurn(turnIdx + 1, turnsList);
+        }, 120);
+      } else {
+        setIsPlaying(false);
+        setCurrentTurnIndex(-1);
+      }
+    };
+
+    utterance.onerror = () => {
+      setIsPlaying(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handlePlay = () => {
+    if (!('speechSynthesis' in window)) {
+      setErrorMessage('Speech synthesis is not supported in this browser.');
+      return;
+    }
+    setErrorMessage(null);
+
+    if (activeTab === 'podcast') {
+      if (isPaused) {
+        window.speechSynthesis.resume();
+        setIsPaused(false);
+        setIsPlaying(true);
+      } else {
+        const startIdx = currentTurnIndex >= 0 ? currentTurnIndex : 0;
+        playPodcastTurn(startIdx);
+      }
+      return;
+    }
+
+    // Narrator Mode
     if (isPaused) {
       window.speechSynthesis.resume();
       setIsPaused(false);
@@ -105,14 +249,13 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
     }
 
     window.speechSynthesis.cancel();
-
-    const cleanText = currentTextToRead
+    const cleanText = text
       .replace(/[#*`_~[\]()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
     if (!cleanText) {
-      alert('No textual content available to narrate.');
+      setErrorMessage('No text available on this page to narrate.');
       return;
     }
 
@@ -140,7 +283,6 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
       setIsPaused(false);
     };
 
-    utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   };
 
@@ -157,20 +299,34 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
       window.speechSynthesis.cancel();
       setIsPlaying(false);
       setIsPaused(false);
+      setCurrentTurnIndex(-1);
     }
   };
 
-  // Generate 2-Host AI Podcast
+  const handleNextTurn = () => {
+    if (currentTurnIndex + 1 < dialogueTurns.length) {
+      playPodcastTurn(currentTurnIndex + 1);
+    }
+  };
+
+  const handlePrevTurn = () => {
+    if (currentTurnIndex > 0) {
+      playPodcastTurn(currentTurnIndex - 1);
+    }
+  };
+
   const handleGeneratePodcast = async () => {
     setIsGeneratingPodcast(true);
+    setErrorMessage(null);
     handleStop();
     try {
       const res = await generatePodcastScript(title, sourceUrl || 'https://webpage', text);
       setPodcastScript(res.script);
-      setPodcastSpokenText(res.spokenText);
+      const parsed = parseScriptIntoTurns(res.script);
+      setDialogueTurns(parsed);
       setActiveTab('podcast');
     } catch (err: any) {
-      alert(`Failed to generate podcast briefing: ${err.message || 'Error'}`);
+      setErrorMessage(`Failed to generate briefing: ${err.message || 'Unknown error'}`);
     } finally {
       setIsGeneratingPodcast(false);
     }
@@ -182,18 +338,27 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const currentSpeaker = currentTurnIndex >= 0 && dialogueTurns[currentTurnIndex]
+    ? dialogueTurns[currentTurnIndex].speaker
+    : null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+        {/* Top Header */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
               <Volume2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Audio Narration Studio</h3>
-              <p className="text-xs text-slate-500 truncate max-w-md">{title}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">Audio Narration Studio</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Frontier AI Audio
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 truncate max-w-sm sm:max-w-md">{title}</p>
             </div>
           </div>
           <button
@@ -201,269 +366,334 @@ export const AudioNarrationModal: React.FC<AudioNarrationModalProps> = ({
               handleStop();
               onClose();
             }}
-            className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Studio Mode Tabs */}
-        <div className="flex border-b border-slate-100 bg-white px-5 pt-3 shrink-0 gap-3">
-          <button
-            onClick={() => {
-              handleStop();
-              setActiveTab('narrator');
-            }}
-            className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
-              activeTab === 'narrator'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Direct Text Narrator</span>
-          </button>
+        {/* Tab Selection */}
+        <div className="px-5 pt-3 pb-2 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                handleStop();
+                setActiveTab('narrator');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'narrator'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Solo Narrator</span>
+            </button>
+            <button
+              onClick={() => {
+                handleStop();
+                setActiveTab('podcast');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'podcast'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Dual-Speaker Podcast (Alex & Sam)</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => {
-              handleStop();
-              setActiveTab('podcast');
-              if (!podcastScript && !isGeneratingPodcast) {
-                handleGeneratePodcast();
-              }
-            }}
-            className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
-              activeTab === 'podcast'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <Radio className="w-4 h-4 text-rose-500" />
-            <span>2-Host AI Podcast Briefing</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold">
-              AI Audio
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">Speed:</span>
+            {[0.8, 1.0, 1.25, 1.5].map((s) => (
+              <button
+                key={s}
+                onClick={() => setRate(s)}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-mono cursor-pointer transition-colors ${
+                  rate === s
+                    ? 'bg-slate-900 text-white font-bold'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Body Content Area */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        {/* Error notification banner */}
+        {errorMessage && (
+          <div className="mx-5 mt-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{errorMessage}</span>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="text-rose-600 font-bold hover:underline cursor-pointer">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Body Content */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-5">
           {activeTab === 'narrator' ? (
-            <div className="space-y-5">
-              {/* Animated Playback Visualizer Card */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white shadow-lg space-y-4">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Web Speech Engine</span>
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        isPlaying ? 'bg-emerald-400 animate-ping' : isPaused ? 'bg-amber-400' : 'bg-slate-600'
-                      }`}
-                    />
-                    {isPlaying ? 'Speaking' : isPaused ? 'Paused' : 'Ready'}
-                  </span>
-                </div>
-
-                {/* Animated Equalizer Waves */}
-                <div className="h-12 flex items-center justify-center gap-1.5">
-                  {[24, 40, 16, 48, 32, 20, 52, 36, 18, 44, 28, 50, 22, 38].map((h, i) => (
-                    <div
-                      key={i}
-                      className={`w-1.5 rounded-full transition-all duration-150 ${
-                        isPlaying
-                          ? 'bg-indigo-400 animate-pulse'
-                          : isPaused
-                          ? 'bg-amber-400/60'
-                          : 'bg-slate-700'
-                      }`}
-                      style={{
-                        height: isPlaying ? `${Math.max(12, Math.round(h * Math.random()))}px` : '10px',
-                      }}
-                    />
-                  ))}
-                </div>
-
-                {/* Primary Playback Controls */}
-                <div className="flex items-center justify-center gap-4 pt-2">
-                  <button
-                    onClick={handleStop}
-                    className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
-                    title="Stop & Reset"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={isPlaying ? handlePause : handlePlay}
-                    className="w-14 h-14 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
-                  >
-                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const nextRate = rate === 1.0 ? 1.25 : rate === 1.25 ? 1.5 : rate === 1.5 ? 2.0 : 1.0;
-                      setRate(nextRate);
-                      if (isPlaying) {
-                        handleStop();
-                        setTimeout(handlePlay, 100);
-                      }
-                    }}
-                    className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer"
-                    title="Toggle Speed"
-                  >
-                    {rate}x
-                  </button>
-                </div>
-              </div>
-
-              {/* Speech Controls & Audio Settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {/* Voice Selection */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <label className="font-bold text-slate-700 flex items-center gap-1.5">
-                    <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Neural / System Voice</span>
-                  </label>
+            /* Solo Narrator View */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1 text-xs">
+                  <label className="text-slate-600 font-medium">Select Voice Engine</label>
                   <select
                     value={selectedVoice}
-                    onChange={(e) => {
-                      setSelectedVoice(e.target.value);
-                      if (isPlaying) {
-                        handleStop();
-                        setTimeout(handlePlay, 100);
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => setSelectedVoice(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   >
-                    {voices.map((v, i) => (
-                      <option key={i} value={v.name}>
+                    {voices.map((v) => (
+                      <option key={v.name} value={v.name}>
                         {v.name} ({v.lang})
                       </option>
                     ))}
                   </select>
                 </div>
-
-                {/* Speed & Pitch Controls */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between font-bold text-slate-700">
-                    <span>Reading Speed</span>
-                    <span className="font-mono text-indigo-600">{rate}x</span>
-                  </div>
+                <div className="space-y-1 text-xs">
+                  <label className="text-slate-600 font-medium">Voice Pitch ({pitch}x)</label>
                   <input
                     type="range"
                     min="0.75"
-                    max="2.0"
-                    step="0.25"
-                    value={rate}
-                    onChange={(e) => {
-                      setRate(parseFloat(e.target.value));
-                      if (isPlaying) {
-                        handleStop();
-                        setTimeout(handlePlay, 100);
-                      }
-                    }}
-                    className="w-full accent-indigo-600 cursor-pointer"
+                    max="1.5"
+                    step="0.05"
+                    value={pitch}
+                    onChange={(e) => setPitch(parseFloat(e.target.value))}
+                    className="w-full mt-2 accent-indigo-600 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                    <span>0.75x</span>
-                    <span>1.0x</span>
-                    <span>1.5x</span>
-                    <span>2.0x</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Text Preview Box */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between text-slate-500 font-medium">
-                  <span>Reading Sample (~{Math.round(text.length / 5)} words)</span>
-                  <button
-                    onClick={() => handleCopyScript(text)}
-                    className="text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-                <div className="max-h-36 overflow-y-auto text-slate-700 leading-relaxed font-sans pr-2">
-                  {text || 'No text extracted for narration.'}
-                </div>
+              {/* Text Sample View */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 max-h-56 overflow-y-auto leading-relaxed">
+                {text || 'No textual content extracted from this webpage.'}
               </div>
             </div>
           ) : (
-            /* 2-Host Podcast View */
+            /* Dual-Speaker Podcast View */
             <div className="space-y-4">
               {isGeneratingPodcast ? (
                 <div className="py-16 text-center space-y-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-rose-500 mx-auto" />
-                  <h4 className="text-sm font-bold text-slate-800">Generating 2-Host AI Audio Briefing...</h4>
+                  <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-800">Composing Dual-Host AI Podcast...</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Transforming webpage into a dynamic banter script featuring hosts Alex & Sam using Gemini 3.7.
+                    Transforming webpage into a lively analytical banter between hosts Alex & Sam.
                   </p>
                 </div>
-              ) : podcastScript ? (
+              ) : dialogueTurns.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Play Podcast Spoken Text Banner */}
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-rose-800">
-                      <Radio className="w-4 h-4 text-rose-600" />
-                      <span className="font-semibold">AI Briefing Generated</span>
+                  {/* Visual Host Equalizer Cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Host Alex Card */}
+                    <div
+                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                        currentSpeaker === 'Alex'
+                          ? 'bg-indigo-50/80 border-indigo-400 shadow-sm ring-2 ring-indigo-500/20'
+                          : 'bg-slate-50 border-slate-200 opacity-75'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                          AL
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-slate-900">Alex</div>
+                          <div className="text-[10px] text-slate-500 font-mono">Lead Analyst</div>
+                        </div>
+                      </div>
+                      {/* Animated Voice Equalizer */}
+                      <div className="flex items-center gap-0.5 h-6">
+                        {[0.4, 0.9, 0.6, 1.0, 0.5].map((h, i) => (
+                          <div
+                            key={i}
+                            className={`w-1 rounded-full transition-all duration-150 ${
+                              currentSpeaker === 'Alex'
+                                ? 'bg-indigo-600 animate-pulse'
+                                : 'bg-slate-300'
+                            }`}
+                            style={{
+                              height: currentSpeaker === 'Alex' ? `${h * 20}px` : '4px',
+                              animationDelay: `${i * 80}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={isPlaying ? handlePause : handlePlay}
-                        className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{isPlaying ? 'Pause Audio' : 'Listen Now'}</span>
-                      </button>
+
+                    {/* Host Sam Card */}
+                    <div
+                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                        currentSpeaker === 'Sam'
+                          ? 'bg-rose-50/80 border-rose-400 shadow-sm ring-2 ring-rose-500/20'
+                          : 'bg-slate-50 border-slate-200 opacity-75'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                          SM
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-slate-900">Sam</div>
+                          <div className="text-[10px] text-slate-500 font-mono">Inquisitive Co-Host</div>
+                        </div>
+                      </div>
+                      {/* Animated Voice Equalizer */}
+                      <div className="flex items-center gap-0.5 h-6">
+                        {[0.6, 1.0, 0.5, 0.8, 0.4].map((h, i) => (
+                          <div
+                            key={i}
+                            className={`w-1 rounded-full transition-all duration-150 ${
+                              currentSpeaker === 'Sam'
+                                ? 'bg-rose-600 animate-pulse'
+                                : 'bg-slate-300'
+                            }`}
+                            style={{
+                              height: currentSpeaker === 'Sam' ? `${h * 20}px` : '4px',
+                              animationDelay: `${i * 90}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Dialogue Script */}
-                  <div className="p-5 rounded-2xl bg-slate-900 text-slate-200 text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto shadow-inner border border-slate-800">
-                    {podcastScript}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-2 pt-2 text-xs">
-                    <button
-                      onClick={() => handleCopyScript(podcastScript)}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copied ? 'Copied' : 'Copy Script'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => onSaveAsNote(`Audio Briefing: ${title}`, podcastScript, sourceUrl)}
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <StickyNote className="w-3.5 h-3.5" />
-                      <span>Save as AI Note</span>
-                    </button>
+                  {/* Interactive Dialogue Turns Teleprompter */}
+                  <div
+                    ref={scriptScrollRef}
+                    className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-sans max-h-60 overflow-y-auto space-y-3 shadow-inner"
+                  >
+                    {dialogueTurns.map((turn, idx) => {
+                      const isActive = currentTurnIndex === idx;
+                      const isAlex = turn.speaker === 'Alex';
+                      return (
+                        <div
+                          key={turn.id}
+                          id={`turn-${idx}`}
+                          onClick={() => playPodcastTurn(idx)}
+                          className={`p-3 rounded-xl transition-all cursor-pointer ${
+                            isActive
+                              ? isAlex
+                                ? 'bg-indigo-950/80 border border-indigo-500 shadow-sm ring-1 ring-indigo-500'
+                                : 'bg-rose-950/80 border border-rose-500 shadow-sm ring-1 ring-rose-500'
+                              : 'hover:bg-slate-800/60 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span
+                              className={`font-bold font-mono ${
+                                isAlex ? 'text-indigo-400' : 'text-rose-400'
+                              }`}
+                            >
+                              {turn.speaker}
+                            </span>
+                            {isActive && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-emerald-300 flex items-center gap-1 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                Speaking
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-200 leading-relaxed">{turn.text}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
                 <div className="py-12 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">
-                    <Users className="w-6 h-6" />
+                  <div className="w-14 h-14 rounded-3xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto shadow-sm">
+                    <Radio className="w-7 h-7" />
                   </div>
                   <h4 className="text-sm font-bold text-slate-800">2-Host Conversational Briefing</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    Turn this article into an engaging 2-minute dialogue between two AI analysts.
+                    Turn this webpage into a deep dive conversational podcast featuring Alex & Sam with alternating voices and real-time audio visualization.
                   </p>
                   <button
                     onClick={handleGeneratePodcast}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
+                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors"
                   >
-                    Generate Briefing
+                    Generate Dual-Host Podcast
                   </button>
                 </div>
               )}
             </div>
           )}
+        </div>
+
+        {/* Bottom Playback & Actions Bar */}
+        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            {activeTab === 'podcast' && dialogueTurns.length > 0 && (
+              <button
+                onClick={handlePrevTurn}
+                disabled={currentTurnIndex <= 0}
+                className="p-2 rounded-xl border border-slate-200 hover:bg-white text-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+                title="Previous dialogue turn"
+              >
+                <Rewind className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={isPlaying ? handlePause : handlePlay}
+              className={`px-5 py-2.5 rounded-xl text-white font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer ${
+                activeTab === 'podcast'
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              <span className="text-xs">
+                {isPlaying ? 'Pause Narration' : isPaused ? 'Resume' : 'Start Listening'}
+              </span>
+            </button>
+
+            {activeTab === 'podcast' && dialogueTurns.length > 0 && (
+              <button
+                onClick={handleNextTurn}
+                disabled={currentTurnIndex >= dialogueTurns.length - 1}
+                className="p-2 rounded-xl border border-slate-200 hover:bg-white text-slate-700 disabled:opacity-40 transition-colors cursor-pointer"
+                title="Next dialogue turn"
+              >
+                <FastForward className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={handleStop}
+              className="p-2 rounded-xl border border-slate-200 hover:bg-white text-slate-600 transition-colors cursor-pointer"
+              title="Stop playback"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {podcastScript && activeTab === 'podcast' && (
+              <>
+                <button
+                  onClick={() => handleCopyScript(podcastScript)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-white text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+                <button
+                  onClick={() => onSaveAsNote(`Audio Briefing: ${title}`, podcastScript, sourceUrl)}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <StickyNote className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Save Note</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

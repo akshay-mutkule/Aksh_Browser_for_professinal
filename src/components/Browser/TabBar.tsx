@@ -27,7 +27,8 @@ import {
   Terminal,
   Webhook,
   Wrench,
-  Radio
+  Radio,
+  Orbit
 } from 'lucide-react';
 import { Tab, PageContentType } from '../../types';
 import { TabContextMenu } from './TabContextMenu';
@@ -56,6 +57,7 @@ interface TabBarProps {
   onCloseAllInGroup?: (groupName: string) => void;
   onSynthesizeGroup?: (groupName: string, tabs: Tab[]) => void;
   onSaveGroupAsNotes?: (groupName: string, tabs: Tab[]) => void;
+  onOpenTabCosmos?: () => void;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -81,6 +83,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   onCloseAllInGroup,
   onSynthesizeGroup,
   onSaveGroupAsNotes,
+  onOpenTabCosmos,
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -254,6 +257,18 @@ export const TabBar: React.FC<TabBarProps> = ({
         >
           <Layers className="w-3.5 h-3.5 text-blue-600" />
           <span className="hidden xl:inline">{isClustering ? 'Organizing...' : 'Smart Group'}</span>
+        </button>
+      )}
+
+      {/* Tab Cosmos 2D Semantic Graph Button */}
+      {onOpenTabCosmos && (
+        <button
+          onClick={onOpenTabCosmos}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all shrink-0 cursor-pointer"
+          title="Open Tab Cosmos: 2D Spatial & Semantic Graph"
+        >
+          <Orbit className="w-3.5 h-3.5 text-indigo-600" />
+          <span className="hidden xl:inline">Cosmos</span>
         </button>
       )}
       {/* Tab Context Menu */}

@@ -47,7 +47,8 @@ import {
   Crosshair,
   FastForward,
   Pause,
-  RotateCcw
+  RotateCcw,
+  BarChart3
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -56,6 +57,7 @@ import { translateText, factCheckClaim, sendAIChat } from '../../services/api';
 import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
 import { PageQuizModal } from '../Modals/PageQuizModal';
 import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
+import { DataVisualizerModal } from '../Modals/DataVisualizerModal';
 import { GoogleSearchPageView } from './GoogleSearchPageView';
 
 interface LiveWebViewProps {
@@ -167,6 +169,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [speedReaderWpm, setSpeedReaderWpm] = useState<number>(350);
   const [speedReaderPlaying, setSpeedReaderPlaying] = useState<boolean>(true);
   const [speedReaderIndex, setSpeedReaderIndex] = useState<number>(0);
+  const [isDataVisualizerOpen, setIsDataVisualizerOpen] = useState<boolean>(false);
 
   // Floating In-Page Selection Action HUD
   const [selectionPopup, setSelectionPopup] = useState<{
@@ -1236,6 +1239,16 @@ Format cleanly with Markdown headers and bullet points.`;
           >
             <FastForward className="w-3.5 h-3.5 text-purple-600" />
             <span className="hidden sm:inline">Speed Read</span>
+          </button>
+
+          {/* AI Data Transformer & Chart Visualizer */}
+          <button
+            onClick={() => setIsDataVisualizerOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-emerald-200 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition-colors cursor-pointer"
+            title="AI Data Transformer: Convert page numbers and tables into interactive charts"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">Data Chart</span>
           </button>
 
           {/* Audio Listen */}
@@ -2786,6 +2799,16 @@ Format cleanly with Markdown headers and bullet points.`;
           </div>
         </div>
       )}
+
+      {/* In-Page AI Data Transformer & Chart Visualizer Modal */}
+      <DataVisualizerModal
+        isOpen={isDataVisualizerOpen}
+        onClose={() => setIsDataVisualizerOpen(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || tab.extractedText || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
     </div>
   );
 };

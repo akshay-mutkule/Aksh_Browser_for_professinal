@@ -48,7 +48,8 @@ import {
   Brain,
   GitCompare,
   Wrench,
-  BrainCircuit
+  BrainCircuit,
+  Orbit
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Tab, PageContentType } from '../../types';
@@ -81,6 +82,8 @@ interface CommandPaletteProps {
   onOpenDiff?: () => void;
   onToggleNeuralIsland?: () => void;
   onSaveAsNote?: (title: string, content: string) => void;
+  onOpenTabCosmos?: () => void;
+  onOpenAudioStudio?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -111,6 +114,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenDiff,
   onToggleNeuralIsland,
   onSaveAsNote,
+  onOpenTabCosmos,
+  onOpenAudioStudio,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -244,6 +249,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-indigo-600',
       action: () => {
         if (onToggleAmbientSound) onToggleAmbientSound();
+        onClose();
+      },
+    },
+    {
+      id: 'tab-cosmos',
+      title: 'Tab Cosmos: 2D Spatial & Semantic Graph',
+      subtitle: 'Explore active tabs in an interactive 2D orbital cosmos with memory weights and semantic clusters',
+      category: 'Productivity',
+      icon: Orbit,
+      iconColor: 'text-indigo-500',
+      action: () => {
+        if (onOpenTabCosmos) onOpenTabCosmos();
+        onClose();
+      },
+    },
+    {
+      id: 'audio-studio',
+      title: 'Dual-Speaker AI Podcast Studio (Alex & Sam)',
+      subtitle: 'Turn webpage into an alternating conversational debrief podcast with visual equalizer waveforms',
+      category: 'AI Assistant',
+      icon: Radio,
+      iconColor: 'text-rose-500',
+      action: () => {
+        if (onOpenAudioStudio) onOpenAudioStudio();
         onClose();
       },
     },

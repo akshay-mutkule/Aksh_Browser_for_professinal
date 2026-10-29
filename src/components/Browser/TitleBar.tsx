@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal, Brain } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal, Brain, Orbit } from 'lucide-react';
 import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -37,6 +37,7 @@ interface TitleBarProps {
   onOpenVoiceAssistant?: () => void;
   onOpenTerminal?: () => void;
   onOpenVault?: () => void;
+  onOpenTabCosmos?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -73,6 +74,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onOpenVoiceAssistant,
   onOpenTerminal,
   onOpenVault,
+  onOpenTabCosmos,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -176,6 +178,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           onCloseAllInGroup={onCloseAllInGroup}
           onSynthesizeGroup={onSynthesizeGroup}
           onSaveGroupAsNotes={onSaveGroupAsNotes}
+          onOpenTabCosmos={onOpenTabCosmos}
         />
       ) : (
         <div className="flex-1 px-4 flex items-center justify-between text-xs text-slate-600">
@@ -193,6 +196,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
       {/* Right Controls & AI Side Panel Toggle */}
       <div className="flex items-center gap-1.5 px-2 sm:px-3 shrink-0">
+        {onOpenTabCosmos && (
+          <button
+            onClick={onOpenTabCosmos}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+            title="Open Tab Cosmos: 2D Spatial & Semantic Graph"
+          >
+            <Orbit className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden xl:inline">Cosmos</span>
+          </button>
+        )}
+
         {onOpenTour && (
           <button
             onClick={onOpenTour}

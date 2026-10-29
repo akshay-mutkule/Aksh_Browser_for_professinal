@@ -60,6 +60,8 @@ import { SmartTabOrganizerModal } from './components/Modals/SmartTabOrganizerMod
 import { PageQuizModal } from './components/Modals/PageQuizModal';
 import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
 import { PageDiffModal } from './components/Modals/PageDiffModal';
+import { SpatialTabCosmosModal } from './components/Modals/SpatialTabCosmosModal';
+import { AudioNarrationModal } from './components/Modals/AudioNarrationModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag, UserScript } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -103,6 +105,8 @@ export function App() {
   const [isDataExtractorOpen, setIsDataExtractorOpen] = useState<boolean>(false);
   const [isSessionStashOpen, setIsSessionStashOpen] = useState<boolean>(false);
   const [isClearDataOpen, setIsClearDataOpen] = useState<boolean>(false);
+  const [isTabCosmosOpen, setIsTabCosmosOpen] = useState<boolean>(false);
+  const [isAudioStudioOpen, setIsAudioStudioOpen] = useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [workspaces, setWorkspaces] = useState<Workspace[]>(DEFAULT_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>('ws-general');
@@ -1736,6 +1740,7 @@ export function App() {
         onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
         onOpenTerminal={() => setIsOmniTerminalOpen(true)}
         onOpenVault={() => handleNewTab('aksh://memory')}
+        onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
       />
 
       {/* 2. Address Bar / Omnibox */}
@@ -2054,6 +2059,7 @@ export function App() {
             textToRead={audioNarration.text}
             title={audioNarration.title}
             onClose={() => setAudioNarration({ isOpen: false, text: '', title: '' })}
+            onOpenStudio={() => setIsAudioStudioOpen(true)}
           />
         )}
       </AnimatePresence>
@@ -2102,6 +2108,8 @@ export function App() {
         onOpenDiff={() => setIsPageDiffOpen(true)}
         onToggleNeuralIsland={() => setIsNeuralIslandOpen((prev) => !prev)}
         onSaveAsNote={handleSaveAsNote}
+        onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
+        onOpenAudioStudio={() => setIsAudioStudioOpen(true)}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -2264,6 +2272,30 @@ export function App() {
           onSaveAsNote={handleSaveAsNote}
         />
       )}
+
+      {/* 2D Spatial Tab Cosmos & Semantic Graph Modal */}
+      <SpatialTabCosmosModal
+        isOpen={isTabCosmosOpen}
+        onClose={() => setIsTabCosmosOpen(false)}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSelectTab={handleSelectTabWithWake}
+        onCloseTab={handleCloseTab}
+        onSplitTab={handleSplitTab}
+        onSynthesizeTabs={(selectedIds) => {
+          setIsSynthesisModalOpen(true);
+        }}
+      />
+
+      {/* Dual-Speaker AI Synthetic Audio Studio Modal (Alex & Sam) */}
+      <AudioNarrationModal
+        isOpen={isAudioStudioOpen}
+        onClose={() => setIsAudioStudioOpen(false)}
+        title={activeTab?.title || 'Current Webpage'}
+        text={activeTab?.extractedText || activeTab?.pdfData?.text || activeTab?.title || ''}
+        sourceUrl={activeTab?.url}
+        onSaveAsNote={handleSaveAsNote}
+      />
 
       {/* Floating Focus Ambient Soundscapes Player */}
       <AnimatePresence>

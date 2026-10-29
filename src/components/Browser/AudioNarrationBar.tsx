@@ -24,9 +24,10 @@ interface AudioNarrationBarProps {
   title: string;
   url?: string;
   onClose: () => void;
+  onOpenStudio?: () => void;
 }
 
-export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead, title, url, onClose }) => {
+export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead, title, url, onClose, onOpenStudio }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [rate, setRate] = useState<number>(1.0);
   const [activeMode, setActiveMode] = useState<'narrator' | 'podcast'>('narrator');
@@ -225,6 +226,22 @@ export const AudioNarrationBar: React.FC<AudioNarrationBarProps> = ({ textToRead
             <Radio className="w-3.5 h-3.5 text-rose-600" />
             <span>{isGeneratingPodcast ? 'Drafting...' : 'Podcastify'}</span>
           </button>
+
+          {/* Full Dual-Host Studio Button */}
+          {onOpenStudio && (
+            <button
+              onClick={() => {
+                handleStop();
+                onClose();
+                onOpenStudio();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Open Full 2-Host Dual-Voice Synthetic Podcast Studio"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Studio</span>
+            </button>
+          )}
         </div>
 
         {/* Speed Rate Pills */}
