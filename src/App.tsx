@@ -62,6 +62,7 @@ import { PageCredibilityModal } from './components/Modals/PageCredibilityModal';
 import { PageDiffModal } from './components/Modals/PageDiffModal';
 import { SpatialTabCosmosModal } from './components/Modals/SpatialTabCosmosModal';
 import { AudioNarrationModal } from './components/Modals/AudioNarrationModal';
+import { SemanticTimeMachineModal } from './components/Modals/SemanticTimeMachineModal';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag, UserScript } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -107,6 +108,7 @@ export function App() {
   const [isClearDataOpen, setIsClearDataOpen] = useState<boolean>(false);
   const [isTabCosmosOpen, setIsTabCosmosOpen] = useState<boolean>(false);
   const [isAudioStudioOpen, setIsAudioStudioOpen] = useState<boolean>(false);
+  const [isGlobalTimeMachineOpen, setIsGlobalTimeMachineOpen] = useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [workspaces, setWorkspaces] = useState<Workspace[]>(DEFAULT_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>('ws-general');
@@ -1899,6 +1901,7 @@ export function App() {
               onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
               onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
               onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
+              onOpenTimeMachine={() => setIsGlobalTimeMachineOpen(true)}
             />
           </div>
 
@@ -2110,6 +2113,7 @@ export function App() {
         onSaveAsNote={handleSaveAsNote}
         onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
         onOpenAudioStudio={() => setIsAudioStudioOpen(true)}
+        onOpenTimeMachine={() => setIsGlobalTimeMachineOpen(true)}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -2294,6 +2298,16 @@ export function App() {
         title={activeTab?.title || 'Current Webpage'}
         text={activeTab?.extractedText || activeTab?.pdfData?.text || activeTab?.title || ''}
         sourceUrl={activeTab?.url}
+        onSaveAsNote={handleSaveAsNote}
+      />
+
+      {/* Global Semantic Time Machine Modal */}
+      <SemanticTimeMachineModal
+        isOpen={isGlobalTimeMachineOpen}
+        onClose={() => setIsGlobalTimeMachineOpen(false)}
+        pageTitle={activeTab?.title || 'Current Webpage'}
+        pageUrl={activeTab?.url || 'https://example.com'}
+        pageContent={activeTab?.extractedText || activeTab?.pdfData?.text || activeTab?.title || ''}
         onSaveAsNote={handleSaveAsNote}
       />
 

@@ -48,7 +48,8 @@ import {
   FastForward,
   Pause,
   RotateCcw,
-  BarChart3
+  BarChart3,
+  History
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -58,6 +59,8 @@ import { PageStickyNotesLayer } from '../Browser/PageStickyNotesLayer';
 import { PageQuizModal } from '../Modals/PageQuizModal';
 import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
 import { DataVisualizerModal } from '../Modals/DataVisualizerModal';
+import { SemanticTimeMachineModal } from '../Modals/SemanticTimeMachineModal';
+import { OnPageAgentHUD } from '../Browser/OnPageAgentHUD';
 import { GoogleSearchPageView } from './GoogleSearchPageView';
 
 interface LiveWebViewProps {
@@ -170,6 +173,10 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [speedReaderPlaying, setSpeedReaderPlaying] = useState<boolean>(true);
   const [speedReaderIndex, setSpeedReaderIndex] = useState<number>(0);
   const [isDataVisualizerOpen, setIsDataVisualizerOpen] = useState<boolean>(false);
+  const [isTimeMachineOpen, setIsTimeMachineOpen] = useState<boolean>(false);
+  const [isOnPageAgentOpen, setIsOnPageAgentOpen] = useState<boolean>(false);
+  const [isBilingualDualMode, setIsBilingualDualMode] = useState<boolean>(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   // Floating In-Page Selection Action HUD
   const [selectionPopup, setSelectionPopup] = useState<{
@@ -764,7 +771,8 @@ Format cleanly with Markdown headers and bullet points.`;
       setTranslatedText(res.translatedText);
       setCurrentLanguage(lang);
     } catch (err: any) {
-      alert(`Translation error: ${err.message || 'Server error'}`);
+      setTranslationError(`Translation failed: ${err.message || 'Server error'}`);
+      setTimeout(() => setTranslationError(null), 5000);
     } finally {
       setIsTranslating(false);
     }
@@ -1251,6 +1259,30 @@ Format cleanly with Markdown headers and bullet points.`;
             <span className="hidden sm:inline">Data Chart</span>
           </button>
 
+          {/* Semantic Time Machine & Temporal Web Archive */}
+          <button
+            onClick={() => setIsTimeMachineOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-800 text-xs font-semibold transition-colors cursor-pointer"
+            title="Semantic Time Machine: Reconstruct historical versions & semantic drift with Wayback AI"
+          >
+            <History className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden sm:inline">Time Machine</span>
+          </button>
+
+          {/* Autonomous On-Page Action Agent */}
+          <button
+            onClick={() => setIsOnPageAgentOpen(!isOnPageAgentOpen)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isOnPageAgentOpen
+                ? 'bg-cyan-600 border-cyan-700 text-white shadow-xs'
+                : 'border-cyan-200 bg-cyan-50/80 hover:bg-cyan-100 text-cyan-800'
+            }`}
+            title="Autonomous On-Page Action Agent: Execute multi-step DOM queries & audit goals"
+          >
+            <Bot className={`w-3.5 h-3.5 ${isOnPageAgentOpen ? 'text-white' : 'text-cyan-600'}`} />
+            <span className="hidden sm:inline">Action Agent</span>
+          </button>
+
           {/* Audio Listen */}
           {onTriggerSpeech && (
             <button
@@ -1337,6 +1369,22 @@ Format cleanly with Markdown headers and bullet points.`;
         </div>
       </div>
 
+      {/* Translation Error Banner */}
+      {translationError && (
+        <div className="bg-rose-50 border-b border-rose-200 px-4 py-2 flex items-center justify-between text-xs text-rose-900 z-10 shrink-0">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-600" />
+            <span>{translationError}</span>
+          </div>
+          <button
+            onClick={() => setTranslationError(null)}
+            className="text-xs font-semibold text-rose-700 hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Translation Alert Banner */}
       {translatedText && (
         <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-2 flex items-center justify-between text-xs text-indigo-900 z-10 shrink-0">
@@ -1346,11 +1394,22 @@ Format cleanly with Markdown headers and bullet points.`;
               Page translated to <strong>{currentLanguage}</strong> using Gemini AI.
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsBilingualDualMode(!isBilingualDualMode)}
+              className={`px-2.5 py-1 rounded-lg border font-semibold text-xs transition-colors cursor-pointer ${
+                isBilingualDualMode
+                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
+                  : 'bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-100'
+              }`}
+            >
+              {isBilingualDualMode ? 'Dual Columns Active' : 'Split Bilingual View'}
+            </button>
             <button
               onClick={() => {
                 setTranslatedText(null);
                 setCurrentLanguage(null);
+                setIsBilingualDualMode(false);
               }}
               className="text-xs font-semibold text-indigo-700 hover:underline cursor-pointer"
             >
@@ -1976,66 +2035,98 @@ Format cleanly with Markdown headers and bullet points.`;
                     </div>
                   </div>
                 )}
-                <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
-                  <ReactMarkdown
-                    components={{
-                      a: ({ href, children, ...props }) => (
-                        <a
-                          href={href}
-                          onClick={(e) => {
-                            if (href && !href.startsWith('#')) {
-                              e.preventDefault();
-                              onNavigate(href);
-                            }
-                          }}
-                          className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer inline-flex items-center gap-0.5"
-                          title={`Navigate to ${href}`}
-                          {...props}
-                        >
-                          <span>{children}</span>
-                          <ArrowUpRight className="w-3.5 h-3.5 inline-block opacity-70 shrink-0" />
-                        </a>
-                      ),
-                      pre: ({ children, ...props }) => {
-                        const rawCode = String((children as any)?.props?.children || children || '');
-                        return (
-                          <div className="relative group my-4 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
-                            <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 font-mono">
-                              <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
-                                <Code className="w-3.5 h-3.5 text-cyan-400" />
-                                <span>Code Snippet</span>
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                {onOpenSandbox && (
+                {isBilingualDualMode && translatedText ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    {/* Left Column: Original Source */}
+                    <div className="space-y-3 p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs font-bold text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-slate-400" />
+                          <span>Original Source (English)</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">Source Text</span>
+                      </div>
+                      <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-700 prose-p:leading-relaxed prose-sm">
+                        <ReactMarkdown>{tab.extractedText || mockSite?.extractedText || activeContent}</ReactMarkdown>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Neural Translation */}
+                    <div className="space-y-3 p-5 rounded-2xl bg-indigo-50/60 border border-indigo-200 shadow-2xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-indigo-200 text-xs font-bold text-indigo-900">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                          <span>Neural Translation ({currentLanguage})</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-indigo-600 font-semibold">Gemini AI</span>
+                      </div>
+                      <div className="prose max-w-none prose-headings:font-bold prose-headings:text-indigo-950 prose-p:text-slate-800 prose-p:leading-relaxed prose-sm">
+                        <ReactMarkdown>{translatedText}</ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 prose-table:w-full prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-td:border-b">
+                    <ReactMarkdown
+                      components={{
+                        a: ({ href, children, ...props }) => (
+                          <a
+                            href={href}
+                            onClick={(e) => {
+                              if (href && !href.startsWith('#')) {
+                                e.preventDefault();
+                                onNavigate(href);
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer inline-flex items-center gap-0.5"
+                            title={`Navigate to ${href}`}
+                            {...props}
+                          >
+                            <span>{children}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 inline-block opacity-70 shrink-0" />
+                          </a>
+                        ),
+                        pre: ({ children, ...props }) => {
+                          const rawCode = String((children as any)?.props?.children || children || '');
+                          return (
+                            <div className="relative group my-4 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
+                              <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 font-mono">
+                                <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                                  <Code className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>Code Snippet</span>
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {onOpenSandbox && (
+                                    <button
+                                      onClick={() => onOpenSandbox(rawCode)}
+                                      className="px-2 py-0.5 rounded-md bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 font-semibold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                                      title="Open and run in Code Sandbox"
+                                    >
+                                      <Play className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
+                                      <span>Run in Sandbox</span>
+                                    </button>
+                                  )}
                                   <button
-                                    onClick={() => onOpenSandbox(rawCode)}
-                                    className="px-2 py-0.5 rounded-md bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 font-semibold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
-                                    title="Open and run in Code Sandbox"
+                                    onClick={() => handleCopyText(rawCode)}
+                                    className="px-2 py-0.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
                                   >
-                                    <Play className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
-                                    <span>Run in Sandbox</span>
+                                    <Copy className="w-2.5 h-2.5" />
+                                    <span>Copy</span>
                                   </button>
-                                )}
-                                <button
-                                  onClick={() => handleCopyText(rawCode)}
-                                  className="px-2 py-0.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
-                                >
-                                  <Copy className="w-2.5 h-2.5" />
-                                  <span>Copy</span>
-                                </button>
+                                </div>
                               </div>
+                              <pre className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed bg-slate-950" {...props}>
+                                {children}
+                              </pre>
                             </div>
-                            <pre className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed bg-slate-950" {...props}>
-                              {children}
-                            </pre>
-                          </div>
-                        );
-                      },
-                    }}
-                  >
-                    {displayContent}
-                  </ReactMarkdown>
-                </div>
+                          );
+                        },
+                      }}
+                    >
+                      {displayContent}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-white p-12 rounded-2xl border border-slate-200 shadow-xs text-center space-y-3">
@@ -2804,6 +2895,26 @@ Format cleanly with Markdown headers and bullet points.`;
       <DataVisualizerModal
         isOpen={isDataVisualizerOpen}
         onClose={() => setIsDataVisualizerOpen(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || tab.extractedText || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
+
+      {/* Semantic Time Machine & Temporal Web Archive Modal */}
+      <SemanticTimeMachineModal
+        isOpen={isTimeMachineOpen}
+        onClose={() => setIsTimeMachineOpen(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || tab.extractedText || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
+
+      {/* Autonomous On-Page Action Agent HUD */}
+      <OnPageAgentHUD
+        isOpen={isOnPageAgentOpen}
+        onClose={() => setIsOnPageAgentOpen(false)}
         pageTitle={tab.title}
         pageUrl={tab.url}
         pageContent={activeContent || tab.extractedText || ''}

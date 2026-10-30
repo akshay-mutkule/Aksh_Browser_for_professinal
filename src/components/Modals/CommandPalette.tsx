@@ -84,6 +84,7 @@ interface CommandPaletteProps {
   onSaveAsNote?: (title: string, content: string) => void;
   onOpenTabCosmos?: () => void;
   onOpenAudioStudio?: () => void;
+  onOpenTimeMachine?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -116,6 +117,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onSaveAsNote,
   onOpenTabCosmos,
   onOpenAudioStudio,
+  onOpenTimeMachine,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -273,6 +275,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-rose-500',
       action: () => {
         if (onOpenAudioStudio) onOpenAudioStudio();
+        onClose();
+      },
+    },
+    {
+      id: 'time-machine',
+      title: 'Semantic Time Machine & Temporal Web Archive',
+      subtitle: 'Time-travel on active webpage across historical epochs with side-by-side split slider and semantic drift diffs',
+      category: 'Page Tools',
+      icon: History,
+      iconColor: 'text-indigo-500',
+      action: () => {
+        if (onOpenTimeMachine) onOpenTimeMachine();
         onClose();
       },
     },

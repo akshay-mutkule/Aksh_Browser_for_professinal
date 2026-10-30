@@ -27,7 +27,8 @@ import {
   Bot,
   Workflow,
   Scale,
-  Mic
+  Mic,
+  History
 } from 'lucide-react';
 import { Tab, NeuralMemoryItem, AIModelId } from '../../types';
 import { sendAIChat } from '../../services/api';
@@ -45,6 +46,7 @@ interface NeuralIslandHUDProps {
   onToggleVoiceHud?: () => void;
   onToggleOmniTerminal?: () => void;
   onOpenCrossTabSynthesis?: () => void;
+  onOpenTimeMachine?: () => void;
 }
 
 export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
@@ -60,6 +62,7 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
   onToggleVoiceHud,
   onToggleOmniTerminal,
   onOpenCrossTabSynthesis,
+  onOpenTimeMachine,
 }) => {
   const [quickPrompt, setQuickPrompt] = useState('');
   const [selectedModel, setSelectedModel] = useState<AIModelId>('gemini-3.7-flash');
@@ -550,6 +553,23 @@ export const NeuralIslandHUD: React.FC<NeuralIslandHUDProps> = ({
                 <div className="text-[11px] font-semibold text-slate-200">Agent Studio</div>
                 <div className="text-[9px] text-slate-400">Autonomous multi-agent</div>
               </button>
+
+              {onOpenTimeMachine && (
+                <button
+                  onClick={() => {
+                    onOpenTimeMachine();
+                    onToggleOpen();
+                  }}
+                  className="p-2.5 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-700/30 text-left transition-all cursor-pointer group hover:scale-[1.02]"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <History className="w-4 h-4 text-indigo-400 group-hover:scale-110" />
+                    <span className="text-[9px] font-mono text-indigo-400 font-bold">TIME</span>
+                  </div>
+                  <div className="text-[11px] font-semibold text-slate-200">Time Machine</div>
+                  <div className="text-[9px] text-slate-400">Wayback neural delta</div>
+                </button>
+              )}
 
               <button
                 onClick={() => {
