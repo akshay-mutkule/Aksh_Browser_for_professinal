@@ -290,6 +290,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onClose();
       },
     },
+    {
+      id: 'system-architecture',
+      title: 'System Architecture & Kernel Spec (aksh://system)',
+      subtitle: 'High-level architectural blueprint, runtime kernel telemetry, zero-trust security & AI dataflow',
+      category: 'Developer',
+      icon: Cpu,
+      iconColor: 'text-indigo-400',
+      action: () => {
+        onOpenInternalView('system');
+        onClose();
+      },
+    },
     // Page Tools
     {
       id: 'page-snapshot',

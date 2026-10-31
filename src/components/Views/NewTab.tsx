@@ -352,6 +352,11 @@ export const NewTab: React.FC<NewTabProps> = ({
       return;
     }
 
+    if (q.startsWith('!system') || q.startsWith('!arch') || q.startsWith('!kernel')) {
+      onNavigate('aksh://system');
+      return;
+    }
+
     // Resolve search: if available in this web, navigates to it; if NOT available, directs to Google!
     const resolution = resolveSearchOrUrl(q, { bookmarks, history });
     onNavigate(resolution.targetUrl);

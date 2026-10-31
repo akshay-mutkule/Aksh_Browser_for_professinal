@@ -34,6 +34,7 @@ import { SemanticDiffView } from './components/Views/SemanticDiffView';
 import { FullTerminalView } from './components/Views/FullTerminalView';
 import { MicroToolsView } from './components/Views/MicroToolsView';
 import { NetworkStudioView } from './components/Views/NetworkStudioView';
+import { SystemArchitectureView } from './components/Views/SystemArchitectureView';
 import { OmniTerminal } from './components/Browser/OmniTerminal';
 import { VoiceAssistantHud } from './components/Browser/VoiceAssistantHud';
 import { VimNavigationHud } from './components/Browser/VimNavigationHud';
@@ -592,6 +593,9 @@ export function App() {
       } else if (normalizedUrl === 'aksh://network' || normalizedUrl === 'aksh://traffic' || normalizedUrl === 'aksh://radar' || normalizedUrl === 'aksh://interceptor' || normalizedUrl === 'aksh://proxy') {
         resolvedType = 'network';
         title = 'Network Radar & Proxy Studio';
+      } else if (normalizedUrl === 'aksh://system' || normalizedUrl === 'aksh://architecture' || normalizedUrl === 'aksh://kernel' || normalizedUrl === 'aksh://spec') {
+        resolvedType = 'system';
+        title = 'System Architecture & Kernel Spec';
       } else if (SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl]) {
         // Preloaded curated website
         const site = SAMPLE_WEBSITES[targetUrl] || SAMPLE_WEBSITES[normalizedUrl];
@@ -1690,6 +1694,16 @@ export function App() {
             onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
           />
         )}
+
+        {targetTab.contentType === 'system' && (
+          <SystemArchitectureView
+            tabs={tabs}
+            workspaces={workspaces}
+            activeWorkspaceId={activeWorkspaceId}
+            onNavigateUrl={(url) => navigateTab(targetTab.id, url)}
+            onSaveAsNote={handleSaveAsNote}
+          />
+        )}
       </div>
     );
   };
@@ -1743,6 +1757,7 @@ export function App() {
         onOpenTerminal={() => setIsOmniTerminalOpen(true)}
         onOpenVault={() => handleNewTab('aksh://memory')}
         onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
+        onOpenArchitecture={() => handleNewTab('aksh://system')}
       />
 
       {/* 2. Address Bar / Omnibox */}

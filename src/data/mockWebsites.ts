@@ -427,6 +427,7 @@ Key quantum algorithms demonstrating computational speedup:
 ];
 
 export const SPEED_DIAL_SHORTCUTS = [
+  { id: 'app-system', title: 'Architecture', url: 'aksh://system', icon: 'Cpu', color: 'bg-indigo-600' },
   { id: 'app-memory', title: 'Neural Vault', url: 'aksh://memory', icon: 'Brain', color: 'bg-indigo-700' },
   { id: 'app-diff', title: 'Semantic Diff', url: 'aksh://diff', icon: 'GitCompare', color: 'bg-cyan-700' },
   { id: 'app-tools', title: 'Micro-Tools', url: 'aksh://tools', icon: 'Wrench', color: 'bg-cyan-600' },

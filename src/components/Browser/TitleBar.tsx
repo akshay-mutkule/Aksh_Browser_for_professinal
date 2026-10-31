@@ -38,6 +38,7 @@ interface TitleBarProps {
   onOpenTerminal?: () => void;
   onOpenVault?: () => void;
   onOpenTabCosmos?: () => void;
+  onOpenArchitecture?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -75,6 +76,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onOpenTerminal,
   onOpenVault,
   onOpenTabCosmos,
+  onOpenArchitecture,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -226,6 +228,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           >
             <Brain className="w-3.5 h-3.5 text-indigo-600" />
             <span className="hidden xl:inline">Vault</span>
+          </button>
+        )}
+
+        {onOpenArchitecture && (
+          <button
+            onClick={onOpenArchitecture}
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-50 to-cyan-50 hover:from-indigo-100 hover:to-cyan-100 text-indigo-800 border border-indigo-200 shadow-2xs transition-all cursor-pointer"
+            title="System Architecture & Kernel Spec (aksh://system)"
+          >
+            <Cpu className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <span className="hidden xl:inline">Architecture</span>
           </button>
         )}
 

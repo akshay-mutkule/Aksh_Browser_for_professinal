@@ -28,7 +28,8 @@ export type PageContentType =
   | 'memory'
   | 'diff'
   | 'tools'
-  | 'network';
+  | 'network'
+  | 'system';
 
 export interface Tab {
   id: string;
