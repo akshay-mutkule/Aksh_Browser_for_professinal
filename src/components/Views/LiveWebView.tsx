@@ -49,7 +49,8 @@ import {
   Pause,
   RotateCcw,
   BarChart3,
-  History
+  History,
+  Scale
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Tab, PageAnnotation } from '../../types';
@@ -60,6 +61,7 @@ import { PageQuizModal } from '../Modals/PageQuizModal';
 import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
 import { DataVisualizerModal } from '../Modals/DataVisualizerModal';
 import { SemanticTimeMachineModal } from '../Modals/SemanticTimeMachineModal';
+import { NeuralCrossExaminerModal } from '../Modals/NeuralCrossExaminerModal';
 import { OnPageAgentHUD } from '../Browser/OnPageAgentHUD';
 import { GoogleSearchPageView } from './GoogleSearchPageView';
 
@@ -175,6 +177,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [isDataVisualizerOpen, setIsDataVisualizerOpen] = useState<boolean>(false);
   const [isTimeMachineOpen, setIsTimeMachineOpen] = useState<boolean>(false);
   const [isOnPageAgentOpen, setIsOnPageAgentOpen] = useState<boolean>(false);
+  const [isCrossExaminerOpen, setIsCrossExaminerOpen] = useState<boolean>(false);
   const [isBilingualDualMode, setIsBilingualDualMode] = useState<boolean>(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
 
@@ -1281,6 +1284,16 @@ Format cleanly with Markdown headers and bullet points.`;
           >
             <Bot className={`w-3.5 h-3.5 ${isOnPageAgentOpen ? 'text-white' : 'text-cyan-600'}`} />
             <span className="hidden sm:inline">Action Agent</span>
+          </button>
+
+          {/* Neural Cognitive Cross-Examiner */}
+          <button
+            onClick={() => setIsCrossExaminerOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-purple-200 bg-purple-50/80 hover:bg-purple-100 text-purple-800 text-xs font-semibold transition-colors cursor-pointer"
+            title="Neural Cognitive Cross-Examiner: Pits Strategic Synthesizer against Adversarial Skeptic to verify claims"
+          >
+            <Scale className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden sm:inline">Cross-Examiner</span>
           </button>
 
           {/* Audio Listen */}
@@ -2915,6 +2928,16 @@ Format cleanly with Markdown headers and bullet points.`;
       <OnPageAgentHUD
         isOpen={isOnPageAgentOpen}
         onClose={() => setIsOnPageAgentOpen(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || tab.extractedText || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
+
+      {/* Neural Cognitive Cross-Examiner Modal */}
+      <NeuralCrossExaminerModal
+        isOpen={isCrossExaminerOpen}
+        onClose={() => setIsCrossExaminerOpen(false)}
         pageTitle={tab.title}
         pageUrl={tab.url}
         pageContent={activeContent || tab.extractedText || ''}

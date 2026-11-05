@@ -99,6 +99,8 @@ interface NewTabProps {
   onToggleVoiceHud?: () => void;
   onToggleOmniTerminal?: () => void;
   onOpenCrossTabSynthesis?: () => void;
+  onOpenCrossExaminer?: () => void;
+  onToggleZenMode?: () => void;
 }
 
 export const NewTab: React.FC<NewTabProps> = ({
@@ -111,6 +113,8 @@ export const NewTab: React.FC<NewTabProps> = ({
   onToggleVoiceHud,
   onToggleOmniTerminal,
   onOpenCrossTabSynthesis,
+  onOpenCrossExaminer,
+  onToggleZenMode,
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [isAiMode, setIsAiMode] = useState(false);
@@ -354,6 +358,16 @@ export const NewTab: React.FC<NewTabProps> = ({
 
     if (q.startsWith('!system') || q.startsWith('!arch') || q.startsWith('!kernel')) {
       onNavigate('aksh://system');
+      return;
+    }
+
+    if (q.startsWith('!crossexam') || q.startsWith('!consensus')) {
+      if (onOpenCrossExaminer) onOpenCrossExaminer();
+      return;
+    }
+
+    if (q.startsWith('!zen')) {
+      if (onToggleZenMode) onToggleZenMode();
       return;
     }
 

@@ -64,6 +64,8 @@ import { PageDiffModal } from './components/Modals/PageDiffModal';
 import { SpatialTabCosmosModal } from './components/Modals/SpatialTabCosmosModal';
 import { AudioNarrationModal } from './components/Modals/AudioNarrationModal';
 import { SemanticTimeMachineModal } from './components/Modals/SemanticTimeMachineModal';
+import { NeuralCrossExaminerModal } from './components/Modals/NeuralCrossExaminerModal';
+import { AmbientZenCapsule } from './components/Browser/AmbientZenCapsule';
 import { ambientSound, SoundscapeType } from './utils/ambientAudio';
 import { Tab, HistoryItem, Bookmark, DownloadItem, AINote, BrowserSettings, PageContentType, BrowserExtension, ReadingListItem, Workspace, BrowserFlag, UserScript } from './types';
 import { SAMPLE_WEBSITES, SAMPLE_PDFS, INITIAL_BOOKMARKS, INITIAL_NOTES, INITIAL_DOWNLOADS } from './data/mockWebsites';
@@ -110,6 +112,8 @@ export function App() {
   const [isTabCosmosOpen, setIsTabCosmosOpen] = useState<boolean>(false);
   const [isAudioStudioOpen, setIsAudioStudioOpen] = useState<boolean>(false);
   const [isGlobalTimeMachineOpen, setIsGlobalTimeMachineOpen] = useState<boolean>(false);
+  const [isCrossExaminerOpen, setIsCrossExaminerOpen] = useState<boolean>(false);
+  const [isZenMode, setIsZenMode] = useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [workspaces, setWorkspaces] = useState<Workspace[]>(DEFAULT_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>('ws-general');
@@ -1291,6 +1295,11 @@ export function App() {
         e.preventDefault();
         setIsOmniTerminalOpen((prev) => !prev);
       }
+      // Zen Focus Mode: Alt+Z
+      if (e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        setIsZenMode((prev) => !prev);
+      }
       // Keyboard shortcuts modal: ? or Esc
       if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         setIsShortcutsOpen(true);
@@ -1300,6 +1309,8 @@ export function App() {
         setIsCommandPaletteOpen(false);
         setIsVoiceHudOpen(false);
         setIsOmniTerminalOpen(false);
+        setIsCrossExaminerOpen(false);
+        setIsZenMode(false);
         setSelectionHud({ selectedText: '', coords: null });
       }
     };
@@ -1336,6 +1347,8 @@ export function App() {
             onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
             onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
             onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
+            onOpenCrossExaminer={() => setIsCrossExaminerOpen(true)}
+            onToggleZenMode={() => setIsZenMode((prev) => !prev)}
           />
         )}
 
@@ -1726,124 +1739,143 @@ export function App() {
           : 'bg-white text-slate-900'
       } ${settings.dyslexicFont ? 'tracking-wider' : 'font-sans'}`}
     >
+      {/* Zen Focus Mode Floating Escape Handle */}
+      {isZenMode && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-950/90 border border-slate-700/80 shadow-2xl backdrop-blur-md text-slate-200 select-none animate-fadeIn">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs font-semibold tracking-wide">Zen Hyper-Focus Mode</span>
+          <span className="text-[11px] font-mono text-slate-400">Alt+Z or Esc</span>
+          <button
+            onClick={() => setIsZenMode(false)}
+            className="ml-1.5 px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
       {/* 1. TitleBar & Tab Strip */}
-      <TitleBar
-        tabs={tabs}
-        activeTabId={activeTabId}
-        onSelectTab={handleSelectTabWithWake}
-        onCloseTab={handleCloseTab}
-        onNewTab={() => handleNewTab('aksh://newtab')}
-        onPinTab={handlePinTab}
-        isAiSidebarOpen={isAiSidebarOpen}
-        onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
-        onAutoClusterTabs={handleAutoClusterTabs}
-        isClustering={isClustering}
-        tabLayout={tabLayout}
-        onDuplicateTab={handleDuplicateTab}
-        onReloadTab={handleReloadTab}
-        onMuteTab={handleToggleMuteTab}
-        onSplitTab={handleSplitTab}
-        onAssignTabGroup={handleAssignTabGroup}
-        onRemoveTabGroup={handleRemoveTabGroup}
-        onBookmarkTab={handleBookmarkTab}
-        onCloseOtherTabs={handleCloseOtherTabs}
-        onCloseTabsToRight={handleCloseTabsToRight}
-        onOpenTour={() => setIsTourOpen(true)}
-        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
-        workspaces={workspaces}
-        activeWorkspaceId={activeWorkspaceId}
-        onSelectWorkspace={handleSwitchWorkspace}
-        onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
-        onOpenTerminal={() => setIsOmniTerminalOpen(true)}
-        onOpenVault={() => handleNewTab('aksh://memory')}
-        onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
-        onOpenArchitecture={() => handleNewTab('aksh://system')}
-      />
+      {!isZenMode && (
+        <TitleBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={handleSelectTabWithWake}
+          onCloseTab={handleCloseTab}
+          onNewTab={() => handleNewTab('aksh://newtab')}
+          onPinTab={handlePinTab}
+          isAiSidebarOpen={isAiSidebarOpen}
+          onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
+          onAutoClusterTabs={handleAutoClusterTabs}
+          isClustering={isClustering}
+          tabLayout={tabLayout}
+          onDuplicateTab={handleDuplicateTab}
+          onReloadTab={handleReloadTab}
+          onMuteTab={handleToggleMuteTab}
+          onSplitTab={handleSplitTab}
+          onAssignTabGroup={handleAssignTabGroup}
+          onRemoveTabGroup={handleRemoveTabGroup}
+          onBookmarkTab={handleBookmarkTab}
+          onCloseOtherTabs={handleCloseOtherTabs}
+          onCloseTabsToRight={handleCloseTabsToRight}
+          onOpenTour={() => setIsTourOpen(true)}
+          onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          onSelectWorkspace={handleSwitchWorkspace}
+          onOpenVoiceAssistant={() => setIsVoiceHudOpen(true)}
+          onOpenTerminal={() => setIsOmniTerminalOpen(true)}
+          onOpenVault={() => handleNewTab('aksh://memory')}
+          onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
+          onOpenArchitecture={() => handleNewTab('aksh://system')}
+        />
+      )}
 
       {/* 2. Address Bar / Omnibox */}
-      <AddressBar
-        activeTab={activeTab}
-        bookmarks={bookmarks}
-        history={history}
-        onNavigate={(url) => navigateTab(activeTabId, url)}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        onReload={handleReload}
-        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
-        isBookmarked={isCurrentBookmarked}
-        onToggleBookmark={handleToggleBookmark}
-        onToggleReaderMode={handleToggleReaderMode}
-        onQuickSummarize={() => setIsAiSidebarOpen(true)}
-        onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
-        onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onToggleSplitScreen={handleToggleSplitScreen}
-        isSplitScreen={splitScreen.enabled}
-        onToggleNeuralIsland={() => setIsNeuralIslandOpen((prev) => !prev)}
-        isNeuralIslandOpen={isNeuralIslandOpen}
-        onTriggerSpeech={handleTriggerSpeech}
-        isSpeaking={audioNarration.isOpen}
-        isVimMode={isVimMode}
-        onToggleVimMode={handleToggleVimMode}
-        onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
-        onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
-        onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
-        tabLayout={tabLayout}
-        onToggleTabLayout={() => {
-          const next = tabLayout === 'horizontal' ? 'vertical' : 'horizontal';
-          setTabLayout(next);
-          setSettings((s) => ({ ...s, tabLayout: next }));
-        }}
-        onOpenFindInPage={() => setIsFindInPageOpen(true)}
-        onOpenTour={() => setIsTourOpen(true)}
-        onOpenSnapshot={() => setIsSnapshotOpen(true)}
-        onOpenPerformance={() => setIsPerformanceOpen(true)}
-        onMindmapPage={handleMindmapPage}
-        onExportMarkdown={handleExportMarkdown}
-        onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
-        onOpenSessionStash={() => setIsSessionStashOpen(true)}
-        onToggleAmbientSound={handleToggleAmbientSound}
-        isAmbientPlaying={ambientState.isPlaying}
-        onOpenWebClipper={() => setIsClipperOpen(true)}
-        onOpenShortcuts={() => setIsShortcutsOpen(true)}
-        extensions={extensions}
-        onToggleExtension={handleToggleExtension}
-        onOpenExtensionsManager={() => navigateTab(activeTabId, 'aksh://extensions')}
-        isInReadingList={readingList.some((item) => item.url === activeTab?.url)}
-        onToggleReadingList={handleToggleCurrentReadingList}
-        onOpenResponsiveMode={() => setIsResponsiveModalOpen(true)}
-        settings={settings}
-        onUpdateSettings={handleUpdateSettings}
-        onClearBrowsingData={() => setIsClearDataOpen(true)}
-        zoomLevel={zoomLevel}
-        onChangeZoom={handleChangeZoom}
-        onResetZoom={handleResetZoom}
-        onToggleFullscreen={handleToggleFullscreen}
-        onPrintPage={handlePrintPage}
-        onNewTab={() => handleNewTab('aksh://newtab')}
-        onNewIncognitoTab={() => {
-          const newTabId = 'tab-' + Date.now();
-          const incognitoTab: Tab = {
-            id: newTabId,
-            title: 'Incognito New Tab',
-            url: 'aksh://newtab',
-            contentType: 'newtab',
-            historyStack: ['aksh://newtab'],
-            historyIndex: 0,
-            canGoBack: false,
-            canGoForward: false,
-            isLoading: false,
-            isReaderMode: false,
-            groupName: 'Incognito',
-            groupColor: '#334155',
-          };
-          setTabs((prev) => [...prev, incognitoTab]);
-          setActiveTabId(newTabId);
-        }}
-      />
+      {!isZenMode && (
+        <AddressBar
+          activeTab={activeTab}
+          bookmarks={bookmarks}
+          history={history}
+          onNavigate={(url) => navigateTab(activeTabId, url)}
+          onGoBack={handleGoBack}
+          onGoForward={handleGoForward}
+          onReload={handleReload}
+          onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
+          isBookmarked={isCurrentBookmarked}
+          onToggleBookmark={handleToggleBookmark}
+          onToggleReaderMode={handleToggleReaderMode}
+          onQuickSummarize={() => setIsAiSidebarOpen(true)}
+          onOpenAiSidebar={() => setIsAiSidebarOpen(true)}
+          onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onToggleSplitScreen={handleToggleSplitScreen}
+          isSplitScreen={splitScreen.enabled}
+          onToggleNeuralIsland={() => setIsNeuralIslandOpen((prev) => !prev)}
+          isNeuralIslandOpen={isNeuralIslandOpen}
+          onTriggerSpeech={handleTriggerSpeech}
+          isSpeaking={audioNarration.isOpen}
+          isVimMode={isVimMode}
+          onToggleVimMode={handleToggleVimMode}
+          onOpenCrossTabSynthesis={() => setIsSynthesisModalOpen(true)}
+          onToggleVoiceHud={() => setIsVoiceHudOpen((prev) => !prev)}
+          onToggleOmniTerminal={() => setIsOmniTerminalOpen((prev) => !prev)}
+          tabLayout={tabLayout}
+          onToggleTabLayout={() => {
+            const next = tabLayout === 'horizontal' ? 'vertical' : 'horizontal';
+            setTabLayout(next);
+            setSettings((s) => ({ ...s, tabLayout: next }));
+          }}
+          onOpenFindInPage={() => setIsFindInPageOpen(true)}
+          onOpenTour={() => setIsTourOpen(true)}
+          onOpenSnapshot={() => setIsSnapshotOpen(true)}
+          onOpenPerformance={() => setIsPerformanceOpen(true)}
+          onMindmapPage={handleMindmapPage}
+          onExportMarkdown={handleExportMarkdown}
+          onOpenDataExtractor={() => setIsDataExtractorOpen(true)}
+          onOpenSessionStash={() => setIsSessionStashOpen(true)}
+          onToggleAmbientSound={handleToggleAmbientSound}
+          isAmbientPlaying={ambientState.isPlaying}
+          onOpenWebClipper={() => setIsClipperOpen(true)}
+          onOpenShortcuts={() => setIsShortcutsOpen(true)}
+          extensions={extensions}
+          onToggleExtension={handleToggleExtension}
+          onOpenExtensionsManager={() => navigateTab(activeTabId, 'aksh://extensions')}
+          isInReadingList={readingList.some((item) => item.url === activeTab?.url)}
+          onToggleReadingList={handleToggleCurrentReadingList}
+          onOpenResponsiveMode={() => setIsResponsiveModalOpen(true)}
+          settings={settings}
+          onUpdateSettings={handleUpdateSettings}
+          onClearBrowsingData={() => setIsClearDataOpen(true)}
+          zoomLevel={zoomLevel}
+          onChangeZoom={handleChangeZoom}
+          onResetZoom={handleResetZoom}
+          onToggleFullscreen={handleToggleFullscreen}
+          onPrintPage={handlePrintPage}
+          onNewTab={() => handleNewTab('aksh://newtab')}
+          onNewIncognitoTab={() => {
+            const newTabId = 'tab-' + Date.now();
+            const incognitoTab: Tab = {
+              id: newTabId,
+              title: 'Incognito New Tab',
+              url: 'aksh://newtab',
+              contentType: 'newtab',
+              historyStack: ['aksh://newtab'],
+              historyIndex: 0,
+              canGoBack: false,
+              canGoForward: false,
+              isLoading: false,
+              isReaderMode: false,
+              groupName: 'Incognito',
+              groupColor: '#334155',
+            };
+            setTabs((prev) => [...prev, incognitoTab]);
+            setActiveTabId(newTabId);
+          }}
+        />
+      )}
 
       {/* 3. Bookmarks Quick Bar */}
-      {settings.showBookmarksBar !== false && (
+      {!isZenMode && settings.showBookmarksBar !== false && (
         <BookmarksBar
           bookmarks={bookmarks}
           onNavigate={(url) => navigateTab(activeTabId, url)}
@@ -1854,7 +1886,7 @@ export function App() {
       {/* 4. Main Body: (Optional Vertical TabBar) + Active Tab Viewport + Split-Screen + AI Sidebar */}
       <div className="flex-1 flex overflow-hidden relative bg-white">
         {/* Arc-Style Vertical Tab Bar */}
-        {tabLayout === 'vertical' && (
+        {!isZenMode && tabLayout === 'vertical' && (
           <VerticalTabBar
             tabs={tabs}
             activeTabId={activeTabId}
@@ -2008,48 +2040,52 @@ export function App() {
         </main>
 
         {/* AI Co-Pilot Sidebar */}
-        <AISidebar
-          isOpen={isAiSidebarOpen}
-          onClose={() => setIsAiSidebarOpen(false)}
-          activeTab={activeTab}
-          onSaveAsNote={handleSaveAsNote}
-          onOpenResearchMode={(query) => {
-            handleNewTab(`aksh://research${query ? `?q=${encodeURIComponent(query)}` : ''}`);
-          }}
-          onOpenComparisonMode={() => {
-            handleNewTab('aksh://comparison');
-          }}
-          onOpenMindmap={handleMindmapPage}
-          onToggleSplitScreen={handleToggleSplitScreen}
-          onTriggerSpeech={handleTriggerSpeech}
-        />
+        {!isZenMode && (
+          <AISidebar
+            isOpen={isAiSidebarOpen}
+            onClose={() => setIsAiSidebarOpen(false)}
+            activeTab={activeTab}
+            onSaveAsNote={handleSaveAsNote}
+            onOpenResearchMode={(query) => {
+              handleNewTab(`aksh://research${query ? `?q=${encodeURIComponent(query)}` : ''}`);
+            }}
+            onOpenComparisonMode={() => {
+              handleNewTab('aksh://comparison');
+            }}
+            onOpenMindmap={handleMindmapPage}
+            onToggleSplitScreen={handleToggleSplitScreen}
+            onTriggerSpeech={handleTriggerSpeech}
+          />
+        )}
       </div>
 
       {/* Mobile Bottom Navigation Bar (< md) */}
-      <MobileBottomNav
-        tabs={tabs}
-        activeTab={activeTab}
-        onGoBack={handleGoBack}
-        onGoForward={handleGoForward}
-        onReload={handleReload}
-        onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
-        onNewTab={() => handleNewTab('aksh://newtab')}
-        onOpenTabsSheet={() => setIsMobileTabsOpen(true)}
-        onToggleAiSidebar={() => setIsAiSidebarOpen((prev) => !prev)}
-        isAiSidebarOpen={isAiSidebarOpen}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onToggleReaderMode={handleToggleReaderMode}
-        onTriggerSpeech={handleTriggerSpeech}
-        isSpeaking={audioNarration.isOpen}
-        onOpenSnapshot={() => setIsSnapshotOpen(true)}
-        onOpenPerformance={() => setIsPerformanceOpen(true)}
-        onOpenTour={() => setIsTourOpen(true)}
-        onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
-        onToggleSplitScreen={handleToggleSplitScreen}
-        isSplitScreen={splitScreen.enabled}
-        onMindmapPage={handleMindmapPage}
-        onExportMarkdown={handleExportMarkdown}
-      />
+      {!isZenMode && (
+        <MobileBottomNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onGoBack={handleGoBack}
+          onGoForward={handleGoForward}
+          onReload={handleReload}
+          onGoHome={() => navigateTab(activeTabId, 'aksh://newtab')}
+          onNewTab={() => handleNewTab('aksh://newtab')}
+          onOpenTabsSheet={() => setIsMobileTabsOpen(true)}
+          onToggleAiSidebar={() => setIsAiSidebarOpen((prev) => !prev)}
+          isAiSidebarOpen={isAiSidebarOpen}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onToggleReaderMode={handleToggleReaderMode}
+          onTriggerSpeech={handleTriggerSpeech}
+          isSpeaking={audioNarration.isOpen}
+          onOpenSnapshot={() => setIsSnapshotOpen(true)}
+          onOpenPerformance={() => setIsPerformanceOpen(true)}
+          onOpenTour={() => setIsTourOpen(true)}
+          onOpenInternalView={(view) => navigateTab(activeTabId, `aksh://${view}`)}
+          onToggleSplitScreen={handleToggleSplitScreen}
+          isSplitScreen={splitScreen.enabled}
+          onMindmapPage={handleMindmapPage}
+          onExportMarkdown={handleExportMarkdown}
+        />
+      )}
 
       {/* Mobile Tab Management Sheet (< md) */}
       <MobileTabsSheet
@@ -2129,6 +2165,8 @@ export function App() {
         onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
         onOpenAudioStudio={() => setIsAudioStudioOpen(true)}
         onOpenTimeMachine={() => setIsGlobalTimeMachineOpen(true)}
+        onOpenCrossExaminer={() => setIsCrossExaminerOpen(true)}
+        onToggleZenMode={() => setIsZenMode((prev) => !prev)}
       />
 
       {/* Cross-Tab AI Synthesis Modal */}
@@ -2431,6 +2469,24 @@ export function App() {
         onPinTab={(tabId) => handlePinTab(tabId)}
         onUpdateSettings={handleUpdateSettings}
         onToggleAmbientSound={handleToggleAmbientSound}
+        onSaveAsNote={handleSaveAsNote}
+      />
+
+      {/* Futuristic Ambient Zen & Focus Reactor Capsule */}
+      <AmbientZenCapsule
+        pageTitle={activeTab?.title || 'Aksh AI Browser'}
+        pageContent={activeTab?.extractedText || activeTab?.title || ''}
+        isZenMode={isZenMode}
+        onToggleZenMode={() => setIsZenMode((prev) => !prev)}
+      />
+
+      {/* Global Neural Cognitive Cross-Examiner Modal */}
+      <NeuralCrossExaminerModal
+        isOpen={isCrossExaminerOpen}
+        onClose={() => setIsCrossExaminerOpen(false)}
+        pageTitle={activeTab?.title || 'Aksh AI Browser'}
+        pageUrl={activeTab?.url || 'aksh://newtab'}
+        pageContent={activeTab?.extractedText || activeTab?.title || ''}
         onSaveAsNote={handleSaveAsNote}
       />
     </div>

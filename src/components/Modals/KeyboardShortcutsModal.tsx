@@ -22,7 +22,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
     { key: 'Ctrl + R', desc: 'Reload current web page' },
     { key: 'Ctrl + L', desc: 'Focus address / omnibar search' },
     { key: 'Ctrl + H', desc: 'Open browsing history manager' },
-    { key: 'Ctrl + B', desc: 'Open bookmarks manager' },
+    { key: 'Alt + Z', desc: 'Toggle Zen Hyper-Focus Mode & Ambient Reactor' },
     { key: 'Alt + Left', desc: 'Navigate back in tab history' },
     { key: 'Alt + Right', desc: 'Navigate forward in tab history' },
     { key: 'Esc', desc: 'Close modal dialogs or clear omnibox' },

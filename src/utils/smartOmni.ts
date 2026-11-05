@@ -149,6 +149,24 @@ export const BANG_COMMANDS: Record<
     targetUrl: 'action:voice',
     category: 'Frontier AI',
   },
+  '!crossexam': {
+    title: 'Neural Cognitive Cross-Examiner',
+    description: 'Audit any thesis by pitting Strategic Synthesizer against Adversarial Skeptic',
+    targetUrl: 'action:crossexam',
+    category: 'Frontier AI',
+  },
+  '!consensus': {
+    title: 'Neural Cognitive Cross-Examiner',
+    description: 'Audit any thesis by pitting Strategic Synthesizer against Adversarial Skeptic',
+    targetUrl: 'action:crossexam',
+    category: 'Frontier AI',
+  },
+  '!zen': {
+    title: 'Zen Hyper-Focus Mode',
+    description: 'Distraction-free canvas reading, 40Hz Gamma audio, and Pomodoro timer',
+    targetUrl: 'action:zen',
+    category: 'Appearance',
+  },
 };
 
 export const evaluateSmartOmni = (input: string): SmartOmniResult | null => {

@@ -3,7 +3,7 @@
  * Synthesizes ambient noise and binaural tones completely client-side without external audio assets.
  */
 
-export type SoundscapeType = 'rain' | 'waves' | 'brown' | 'binaural';
+export type SoundscapeType = 'rain' | 'waves' | 'brown' | 'binaural' | 'gamma40' | 'cyber';
 
 class AmbientSoundscapeEngine {
   private ctx: AudioContext | null = null;
@@ -86,6 +86,10 @@ class AmbientSoundscapeEngine {
       this.createBrownNoiseSoundscape(masterGain);
     } else if (type === 'binaural') {
       this.createBinauralSoundscape(masterGain);
+    } else if (type === 'gamma40') {
+      this.createGamma40Soundscape(masterGain);
+    } else if (type === 'cyber') {
+      this.createCyberSoundscape(masterGain);
     }
   }
 
@@ -202,6 +206,73 @@ class AmbientSoundscapeEngine {
     osc1.start();
     osc2.start();
     this.activeNodes.push(osc1, osc2, subGain);
+  }
+
+  private createGamma40Soundscape(targetGain: GainNode) {
+    if (!this.ctx) return;
+    // 40Hz Gamma wave cognitive synchrony (200Hz carrier tone and 240Hz tone = 40Hz gamma entrainment)
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(200, this.ctx.currentTime);
+
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(240, this.ctx.currentTime);
+
+    const subGain = this.ctx.createGain();
+    subGain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+
+    // Subtle lowpass to make it deeply comfortable for prolonged coding / reading
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320, this.ctx.currentTime);
+
+    osc1.connect(subGain);
+    osc2.connect(subGain);
+    subGain.connect(filter);
+    filter.connect(targetGain);
+
+    osc1.start();
+    osc2.start();
+    this.activeNodes.push(osc1, osc2, subGain, filter);
+  }
+
+  private createCyberSoundscape(targetGain: GainNode) {
+    if (!this.ctx) return;
+    // Ambient cyberpunk server room drone: low fundamental + resonant warmth + soft noise
+    const noiseBuffer = this.createNoiseBuffer(6);
+    if (!noiseBuffer) return;
+
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(240, this.ctx.currentTime);
+    noiseFilter.Q.setValueAtTime(3, this.ctx.currentTime);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(targetGain);
+
+    // Warm sub-bass drone oscillator (55Hz / A1)
+    const droneOsc = this.ctx.createOscillator();
+    droneOsc.type = 'triangle';
+    droneOsc.frequency.setValueAtTime(55, this.ctx.currentTime);
+
+    const droneGain = this.ctx.createGain();
+    droneGain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+
+    droneOsc.connect(droneGain);
+    droneGain.connect(targetGain);
+
+    noiseSource.start();
+    droneOsc.start();
+    this.activeNodes.push(noiseSource, noiseFilter, noiseGain, droneOsc, droneGain);
   }
 }
 

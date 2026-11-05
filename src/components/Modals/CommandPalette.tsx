@@ -85,6 +85,8 @@ interface CommandPaletteProps {
   onOpenTabCosmos?: () => void;
   onOpenAudioStudio?: () => void;
   onOpenTimeMachine?: () => void;
+  onOpenCrossExaminer?: () => void;
+  onToggleZenMode?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -118,6 +120,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenTabCosmos,
   onOpenAudioStudio,
   onOpenTimeMachine,
+  onOpenCrossExaminer,
+  onToggleZenMode,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -299,6 +303,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       iconColor: 'text-indigo-400',
       action: () => {
         onOpenInternalView('system');
+        onClose();
+      },
+    },
+    {
+      id: 'neural-crossexam',
+      title: 'Neural Cognitive Cross-Examiner (Dual Consensus)',
+      subtitle: 'Audit webpage thesis by pitting Strategic Synthesizer against Adversarial Risk Auditor with real-time consensus scoring',
+      category: 'AI Superpowers',
+      icon: Scale,
+      iconColor: 'text-purple-400',
+      action: () => {
+        if (onOpenCrossExaminer) onOpenCrossExaminer();
+        onClose();
+      },
+    },
+    {
+      id: 'zen-focus-mode',
+      title: 'Zen Hyper-Focus Mode & Ambient Reactor (Alt+Z)',
+      subtitle: 'Toggle distraction-free canvas reading, 40Hz Gamma soundscapes, and Pomodoro focus timer',
+      category: 'Appearance',
+      icon: Maximize2,
+      iconColor: 'text-emerald-400',
+      action: () => {
+        if (onToggleZenMode) onToggleZenMode();
         onClose();
       },
     },
