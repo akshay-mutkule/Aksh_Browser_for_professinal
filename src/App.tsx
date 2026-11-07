@@ -1787,6 +1787,7 @@ export function App() {
           onOpenVault={() => handleNewTab('aksh://memory')}
           onOpenTabCosmos={() => setIsTabCosmosOpen(true)}
           onOpenArchitecture={() => handleNewTab('aksh://system')}
+          onOpenSynapse={() => setIsSynthesisModalOpen(true)}
         />
       )}
 

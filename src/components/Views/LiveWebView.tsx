@@ -62,6 +62,7 @@ import { PageCredibilityModal } from '../Modals/PageCredibilityModal';
 import { DataVisualizerModal } from '../Modals/DataVisualizerModal';
 import { SemanticTimeMachineModal } from '../Modals/SemanticTimeMachineModal';
 import { NeuralCrossExaminerModal } from '../Modals/NeuralCrossExaminerModal';
+import { NeuralDomInspector } from '../Browser/NeuralDomInspector';
 import { OnPageAgentHUD } from '../Browser/OnPageAgentHUD';
 import { GoogleSearchPageView } from './GoogleSearchPageView';
 
@@ -178,6 +179,7 @@ export const LiveWebView: React.FC<LiveWebViewProps> = ({
   const [isTimeMachineOpen, setIsTimeMachineOpen] = useState<boolean>(false);
   const [isOnPageAgentOpen, setIsOnPageAgentOpen] = useState<boolean>(false);
   const [isCrossExaminerOpen, setIsCrossExaminerOpen] = useState<boolean>(false);
+  const [isDomInspectorOpen, setIsDomInspectorOpen] = useState<boolean>(false);
   const [isBilingualDualMode, setIsBilingualDualMode] = useState<boolean>(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
 
@@ -1294,6 +1296,16 @@ Format cleanly with Markdown headers and bullet points.`;
           >
             <Scale className="w-3.5 h-3.5 text-purple-600" />
             <span className="hidden sm:inline">Cross-Examiner</span>
+          </button>
+
+          {/* Neural DOM X-Ray Inspector */}
+          <button
+            onClick={() => setIsDomInspectorOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50/80 hover:bg-cyan-100 text-cyan-800 text-xs font-semibold transition-colors cursor-pointer"
+            title="Neural DOM X-Ray Inspector: Deconstruct headings, paragraphs, and tables with AI copywriter & schema analysis"
+          >
+            <Scan className="w-3.5 h-3.5 text-cyan-600" />
+            <span className="hidden sm:inline">Inspect DOM</span>
           </button>
 
           {/* Audio Listen */}
@@ -2938,6 +2950,16 @@ Format cleanly with Markdown headers and bullet points.`;
       <NeuralCrossExaminerModal
         isOpen={isCrossExaminerOpen}
         onClose={() => setIsCrossExaminerOpen(false)}
+        pageTitle={tab.title}
+        pageUrl={tab.url}
+        pageContent={activeContent || tab.extractedText || ''}
+        onSaveAsNote={onSaveAsNote}
+      />
+
+      {/* Neural DOM X-Ray Inspector Modal */}
+      <NeuralDomInspector
+        isOpen={isDomInspectorOpen}
+        onClose={() => setIsDomInspectorOpen(false)}
         pageTitle={tab.title}
         pageUrl={tab.url}
         pageContent={activeContent || tab.extractedText || ''}

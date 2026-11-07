@@ -132,8 +132,14 @@ export const BANG_COMMANDS: Record<
     category: 'System',
   },
   '!synth': {
-    title: 'Cross-Tab Dossier Synthesis',
-    description: 'Synthesize insights across all currently open tabs',
+    title: 'Neural Multi-Tab Synapse Matrix',
+    description: 'Cross-tab semantic intersection, claim divergence, and meta-analysis',
+    targetUrl: 'action:synth',
+    category: 'Frontier AI',
+  },
+  '!synapse': {
+    title: 'Neural Multi-Tab Synapse Matrix',
+    description: 'Cross-tab semantic intersection, claim divergence, and meta-analysis',
     targetUrl: 'action:synth',
     category: 'Frontier AI',
   },

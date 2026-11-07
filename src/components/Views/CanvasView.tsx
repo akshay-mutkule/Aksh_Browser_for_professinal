@@ -25,7 +25,11 @@ import {
   Compass,
   FileText,
   Copy,
-  Info
+  Info,
+  GitMerge,
+  Unlink,
+  Zap,
+  X
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { sendAIChat } from '../../services/api';
@@ -79,6 +83,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Edge and Knowledge Bridge states
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [isSynthesizingBridge, setIsSynthesizingBridge] = useState<boolean>(false);
+  const [connectingFromNodeId, setConnectingFromNodeId] = useState<string | null>(null);
 
   // AI Generation states
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -386,6 +395,118 @@ Return strictly a JSON array of 2 objects with keys "title", "content" (1-2 sent
     setNodes((prev) => prev.filter((n) => n.id !== nodeId));
     setEdges((prev) => prev.filter((e) => e.from !== nodeId && e.to !== nodeId));
     if (selectedNodeId === nodeId) setSelectedNodeId(null);
+    if (connectingFromNodeId === nodeId) setConnectingFromNodeId(null);
+  };
+
+  const handleDeleteEdge = (edgeId: string) => {
+    setEdges((prev) => prev.filter((e) => e.id !== edgeId));
+    if (selectedEdgeId === edgeId) setSelectedEdgeId(null);
+  };
+
+  const handleStartConnecting = (nodeId: string) => {
+    setConnectingFromNodeId(nodeId);
+    setSelectedEdgeId(null);
+  };
+
+  const handleCompleteConnection = (targetNodeId: string) => {
+    if (!connectingFromNodeId || connectingFromNodeId === targetNodeId) {
+      setConnectingFromNodeId(null);
+      return;
+    }
+    // Check if edge already exists
+    const exists = edges.some(
+      (e) => (e.from === connectingFromNodeId && e.to === targetNodeId) || (e.from === targetNodeId && e.to === connectingFromNodeId)
+    );
+    if (!exists) {
+      const newEdge: CanvasEdge = {
+        id: `manual-edge-${Date.now()}`,
+        from: connectingFromNodeId,
+        to: targetNodeId,
+        label: 'Knowledge Link',
+        color: '#6366f1',
+      };
+      setEdges((prev) => [...prev, newEdge]);
+      setSelectedEdgeId(newEdge.id);
+    }
+    setConnectingFromNodeId(null);
+  };
+
+  const handleSynthesizeBridge = async (edgeId: string) => {
+    const edge = edges.find((e) => e.id === edgeId);
+    if (!edge) return;
+    const fromNode = nodes.find((n) => n.id === edge.from);
+    const toNode = nodes.find((n) => n.id === edge.to);
+    if (!fromNode || !toNode) return;
+
+    setIsSynthesizingBridge(true);
+    try {
+      const prompt = `You are the Aksh AI Interdisciplinary Knowledge Synthesizer.
+Analyze these two conceptual nodes on the user's research canvas:
+
+[NODE 1: ${fromNode.title}]
+${fromNode.content}
+
+[NODE 2: ${toNode.title}]
+${toNode.content}
+
+Current link context: "${edge.label || 'Connected'}"
+
+Synthesize an interdisciplinary "Knowledge Bridge" hypothesis card that uncovers non-obvious intersections, reconciles conflicting theories, or identifies breakthrough applications.
+Return strictly a JSON object with:
+{
+  "title": "<High-impact 3-6 word title>",
+  "summary": "<2 succinct, high-signal sentences formulating the bridging hypothesis>",
+  "fromRelation": "<2-3 words link from Node 1>",
+  "toRelation": "<2-3 words link to Node 2>"
+}`;
+
+      const res = await sendAIChat(prompt, [], undefined, 'technical', 'gemini-3.7-flash');
+      const text = res.reply || '';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const bridgeNodeId = `bridge-${Date.now()}`;
+        const midX = Math.round((fromNode.x + toNode.x) / 2);
+        const midY = Math.round((fromNode.y + toNode.y) / 2) + 20;
+
+        const bridgeNode: CanvasNode = {
+          id: bridgeNodeId,
+          type: 'insight',
+          title: parsed.title || 'Bridging Synthesis Hypothesis',
+          subtitle: 'AI Knowledge Bridge',
+          content: parsed.summary || 'Synthesized interdisciplinary convergence between research domains.',
+          x: midX,
+          y: midY,
+          color: '#ec4899',
+          tags: ['BRIDGE', 'SYNTHESIS', 'GEMINI 3.7'],
+        };
+
+        const edgeA: CanvasEdge = {
+          id: `bridge-edge-a-${Date.now()}`,
+          from: fromNode.id,
+          to: bridgeNodeId,
+          label: parsed.fromRelation || 'Informs',
+          color: '#ec4899',
+        };
+
+        const edgeB: CanvasEdge = {
+          id: `bridge-edge-b-${Date.now()}`,
+          from: bridgeNodeId,
+          to: toNode.id,
+          label: parsed.toRelation || 'Enables',
+          color: '#ec4899',
+        };
+
+        setNodes((prev) => [...prev, bridgeNode]);
+        setEdges((prev) => [...prev.filter((e) => e.id !== edgeId), edgeA, edgeB]);
+        setSelectedEdgeId(null);
+        setSelectedNodeId(bridgeNodeId);
+      }
+    } catch (err) {
+      console.error('Failed to synthesize bridge:', err);
+    } finally {
+      setIsSynthesizingBridge(false);
+    }
   };
 
   return (
@@ -481,6 +602,84 @@ Return strictly a JSON array of 2 objects with keys "title", "content" (1-2 sent
         </div>
       </header>
 
+      {/* Selected Edge Knowledge Bridge Inspector */}
+      <AnimatePresence>
+        {selectedEdgeId && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -10, x: '-50%' }}
+            className="absolute top-20 left-1/2 z-30 bg-slate-900/95 backdrop-blur-xl border border-pink-500/50 shadow-2xl shadow-pink-950/40 rounded-2xl px-4 py-2 flex items-center gap-3 text-xs pointer-events-auto"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center">
+                <GitMerge className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-200 font-mono text-[11px]">
+                <span className="font-bold text-white max-w-[130px] truncate">
+                  {nodes.find((n) => n.id === edges.find((e) => e.id === selectedEdgeId)?.from)?.title || 'Origin'}
+                </span>
+                <span className="text-pink-400 font-bold">──►</span>
+                <span className="font-bold text-white max-w-[130px] truncate">
+                  {nodes.find((n) => n.id === edges.find((e) => e.id === selectedEdgeId)?.to)?.title || 'Target'}
+                </span>
+              </div>
+            </div>
+
+            <div className="h-4 w-[1px] bg-slate-800" />
+
+            <button
+              onClick={() => handleSynthesizeBridge(selectedEdgeId)}
+              disabled={isSynthesizingBridge}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-pink-900/40 cursor-pointer disabled:opacity-50"
+            >
+              <Zap className={`w-3.5 h-3.5 ${isSynthesizingBridge ? 'animate-spin' : 'fill-current'}`} />
+              <span>{isSynthesizingBridge ? 'Synthesizing...' : '🌉 Synthesize Bridge Node'}</span>
+            </button>
+
+            <button
+              onClick={() => handleDeleteEdge(selectedEdgeId)}
+              className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Delete Connection"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setSelectedEdgeId(null)}
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Active Connecting Mode Banner */}
+      <AnimatePresence>
+        {connectingFromNodeId && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -10, x: '-50%' }}
+            className="absolute top-20 left-1/2 z-30 bg-indigo-950/95 backdrop-blur-xl border border-indigo-500/60 shadow-2xl rounded-2xl px-4 py-2 flex items-center gap-3 text-xs text-white pointer-events-auto"
+          >
+            <Link2 className="w-4 h-4 text-indigo-400 animate-pulse" />
+            <span>
+              Click any node on canvas to link from{' '}
+              <strong>"{nodes.find((n) => n.id === connectingFromNodeId)?.title}"</strong>
+            </span>
+            <button
+              onClick={() => setConnectingFromNodeId(null)}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold cursor-pointer"
+            >
+              Cancel
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Canvas Zoom & Reset Widget (Bottom-Left) */}
       <div className="absolute bottom-6 left-6 z-20 flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-800 shadow-xl pointer-events-auto">
         <button
@@ -561,33 +760,55 @@ Return strictly a JSON array of 2 objects with keys "title", "content" (1-2 sent
             const toNode = nodes.find((n) => n.id === edge.to);
             if (!fromNode || !toNode) return null;
 
+            const isEdgeSelected = edge.id === selectedEdgeId;
+
             // Connect from right of source to left of target (or centered)
-            const x1 = fromNode.x + 140;
+            const x1 = fromNode.x + 150;
             const y1 = fromNode.y + 70;
-            const x2 = toNode.x + 140;
+            const x2 = toNode.x + 150;
             const y2 = toNode.y + 70;
 
             const dx = Math.abs(x2 - x1) * 0.5;
             const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 
             return (
-              <g key={edge.id}>
+              <g
+                key={edge.id}
+                className="pointer-events-auto cursor-pointer group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedEdgeId(edge.id);
+                  setSelectedNodeId(null);
+                }}
+              >
+                {/* Thick invisible path for easy hit testing */}
                 <path
                   d={pathData}
                   fill="none"
-                  stroke={edge.color || '#6366f1'}
-                  strokeWidth="2"
-                  strokeDasharray="4 2"
-                  className="opacity-70 transition-all"
+                  stroke="transparent"
+                  strokeWidth="24"
+                />
+                {/* Visible rendered edge */}
+                <path
+                  d={pathData}
+                  fill="none"
+                  stroke={isEdgeSelected ? '#ec4899' : (edge.color || '#6366f1')}
+                  strokeWidth={isEdgeSelected ? '3.5' : '2'}
+                  strokeDasharray={isEdgeSelected ? 'none' : '5 3'}
+                  className={`${
+                    isEdgeSelected
+                      ? 'opacity-100 filter drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]'
+                      : 'opacity-70 group-hover:opacity-100 group-hover:stroke-pink-400'
+                  } transition-all`}
                 />
                 {edge.label && (
                   <text
                     x={(x1 + x2) / 2}
                     y={(y1 + y2) / 2 - 8}
-                    fill="#cbd5e1"
+                    fill={isEdgeSelected ? '#f472b6' : '#cbd5e1'}
                     fontSize="10"
                     textAnchor="middle"
-                    className="font-medium bg-slate-900 px-1"
+                    className="font-bold select-none group-hover:fill-pink-300"
                   >
                     {edge.label}
                   </text>
@@ -610,8 +831,16 @@ Return strictly a JSON array of 2 objects with keys "title", "content" (1-2 sent
                 width: '300px',
               }}
               onMouseDown={(e) => handleNodeDragStart(e, node)}
-              className={`absolute top-0 left-0 rounded-2xl p-4 bg-slate-900/95 backdrop-blur-lg border transition-shadow cursor-grab active:cursor-grabbing shadow-xl ${
-                isSelected
+              onClick={(e) => {
+                if (connectingFromNodeId && connectingFromNodeId !== node.id) {
+                  e.stopPropagation();
+                  handleCompleteConnection(node.id);
+                }
+              }}
+              className={`absolute top-0 left-0 rounded-2xl p-4 bg-slate-900/95 backdrop-blur-lg border transition-all cursor-grab active:cursor-grabbing shadow-xl ${
+                connectingFromNodeId === node.id
+                  ? 'border-indigo-400 ring-2 ring-indigo-500 shadow-indigo-500/30'
+                  : isSelected
                   ? 'border-indigo-500 shadow-indigo-500/20 ring-2 ring-indigo-500/30'
                   : 'border-slate-800 hover:border-slate-700'
               }`}
@@ -645,16 +874,36 @@ Return strictly a JSON array of 2 objects with keys "title", "content" (1-2 sent
                   </div>
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteNode(node.id);
-                  }}
-                  className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                  title="Remove Node"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectingFromNodeId) {
+                        handleCompleteConnection(node.id);
+                      } else {
+                        handleStartConnecting(node.id);
+                      }
+                    }}
+                    className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                      connectingFromNodeId === node.id
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800'
+                    }`}
+                    title={connectingFromNodeId ? 'Connect to this node' : 'Create link from this node'}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNode(node.id);
+                    }}
+                    className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Remove Node"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               {/* Node Body Content */}

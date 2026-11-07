@@ -366,6 +366,11 @@ export const NewTab: React.FC<NewTabProps> = ({
       return;
     }
 
+    if (q.startsWith('!synth') || q.startsWith('!synapse') || q.startsWith('!dossier')) {
+      if (onOpenCrossTabSynthesis) onOpenCrossTabSynthesis();
+      return;
+    }
+
     if (q.startsWith('!zen')) {
       if (onToggleZenMode) onToggleZenMode();
       return;

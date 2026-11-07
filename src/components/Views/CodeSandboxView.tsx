@@ -23,7 +23,12 @@ import {
   AlertCircle,
   HelpCircle,
   Cpu,
-  Database
+  Database,
+  Zap,
+  ShieldAlert,
+  Wrench,
+  GitCompare,
+  X
 } from 'lucide-react';
 import { Tab } from '../../types';
 import { sendAIChat } from '../../services/api';
@@ -300,13 +305,20 @@ export const CodeSandboxView: React.FC<CodeSandboxViewProps> = ({
   const [copied, setCopied] = useState<boolean>(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(TEMPLATES[0].id);
 
+  // AI Error Healing & Auto-Fix States
+  const [lastDetectedError, setLastDetectedError] = useState<string | null>(null);
+  const [isHealingError, setIsHealingError] = useState<boolean>(false);
+  const [previousCode, setPreviousCode] = useState<string | null>(null);
+  const [lastHealSummary, setLastHealSummary] = useState<string | null>(null);
+  const [showDiffModal, setShowDiffModal] = useState<boolean>(false);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Execute Code / Update Preview
   const runCode = () => {
     if (lang === 'html') {
       if (iframeRef.current) {
-        // Intercept console.log inside the sandbox iframe
+        // Intercept console.log, console.error and window.onerror inside the sandbox iframe
         const injectedScript = `
           <script>
             (function() {
@@ -317,9 +329,19 @@ export const CodeSandboxView: React.FC<CodeSandboxViewProps> = ({
                 oldLog.apply(console, args);
               };
               console.error = function(...args) {
-                window.parent.postMessage({ type: 'CONSOLE_ERROR', msg: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') }, '*');
+                const msg = args.map(a => typeof a === 'object' ? (a && a.message ? a.message : JSON.stringify(a)) : String(a)).join(' ');
+                window.parent.postMessage({ type: 'CONSOLE_ERROR', msg: msg }, '*');
                 oldError.apply(console, args);
               };
+              window.onerror = function(message, source, lineno, colno, error) {
+                const detail = message + (lineno ? ' (Line ' + lineno + ':' + colno + ')' : '');
+                window.parent.postMessage({ type: 'CONSOLE_ERROR', msg: detail }, '*');
+                return false;
+              };
+              window.addEventListener('unhandledrejection', function(event) {
+                const reason = event.reason ? (event.reason.message || String(event.reason)) : 'Promise Rejection';
+                window.parent.postMessage({ type: 'CONSOLE_ERROR', msg: 'Unhandled Promise Rejection: ' + reason }, '*');
+              });
             })();
           </script>
         `;
@@ -396,12 +418,75 @@ export const CodeSandboxView: React.FC<CodeSandboxViewProps> = ({
       if (e.data && e.data.type === 'CONSOLE_LOG') {
         setConsoleLogs((prev) => [...prev, `[LOG]: ${e.data.msg}`]);
       } else if (e.data && e.data.type === 'CONSOLE_ERROR') {
-        setConsoleLogs((prev) => [...prev, `[ERROR]: ${e.data.msg}`]);
+        const errMsg = e.data.msg;
+        setConsoleLogs((prev) => [...prev, `[ERROR]: ${errMsg}`]);
+        setLastDetectedError(errMsg);
       }
     };
     window.addEventListener('message', handleMsg);
     return () => window.removeEventListener('message', handleMsg);
   }, []);
+
+  // 1-Click AI Code Healing / Auto-Fix
+  const handleAutoFixError = async (overrideError?: string) => {
+    const errorTarget = overrideError || lastDetectedError;
+    if (!errorTarget) return;
+
+    setIsHealingError(true);
+    try {
+      const prompt = `You are the Aksh AI Autonomous Code Healer and Senior Debugger.
+The user is running this ${lang.toUpperCase()} code in the live sandbox, which threw the following error:
+
+[ERROR MESSAGE]
+${errorTarget}
+
+[CURRENT CODE]
+\`\`\`${lang}
+${code}
+\`\`\`
+
+Diagnose and repair this code completely. Make sure the repaired code runs without runtime or syntax errors.
+Format your output strictly as:
+SUMMARY: <single clear sentence explaining what broke and how you fixed it>
+CODE:
+<pristine repaired runnable code without markdown quotes or backticks>`;
+
+      const res = await sendAIChat(prompt, [], undefined, 'technical', 'gemini-3.7-flash');
+      const text = res.reply || '';
+
+      let summary = 'Patched syntax and resolved runtime exception';
+      const summaryMatch = text.match(/SUMMARY:\s*([\s\S]*?)(?=\nCODE:|$)/i);
+      if (summaryMatch) {
+        summary = summaryMatch[1].trim();
+      }
+
+      let repairedCode = '';
+      const codeMatch = text.match(/CODE:\s*([\s\S]*)/i);
+      if (codeMatch) {
+        repairedCode = codeMatch[1].trim();
+      } else {
+        repairedCode = text;
+      }
+
+      repairedCode = repairedCode.replace(/^```[a-z]*\n?/i, '').replace(/```$/i, '').trim();
+
+      if (repairedCode) {
+        setPreviousCode(code);
+        setCode(repairedCode);
+        setLastDetectedError(null);
+        setLastHealSummary(summary);
+        setConsoleLogs((prev) => [
+          ...prev,
+          `[✓] ⚡ AI Healer Patched Bug: ${summary}`,
+          `[${new Date().toLocaleTimeString([], { hour12: false })}] Auto-reloaded healthy sandbox.`,
+        ]);
+      }
+    } catch (err: any) {
+      setConsoleLogs((prev) => [...prev, `[AI Healing Error]: ${err.message || err}`]);
+    } finally {
+      setIsHealingError(false);
+    }
+  };
 
   const handleSelectTemplate = (tpl: TemplateOption) => {
     setSelectedTemplateId(tpl.id);
@@ -719,23 +804,101 @@ Provide:
             )}
 
             {activeTabMode === 'console' && (
-              <div className="w-full h-full bg-slate-950 p-4 font-mono text-xs overflow-y-auto space-y-1.5 text-slate-300 scrollbar-thin scrollbar-thumb-slate-800">
-                {consoleLogs.map((log, i) => (
-                  <div
-                    key={i}
-                    className={`leading-relaxed ${
-                      log.includes('[ERROR]')
-                        ? 'text-rose-400'
-                        : log.includes('[✓]')
-                        ? 'text-emerald-400'
-                        : log.includes('>>>')
-                        ? 'text-cyan-400 font-bold'
-                        : 'text-slate-300'
-                    }`}
+              <div className="w-full h-full bg-slate-950 flex flex-col overflow-hidden">
+                {/* AI Error Healing Banner if error detected */}
+                {lastDetectedError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-gradient-to-r from-rose-950/90 via-slate-900 to-indigo-950/80 border-b border-rose-800/60 flex items-center justify-between gap-3 text-xs"
                   >
-                    {log}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                        <AlertCircle className="w-4 h-4 animate-pulse" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider block">
+                          Runtime Exception Trapped
+                        </span>
+                        <p className="text-white font-mono text-xs truncate max-w-sm" title={lastDetectedError}>
+                          {lastDetectedError}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleAutoFixError()}
+                        disabled={isHealingError}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-md shadow-indigo-950/50 cursor-pointer disabled:opacity-50"
+                      >
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        <span>{isHealingError ? 'Diagnosing & Healing...' : '⚡ Auto-Fix with Gemini'}</span>
+                      </button>
+                      <button
+                        onClick={() => setLastDetectedError(null)}
+                        className="p-1 text-slate-400 hover:text-white rounded-md hover:bg-slate-800/80 cursor-pointer"
+                        title="Dismiss"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Successful Heal Confirmation Banner */}
+                {lastHealSummary && !lastDetectedError && (
+                  <div className="px-3 py-2 bg-emerald-950/60 border-b border-emerald-800/50 flex items-center justify-between text-xs text-emerald-300">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="font-semibold">{lastHealSummary}</span>
+                    </div>
+                    {previousCode && (
+                      <button
+                        onClick={() => setShowDiffModal(true)}
+                        className="flex items-center gap-1 text-[11px] underline text-emerald-200 hover:text-white cursor-pointer ml-2"
+                      >
+                        <GitCompare className="w-3 h-3" />
+                        <span>Review Diff</span>
+                      </button>
+                    )}
                   </div>
-                ))}
+                )}
+
+                {/* Terminal Console Stream */}
+                <div className="flex-1 p-4 font-mono text-xs overflow-y-auto space-y-1.5 text-slate-300 scrollbar-thin scrollbar-thumb-slate-800">
+                  {consoleLogs.length === 0 ? (
+                    <div className="text-slate-600 text-center py-8">
+                      No logs emitted yet. Run code or trigger console.log/print.
+                    </div>
+                  ) : (
+                    consoleLogs.map((log, i) => (
+                      <div
+                        key={i}
+                        className={`leading-relaxed ${
+                          log.includes('[ERROR]')
+                            ? 'text-rose-400 flex items-center justify-between group'
+                            : log.includes('[✓]')
+                            ? 'text-emerald-400'
+                            : log.includes('>>>')
+                            ? 'text-cyan-400 font-bold'
+                            : 'text-slate-300'
+                        }`}
+                      >
+                        <span>{log}</span>
+                        {log.includes('[ERROR]') && !isHealingError && (
+                          <button
+                            onClick={() => handleAutoFixError(log.replace('[ERROR]: ', ''))}
+                            className="hidden group-hover:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 hover:bg-indigo-900 cursor-pointer"
+                          >
+                            <Zap className="w-2.5 h-2.5 fill-current" />
+                            <span>Fix this error</span>
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
@@ -747,8 +910,21 @@ Provide:
                     <p className="font-semibold text-xs">Deep AST Inspection in progress...</p>
                   </div>
                 ) : aiAnalysis ? (
-                  <div className="prose prose-invert prose-xs max-w-none space-y-3 whitespace-pre-wrap">
-                    {aiAnalysis}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <span className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">
+                        AST Analysis & Security Profile
+                      </span>
+                      <button
+                        onClick={() => handleAiAction('diagnose')}
+                        className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800"
+                      >
+                        Re-Audit
+                      </button>
+                    </div>
+                    <div className="prose prose-invert prose-xs max-w-none space-y-3 whitespace-pre-wrap">
+                      {aiAnalysis}
+                    </div>
                   </div>
                 ) : (
                   <div className="py-12 text-center text-slate-500 space-y-2">
@@ -763,6 +939,65 @@ Provide:
           </div>
         </div>
       </div>
+
+      {/* Code Diff Inspection Modal */}
+      <AnimatePresence>
+        {showDiffModal && previousCode && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+            >
+              <div className="h-12 px-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-xs font-bold text-white">
+                  <GitCompare className="w-4 h-4 text-cyan-400" />
+                  <span>AI Healing Diff: Pre-Fix vs Repaired Implementation</span>
+                </div>
+                <button
+                  onClick={() => setShowDiffModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 grid grid-cols-2 divide-x divide-slate-800 overflow-hidden font-mono text-xs">
+                <div className="flex flex-col overflow-hidden bg-slate-950/60">
+                  <div className="px-3 py-1.5 bg-rose-950/30 text-rose-300 text-[11px] font-bold border-b border-slate-800/80">
+                    Original Code (Had Error)
+                  </div>
+                  <pre className="flex-1 p-3 text-slate-400 overflow-auto whitespace-pre leading-relaxed select-text">
+                    {previousCode}
+                  </pre>
+                </div>
+
+                <div className="flex flex-col overflow-hidden bg-slate-950/90">
+                  <div className="px-3 py-1.5 bg-emerald-950/30 text-emerald-300 text-[11px] font-bold border-b border-slate-800/80">
+                    Repaired Code (Gemini 3.7 Flash)
+                  </div>
+                  <pre className="flex-1 p-3 text-emerald-300 overflow-auto whitespace-pre leading-relaxed select-text">
+                    {code}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="h-12 px-5 bg-slate-950 border-t border-slate-800 flex items-center justify-between shrink-0">
+                <span className="text-[11px] text-slate-400">
+                  {lastHealSummary || 'Automated AST & runtime patch applied'}
+                </span>
+                <button
+                  onClick={() => setShowDiffModal(false)}
+                  className="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer"
+                >
+                  Close Diff
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

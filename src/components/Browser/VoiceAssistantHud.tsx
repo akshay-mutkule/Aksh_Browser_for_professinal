@@ -15,7 +15,10 @@ import {
   Search,
   BookOpen,
   Check,
-  RotateCcw
+  RotateCcw,
+  Send,
+  Code2,
+  Zap
 } from 'lucide-react';
 import { sendAIChat } from '../../services/api';
 
@@ -42,10 +45,18 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [customQuery, setCustomQuery] = useState('');
   const [statusMessage, setStatusMessage] = useState('Listening for voice commands...');
   const [aiVoiceReply, setAiVoiceReply] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const recognitionRef = useRef<any>(null);
+
+  // Real Web Audio FFT Analyser Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   const speakReply = (text: string) => {
     if ('speechSynthesis' in window) {
@@ -77,6 +88,30 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
       return;
     }
 
+    if (clean.includes('sandbox') || clean.includes('compiler') || clean.includes('code')) {
+      const reply = 'Opening AI Live Code Sandbox and Compiler.';
+      setAiVoiceReply(reply);
+      speakReply(reply);
+      setTimeout(() => {
+        onNavigate('aksh://sandbox');
+        onClose();
+      }, 1000);
+      setIsProcessing(false);
+      return;
+    }
+
+    if (clean.includes('synapse') || clean.includes('cross tab') || clean.includes('cross-tab')) {
+      const reply = 'Launching Neural Multi-Tab Synapse Matrix.';
+      setAiVoiceReply(reply);
+      speakReply(reply);
+      setTimeout(() => {
+        onNavigate('aksh://synapse');
+        onClose();
+      }, 1000);
+      setIsProcessing(false);
+      return;
+    }
+
     if (clean.includes('canvas') || clean.includes('spatial') || clean.includes('graph')) {
       const reply = 'Navigating to Neural Spatial Knowledge Canvas.';
       setAiVoiceReply(reply);
@@ -101,8 +136,8 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
       return;
     }
 
-    if (clean.includes('agent') || clean.includes('autonomous') || clean.includes('mission')) {
-      const reply = 'Launching Autonomous Agent Command Center.';
+    if (clean.includes('agent') || clean.includes('autonomous') || clean.includes('mission') || clean.includes('swarm')) {
+      const reply = 'Launching Autonomous Multi-Agent Swarm Orchestrator.';
       setAiVoiceReply(reply);
       speakReply(reply);
       setTimeout(() => {
@@ -179,20 +214,118 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
     }
   };
 
-  // Start speech recognition when opened
+  // Web Audio Analyser & Speech Recognition Lifecycle
   useEffect(() => {
     if (!isOpen) {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
       }
       setIsListening(false);
       return;
     }
 
     setTranscript('');
+    setCustomQuery('');
     setAiVoiceReply(null);
     setStatusMessage('Listening... Speak a browser command or question');
 
+    // Attempt to initialize real Web Audio Analyser
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          streamRef.current = stream;
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            audioCtxRef.current = ctx;
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 64;
+            analyser.smoothingTimeConstant = 0.8;
+            analyserRef.current = analyser;
+            const source = ctx.createMediaStreamSource(stream);
+            source.connect(analyser);
+          }
+        })
+        .catch(() => {
+          // Microphone permission not granted or hardware absent
+        });
+    }
+
+    // High-performance canvas animation loop
+    let time = 0;
+    const drawSpectrum = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const width = canvas.width;
+          const height = canvas.height;
+          ctx.clearRect(0, 0, width, height);
+
+          const barCount = 28;
+          const barWidth = 4;
+          const barSpacing = (width - barCount * barWidth) / (barCount - 1 || 1);
+
+          if (analyserRef.current) {
+            const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+            analyserRef.current.getByteFrequencyData(data);
+
+            for (let i = 0; i < barCount; i++) {
+              const binIndex = Math.min(i, data.length - 1);
+              const val = data[binIndex] / 255;
+              const barHeight = Math.max(3, val * height * 0.9);
+              const x = i * (barWidth + barSpacing);
+              const y = (height - barHeight) / 2;
+
+              const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+              gradient.addColorStop(0, '#c084fc');
+              gradient.addColorStop(1, '#6366f1');
+
+              ctx.fillStyle = gradient;
+              ctx.beginPath();
+              ctx.roundRect(x, y, barWidth, barHeight, 2);
+              ctx.fill();
+            }
+          } else {
+            // Synthetic Harmonic Fourier Fallback
+            time += 0.08;
+            for (let i = 0; i < barCount; i++) {
+              const harmonic = Math.sin(time + i * 0.35) * Math.cos(time * 0.5 + i * 0.2);
+              const amp = Math.abs(harmonic) * (isListening ? 0.85 : 0.3);
+              const barHeight = Math.max(3, amp * height);
+              const x = i * (barWidth + barSpacing);
+              const y = (height - barHeight) / 2;
+
+              const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+              gradient.addColorStop(0, '#38bdf8');
+              gradient.addColorStop(1, '#a855f7');
+
+              ctx.fillStyle = gradient;
+              ctx.beginPath();
+              ctx.roundRect(x, y, barWidth, barHeight, 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+      animFrameRef.current = requestAnimationFrame(drawSpectrum);
+    };
+
+    animFrameRef.current = requestAnimationFrame(drawSpectrum);
+
+    // Initialize Web Speech Recognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -217,7 +350,7 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
 
         recognition.onerror = () => {
           setIsListening(false);
-          setStatusMessage('Microphone offline. Click any voice preset below to test:');
+          setStatusMessage('Microphone offline. Type or click any voice preset below:');
         };
 
         recognition.onend = () => setIsListening(false);
@@ -229,12 +362,21 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
       }
     } else {
       setIsListening(false);
-      setStatusMessage('Voice recognition not supported in this environment. Click a command:');
+      setStatusMessage('Voice recognition idle. Type query or click preset:');
     }
 
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
+      }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
       }
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -247,9 +389,10 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
   const SUGGESTED_COMMANDS = [
     { label: '✨ "Summarize this page"', cmd: 'Summarize this page' },
     { label: '🎨 "Open Knowledge Canvas"', cmd: 'Open neural canvas in split screen' },
-    { label: '⚖️ "Compare models on this tab"', cmd: 'Compare models' },
-    { label: '🤖 "Launch Autonomous Agent"', cmd: 'Launch autonomous agent' },
-    { label: '⚡ "Research Quantum Computing"', cmd: 'Research quantum computing breakthroughs' },
+    { label: '⚡ "Launch Code Sandbox"', cmd: 'Open code sandbox' },
+    { label: '🧠 "Neural Synapse Matrix"', cmd: 'Launch neural synapse cross tab' },
+    { label: '🤖 "Launch Autonomous Swarm"', cmd: 'Launch autonomous multi agent swarm' },
+    { label: '⚖️ "Compare models on tab"', cmd: 'Compare models' },
     { label: '🔀 "Toggle Split Screen"', cmd: 'Toggle split screen' },
     { label: '❓ "Generate Page Quiz"', cmd: 'Generate quiz' },
   ];
@@ -296,30 +439,25 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Animated Voice Waveform Bars */}
-        <div className="flex items-center gap-1.5 h-8 my-2">
-          {[0.6, 1.2, 0.8, 1.5, 0.9, 1.3, 0.7, 1.1, 0.5].map((h, i) => (
-            <motion.div
-              key={i}
-              animate={{
-                height: isListening ? [10, 28 * h, 8, 24 * h, 10] : 4,
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 0.8 + i * 0.1,
-                ease: 'easeInOut',
-              }}
-              className="w-1 rounded-full bg-gradient-to-t from-indigo-500 to-purple-400"
-            />
-          ))}
+        {/* Real Web Audio FFT Frequency Spectrum Canvas */}
+        <div className="my-2 flex flex-col items-center">
+          <canvas
+            ref={canvasRef}
+            width={280}
+            height={36}
+            className="rounded-xl bg-slate-950/60 border border-slate-800/80 px-2 shadow-inner"
+          />
+          <span className="text-[9px] font-mono text-slate-500 mt-1 uppercase tracking-wider">
+            {analyserRef.current ? 'Live FFT Audio Stream' : 'Harmonic Spectrum Synthesizer'}
+          </span>
         </div>
 
         {/* Spoken Query or Status */}
-        <div className="text-center my-3 max-w-sm">
+        <div className="text-center my-2 max-w-sm w-full">
           <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">
-            Aksh Voice Co-Pilot
+            Aksh Voice & AI Co-Pilot
           </p>
-          <h3 className="text-base font-bold text-white min-h-[1.75rem] flex items-center justify-center">
+          <h3 className="text-sm font-bold text-white min-h-[1.75rem] flex items-center justify-center px-4">
             {transcript ? `"${transcript}"` : statusMessage}
           </h3>
           {aiVoiceReply && (
@@ -331,10 +469,30 @@ export const VoiceAssistantHud: React.FC<VoiceAssistantHudProps> = ({
               🔊 {aiVoiceReply}
             </motion.p>
           )}
+
+          {/* Quick Command Text Input */}
+          <div className="flex items-center gap-2 mt-3 w-full">
+            <input
+              type="text"
+              value={customQuery}
+              onChange={(e) => setCustomQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && customQuery.trim() && handleExecuteCommand(customQuery)}
+              placeholder="Or type voice command (e.g. 'sandbox', 'synapse')..."
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
+            />
+            <button
+              onClick={() => customQuery.trim() && handleExecuteCommand(customQuery)}
+              disabled={!customQuery.trim() || isProcessing}
+              className="p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white cursor-pointer transition-colors shadow-md"
+              title="Send Command"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Suggested Voice Commands */}
-        <div className="w-full mt-4 pt-4 border-t border-slate-800">
+        <div className="w-full mt-3 pt-3 border-t border-slate-800">
           <span className="text-[11px] font-semibold text-slate-400 block mb-2 text-center">
             Or Click a Voice Command Preset:
           </span>

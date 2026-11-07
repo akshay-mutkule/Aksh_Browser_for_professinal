@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal, Brain, Orbit } from 'lucide-react';
+import { Sparkles, Minus, Square, X, PanelRight, ShieldCheck, Zap, Globe, Cpu, HelpCircle, ChevronDown, Layers, Compass, Code, BookOpen, Mic, Terminal, Brain, Orbit, BrainCircuit } from 'lucide-react';
 import { Tab, Workspace } from '../../types';
 import { TabBar } from './TabBar';
 
@@ -39,6 +39,7 @@ interface TitleBarProps {
   onOpenVault?: () => void;
   onOpenTabCosmos?: () => void;
   onOpenArchitecture?: () => void;
+  onOpenSynapse?: () => void;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
@@ -77,6 +78,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   onOpenVault,
   onOpenTabCosmos,
   onOpenArchitecture,
+  onOpenSynapse,
 }) => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
@@ -239,6 +241,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           >
             <Cpu className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
             <span className="hidden xl:inline">Architecture</span>
+          </button>
+        )}
+
+        {onOpenSynapse && (
+          <button
+            onClick={onOpenSynapse}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-purple-800 border border-purple-200 shadow-2xs transition-all cursor-pointer"
+            title="Open Neural Multi-Tab Synapse Matrix (!synapse)"
+          >
+            <BrainCircuit className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+            <span className="hidden xl:inline">Synapse</span>
           </button>
         )}
 

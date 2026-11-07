@@ -89,7 +89,10 @@ export const AgentStudioView: React.FC<AgentStudioViewProps> = ({
   const [reasoningDepth, setReasoningDepth] = useState<'fast' | 'deep'>('deep');
   const [executionMode, setExecutionMode] = useState<'single' | 'swarm'>('swarm');
   const [isRunning, setIsRunning] = useState(false);
-  const [activeOutputTab, setActiveOutputTab] = useState<'dossier' | 'data' | 'recipe' | 'sandbox'>('dossier');
+  const [activeOutputTab, setActiveOutputTab] = useState<'dag' | 'dossier' | 'sandbox' | 'data' | 'recipe'>('dag');
+  const [selectedDagNode, setSelectedDagNode] = useState<string>('planner');
+  const [injectedDirective, setInjectedDirective] = useState<string>('');
+  const [injectedSuccess, setInjectedSuccess] = useState<boolean>(false);
 
   // DOM Simulator & Playback states
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
@@ -563,6 +566,18 @@ runAutonomousMission();`;
             {/* View Tabs */}
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setActiveOutputTab('dag')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  activeOutputTab === 'dag'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <BrainCircuit className="w-3.5 h-3.5" />
+                <span>Swarm DAG Flow</span>
+              </button>
+
+              <button
                 onClick={() => setActiveOutputTab('dossier')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                   activeOutputTab === 'dossier'
@@ -653,6 +668,287 @@ runAutonomousMission();`;
 
           {/* View Tab Body */}
           <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            {/* 0. Swarm DAG Orchestration Flow & Interactive Topology */}
+            {activeOutputTab === 'dag' && (
+              <div className="max-w-5xl mx-auto space-y-6">
+                {/* Live Swarm Telemetry HUD Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Total Inferred Tokens</div>
+                    <div className="text-base font-bold text-white font-mono flex items-center justify-between">
+                      <span>3,500 TOK</span>
+                      <Cpu className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">1,120 prompt • 2,380 output</span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Inference Velocity</div>
+                    <div className="text-base font-bold text-cyan-400 font-mono flex items-center justify-between">
+                      <span>58.4 tok/s</span>
+                      <Activity className="w-4 h-4 text-cyan-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Streaming Multi-Threaded</span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Grounding Confidence</div>
+                    <div className="text-base font-bold text-emerald-400 font-mono flex items-center justify-between">
+                      <span>98.6%</span>
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Google Grounding Verified</span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Estimated Cost</div>
+                    <div className="text-base font-bold text-amber-400 font-mono flex items-center justify-between">
+                      <span>$0.0028</span>
+                      <Clock className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Cost Optimized (Flash)</span>
+                  </div>
+                </div>
+
+                {/* Swarm DAG Graph & Node Inspector Split */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left (2 cols): Visual DAG Nodes Pipeline */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <BrainCircuit className="w-4 h-4 text-purple-400" />
+                        Directed Acyclic Graph (DAG) Pipeline
+                      </h3>
+                      <span className="text-[10px] font-mono text-slate-400">Click any node to inspect artifacts</span>
+                    </div>
+
+                    <div className="p-4 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3 relative">
+                      {[
+                        {
+                          id: 'planner',
+                          step: 1,
+                          title: 'Goal Ingestion & Swarm Planner',
+                          role: 'Planner Agent',
+                          model: 'Gemini 3.7 Pro',
+                          latency: '120ms',
+                          tokens: 340,
+                          status: 'COMPLETED',
+                          color: '#8b5cf6',
+                          detail: 'Deconstructed raw mission into 5 sub-tasks with dependency topology.',
+                        },
+                        {
+                          id: 'scout',
+                          step: 2,
+                          title: 'Headless DOM Crawler & Semantic Sieve',
+                          role: 'Scout Agent',
+                          model: 'Chromium Headless / V8',
+                          latency: '48ms',
+                          tokens: 1120,
+                          status: 'COMPLETED',
+                          color: '#3b82f6',
+                          detail: 'Parsed active tab DOM, filtered noise, and captured 14 structural nodes.',
+                        },
+                        {
+                          id: 'data',
+                          step: 3,
+                          title: 'Quantitative Benchmark & Metrics Isolator',
+                          role: 'Data Analyst Agent',
+                          model: 'Deterministic Parser',
+                          latency: '18ms',
+                          tokens: 450,
+                          status: 'COMPLETED',
+                          color: '#06b6d4',
+                          detail: 'Extracted benchmark tables, throughput stats, and feature metrics.',
+                        },
+                        {
+                          id: 'verifier',
+                          step: 4,
+                          title: 'Epistemic Grounding & Fact Verification',
+                          role: 'Verifier Agent',
+                          model: 'Google Search Grounding',
+                          latency: '320ms',
+                          tokens: 280,
+                          status: 'COMPLETED',
+                          color: '#10b981',
+                          detail: 'Cross-checked empirical claims against external consensus knowledge bases.',
+                        },
+                        {
+                          id: 'synthesizer',
+                          step: 5,
+                          title: 'Multi-Criteria Executive Synthesis',
+                          role: 'Synthesizer Agent',
+                          model: 'Gemini 3.7 Flash',
+                          latency: '540ms',
+                          tokens: 890,
+                          status: 'COMPLETED',
+                          color: '#f59e0b',
+                          detail: 'Formulated decision framework, comparative findings, and milestone roadmap.',
+                        },
+                        {
+                          id: 'auditor',
+                          step: 6,
+                          title: 'Adversarial Red-Team Stress Audit',
+                          role: 'Auditor Agent',
+                          model: 'Zero-Trust Heuristics',
+                          latency: '210ms',
+                          tokens: 420,
+                          status: 'COMPLETED',
+                          color: '#f43f5e',
+                          detail: 'Stress-tested architectural caveats, vendor lock-in, and undisclosed failure modes.',
+                        },
+                      ].map((node, idx) => {
+                        const isSelected = selectedDagNode === node.id;
+                        return (
+                          <div key={node.id} className="relative">
+                            {idx > 0 && (
+                              <div className="flex justify-center -my-1 py-0.5">
+                                <div className="w-0.5 h-3 bg-gradient-to-b from-purple-500/50 to-indigo-500/50" />
+                              </div>
+                            )}
+                            <button
+                              onClick={() => setSelectedDagNode(node.id)}
+                              className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                isSelected
+                                  ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg ring-1 ring-purple-500/30'
+                                  : 'bg-slate-950/70 hover:bg-slate-950 border-slate-800 text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-7 h-7 rounded-xl flex items-center justify-center font-bold font-mono text-xs text-white shrink-0 shadow-xs"
+                                  style={{ backgroundColor: node.color }}
+                                >
+                                  0{node.step}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-white">{node.title}</h4>
+                                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                                      {node.model}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 line-clamp-1">{node.detail}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 shrink-0 font-mono text-[10px]">
+                                <span className="text-slate-400">{node.latency}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>{node.status}</span>
+                                </span>
+                              </div>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right (1 col): Selected Node Deep Inspector & HITL Controls */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                        Node Telemetry Inspector
+                      </h3>
+                      <span className="text-[10px] font-mono text-cyan-400">Node: {selectedDagNode.toUpperCase()}</span>
+                    </div>
+
+                    <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                      <div className="space-y-1 pb-3 border-b border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white">Agent Sub-System</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300">
+                            HITL ENABLED
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          Inspect runtime parameters and inject on-the-fly execution constraints.
+                        </p>
+                      </div>
+
+                      {/* Node parameters */}
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
+                          <span>Active Mission:</span>
+                          <span className="text-white truncate max-w-[150px]">{goal.slice(0, 24)}...</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
+                          <span>Assigned Agent:</span>
+                          <span className="text-purple-300 font-semibold">{selectedDagNode.toUpperCase()} ENGINE</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
+                          <span>Context Window:</span>
+                          <span className="text-emerald-400">128K Tokens</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
+                          <span>Deterministic Fallback:</span>
+                          <span className="text-cyan-400">Active</span>
+                        </div>
+                      </div>
+
+                      {/* Human-In-The-Loop (HITL) Dynamic Directive Injection */}
+                      <div className="space-y-2 pt-2 border-t border-slate-800">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                          Inject Runtime Constraint (HITL)
+                        </span>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="e.g. Prioritize pricing model over latency..."
+                            value={injectedDirective}
+                            onChange={(e) => setInjectedDirective(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-purple-500"
+                          />
+                          <button
+                            onClick={() => {
+                              if (!injectedDirective.trim()) return;
+                              setScratchpadLogs((prev) => [
+                                ...prev,
+                                `[HITL OVERRIDE] User injected directive: "${injectedDirective}"`,
+                              ]);
+                              setInjectedSuccess(true);
+                              setTimeout(() => setInjectedSuccess(false), 2500);
+                              setInjectedDirective('');
+                            }}
+                            className="w-full px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            {injectedSuccess ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+                            <span>{injectedSuccess ? 'Directive Injected!' : 'Inject Constraint'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Export Swarm DAG Spec */}
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            const spec = {
+                              mission: goal,
+                              pipeline: 'DAG-6-NODE-SWARM',
+                              nodes: ['planner', 'scout', 'data', 'verifier', 'synthesizer', 'auditor'],
+                              groundingScore: 0.986,
+                              model: selectedModel,
+                              timestamp: new Date().toISOString(),
+                            };
+                            navigator.clipboard.writeText(JSON.stringify(spec, null, 2));
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          }}
+                          className="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>Export Swarm Manifest</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 1. Sandbox Simulated Viewport */}
             {activeOutputTab === 'sandbox' && (
               <div className="max-w-4xl mx-auto space-y-4">
