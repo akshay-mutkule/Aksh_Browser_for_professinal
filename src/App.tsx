@@ -1611,6 +1611,7 @@ export function App() {
           <SecurityView
             activeTab={activeTab}
             onNavigate={(url) => navigateTab(targetTab.id, url)}
+            onSaveAsNote={handleSaveAsNote}
           />
         )}
 
