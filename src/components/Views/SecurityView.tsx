@@ -396,11 +396,9 @@ app.use((req, res, next) => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold tracking-tight text-white">
-                Quantum Security & Zero-Trust Defense Citadel
+                Zero-Trust &amp; Quantum Defense Console
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold">
-                aksh://security
-              </span>
+              <span className="text-xs text-emerald-400 font-medium">Post-Quantum Security</span>
             </div>
             <p className="text-xs text-slate-400">
               NIST FIPS 203 ML-KEM lattice encryption, red-team pen-test simulator, and server hardening suite

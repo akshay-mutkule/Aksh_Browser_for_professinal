@@ -507,36 +507,55 @@ export const NewTab: React.FC<NewTabProps> = ({
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="flex flex-col items-center space-y-1.5 text-center select-none pt-2"
+          className="flex flex-col items-center space-y-2 text-center select-none pt-2"
         >
-          <div className="text-5xl sm:text-6xl font-medium tracking-tight font-sans flex items-center justify-center">
-            <span className="text-[#4285F4]">G</span>
-            <span className="text-[#EA4335]">o</span>
-            <span className="text-[#FBBC05]">o</span>
-            <span className="text-[#4285F4]">g</span>
-            <span className="text-[#34A853]">l</span>
-            <span className="text-[#EA4335]">e</span>
-          </div>
+          {searchMode === 'google' ? (
+            <div className="text-6xl sm:text-7xl font-normal tracking-tight font-sans flex items-center justify-center select-none">
+              <span className="text-[#4285F4]">G</span>
+              <span className="text-[#EA4335]">o</span>
+              <span className="text-[#FBBC05]">o</span>
+              <span className="text-[#4285F4]">g</span>
+              <span className="text-[#34A853]">l</span>
+              <span className="text-[#EA4335]">e</span>
+            </div>
+          ) : searchMode === 'ai' ? (
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">Aksh</span>
+                <span className="text-4xl sm:text-5xl font-light tracking-tight text-blue-600">AI</span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium tracking-normal">Frontier Multimodal Intelligence & Deep Research</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">Aksh</span>
+                <span className="text-4xl sm:text-5xl font-light tracking-tight text-indigo-600">Agents</span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium tracking-normal">Autonomous Goal-Driven Multi-Agent Swarm</p>
+            </div>
+          )}
+
           {currentTime && (
             <div className="text-xs text-slate-400 font-medium flex items-center gap-2">
               <span className="font-mono">{currentTime}</span>
-              <span>•</span>
+              <span aria-hidden="true">&middot;</span>
               <span>{greeting}</span>
             </div>
           )}
         </motion.div>
 
         {/* Minimalist Search Mode Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-full border border-slate-200/80 text-[11px] font-medium text-slate-500 shadow-2xs">
+        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-full text-xs font-medium text-slate-600 shadow-2xs">
           <button
             onClick={() => {
               setSearchMode('google');
               setIsAiMode(false);
             }}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'google' && !isAiMode
                 ? 'bg-white text-slate-900 font-semibold shadow-xs'
-                : 'hover:text-slate-800'
+                : 'hover:text-slate-900'
             }`}
           >
             <span className="text-[#4285F4] font-bold text-xs">G</span>
@@ -548,13 +567,13 @@ export const NewTab: React.FC<NewTabProps> = ({
               setSearchMode('ai');
               setIsAiMode(true);
             }}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'ai' || isAiMode
-                ? 'bg-purple-600 text-white font-semibold shadow-xs'
-                : 'hover:text-purple-700'
+                ? 'bg-white text-blue-600 font-semibold shadow-xs'
+                : 'hover:text-slate-900'
             }`}
           >
-            <Sparkles className="w-3 h-3 text-purple-300" />
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>Gemini AI</span>
           </button>
 
@@ -563,13 +582,13 @@ export const NewTab: React.FC<NewTabProps> = ({
               setSearchMode('agent');
               setIsAiMode(false);
             }}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
               searchMode === 'agent'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold shadow-xs'
-                : 'hover:text-indigo-700'
+                ? 'bg-white text-indigo-600 font-semibold shadow-xs'
+                : 'hover:text-slate-900'
             }`}
           >
-            <Bot className="w-3 h-3" />
+            <Bot className="w-3.5 h-3.5 text-indigo-600" />
             <span>Agent Swarm</span>
           </button>
         </div>
@@ -859,10 +878,10 @@ export const NewTab: React.FC<NewTabProps> = ({
                 className="flex flex-col items-center gap-1.5 group w-18 cursor-pointer"
                 title={`${item.title} (${item.url})`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/90 group-hover:border-blue-400 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
+                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/90 group-hover:border-slate-300 group-hover:shadow-md transition-all flex items-center justify-center shadow-2xs group-hover:-translate-y-0.5">
                   {getShortcutIcon(item.icon)}
                 </div>
-                <span className="text-[11px] text-slate-600 group-hover:text-blue-600 truncate w-full text-center font-medium transition-colors">
+                <span className="text-[11px] text-slate-600 group-hover:text-slate-900 truncate w-full text-center font-medium transition-colors">
                   {item.title}
                 </span>
               </button>

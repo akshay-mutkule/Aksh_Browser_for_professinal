@@ -536,14 +536,12 @@ Generate JSON with this exact schema:
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-bold text-white tracking-tight">
-                  Autonomous Multi-Model Cognitive Arena & Consensus Engine
+                  Multi-Model Intelligence Arena
                 </h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-semibold">
-                  aksh://matrix
-                </span>
+                <span className="text-xs text-indigo-400 font-medium">Consensus Engine</span>
               </div>
               <p className="text-xs text-slate-400">
-                Parallel reasoning benchmarks, automated consensus synthesis, blind arena Elo voting, and pairwise AST diffing
+                Parallel reasoning benchmarks, automated consensus synthesis, blind arena Elo voting, and pairwise diffing
               </p>
             </div>
           </div>

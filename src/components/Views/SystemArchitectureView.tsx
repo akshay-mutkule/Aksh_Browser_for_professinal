@@ -303,19 +303,17 @@ ${layer.modules
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 ring-1 ring-white/20">
             <Cpu className="w-6 h-6 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-                Aksh AI Browser &mdash; System Architecture & Kernel Spec
-              </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                v3.8 Enterprise
-              </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+                  System Architecture &amp; Runtime Kernel
+                </h1>
+                <span className="text-xs text-indigo-400 font-medium">Enterprise Edition</span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Architectural blueprint, runtime kernel telemetry, zero-trust security &amp; AI dataflow
+              </p>
             </div>
-            <p className="text-xs text-slate-400">
-              High-level architectural blueprint, runtime kernel telemetry, zero-trust security & AI dataflow
-            </p>
-          </div>
         </div>
 
         <div className="flex items-center gap-2.5">

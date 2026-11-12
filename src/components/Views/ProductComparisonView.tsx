@@ -223,39 +223,41 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
     <div className="h-full overflow-y-auto bg-slate-50 text-slate-900 p-6 md:p-10 select-text">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header Title */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-50 border border-pink-200 text-pink-700 text-xs font-semibold shadow-2xs">
-            <Scale className="w-4 h-4 text-pink-600" />
-            <span>Aksh AI Multi-Tab & Decision Matrix Studio</span>
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-blue-600">
+            <Scale className="w-4 h-4" />
+            <span>Decision Matrix Studio</span>
+            <span aria-hidden="true">&middot;</span>
+            <span className="text-slate-500 font-normal">Head-to-head comparison</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            Compare Anything Head-to-Head
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+            Compare Head-to-Head
           </h1>
-          <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto">
+          <p className="text-xs md:text-sm text-slate-600 max-w-lg mx-auto">
             Extract granular specifications, pricing metrics, trade-offs, and generate data-driven decision verdicts with Gemini 3.7.
           </p>
         </div>
 
         {/* Mode Switcher Tabs */}
         <div className="flex items-center justify-center">
-          <div className="bg-slate-200/80 p-1 rounded-2xl flex items-center gap-1 border border-slate-300 shadow-2xs">
+          <div className="bg-slate-200/70 p-1 rounded-2xl flex items-center gap-1 text-xs">
             <button
               onClick={() => setActiveMode('open_tabs')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 activeMode === 'open_tabs'
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-pink-600" />
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
               <span>Compare Open Tabs ({tabs.length})</span>
             </button>
 
             <button
               onClick={() => setActiveMode('benchmarks')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 activeMode === 'benchmarks'
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -265,9 +267,9 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
 
             <button
               onClick={() => setActiveMode('custom')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 activeMode === 'custom'
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -279,18 +281,18 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
 
         {/* MODE 1: Compare Open Browser Tabs */}
         {activeMode === 'open_tabs' && (
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-4 shadow-md">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-pink-600" />
+                  <Layers className="w-4 h-4 text-blue-600" />
                   <span>Select 2 to 4 Open Tabs to Compare</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Aksh AI synthesizes live content, product specs, pricing, and architecture from your active tabs.
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-200">
+              <span className="text-xs text-slate-500 font-medium">
                 {selectedTabIds.length} / 4 Selected
               </span>
             </div>
@@ -305,13 +307,13 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
                     onClick={() => handleToggleTabSelect(tab.id)}
                     className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
                       isSelected
-                        ? 'bg-pink-50/70 border-pink-400 ring-2 ring-pink-400/20'
+                        ? 'bg-blue-50/60 border-blue-400 ring-2 ring-blue-400/20'
                         : 'bg-slate-50/70 hover:bg-slate-100/70 border-slate-200'
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded-md flex items-center justify-center mt-0.5 shrink-0 transition-colors ${
-                        isSelected ? 'bg-pink-600 text-white' : 'border border-slate-300 bg-white'
+                        isSelected ? 'bg-blue-600 text-white' : 'border border-slate-300 bg-white'
                       }`}
                     >
                       {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -362,7 +364,7 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
               <button
                 onClick={() => handleRunComparison()}
                 disabled={selectedTabIds.length < 2 || isComparing}
-                className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shadow-pink-500/20 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
               >
                 <Scale className="w-4 h-4" />
                 <span>
@@ -392,22 +394,22 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
                   }}
                   className={`p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between shadow-2xs cursor-pointer ${
                     selectedPreset === preset.id
-                      ? 'bg-pink-50/70 border-pink-400 ring-2 ring-pink-400/20'
+                      ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-400/20'
                       : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-pink-700 uppercase tracking-wide">
+                      <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">
                         {preset.title}
                       </span>
-                      <Sparkles className="w-3.5 h-3.5 text-pink-600 group-hover:scale-110 transition-transform" />
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                       {preset.description}
                     </p>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-pink-600">
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                     <span>Compare Showdown</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -419,7 +421,7 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
 
         {/* MODE 3: Custom Comparison Input */}
         {activeMode === 'custom' && (
-          <div className="p-5 rounded-3xl bg-white border border-slate-200 space-y-3 shadow-md">
+          <div className="p-5 rounded-3xl bg-white border border-slate-200 space-y-3 shadow-sm">
             <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-purple-600" />
               <span>Enter Any Custom Products, Technologies, or Models:</span>
@@ -437,12 +439,12 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
                 value={customQuery}
                 onChange={(e) => setCustomQuery(e.target.value)}
                 placeholder="e.g. 'RTX 4070 Ti Super vs RTX 4080 Super vs RX 7900 XTX' or 'Kindle Paperwhite vs Kobo Clara'..."
-                className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-pink-600 focus:ring-2 focus:ring-pink-500/15"
+                className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15"
               />
               <button
                 type="submit"
                 disabled={!customQuery.trim() || isComparing}
-                className="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-2 transition-colors shadow-sm shrink-0 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-xs shrink-0 cursor-pointer"
               >
                 <Scale className="w-4 h-4" />
                 <span>{isComparing ? 'Comparing...' : 'Compare Showdown'}</span>
@@ -454,9 +456,9 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
         {/* Comparison Loading State */}
         {isComparing && (
           <div className="py-16 text-center space-y-4">
-            <div className="w-10 h-10 rounded-full border-3 border-pink-600 border-t-transparent animate-spin mx-auto" />
+            <div className="w-10 h-10 rounded-full border-3 border-blue-600 border-t-transparent animate-spin mx-auto" />
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-pink-900">
+              <h3 className="text-base font-semibold text-slate-900">
                 Aksh AI is extracting specifications & computing comparison matrix...
               </h3>
               <p className="text-xs text-slate-500">
@@ -471,8 +473,8 @@ export const ProductComparisonView: React.FC<ProductComparisonViewProps> = ({
           <div className="space-y-6 animate-in fade-in">
             {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between p-3.5 rounded-2xl bg-white border border-slate-200 text-xs shadow-xs gap-3">
-              <span className="font-bold text-pink-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5" />
+              <span className="font-bold text-slate-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-blue-600" />
                 <span>Decision Matrix & Showdown</span>
               </span>
 

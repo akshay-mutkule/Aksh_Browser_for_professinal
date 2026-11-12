@@ -809,14 +809,12 @@ ${apiSpec.typescriptTypes}
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-white tracking-tight">
-                Autonomous Web-to-API & GraphQL Suite
+                Web-to-API &amp; GraphQL Suite
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800/60 font-semibold">
-                aksh://apibuilder
-              </span>
+              <span className="text-xs text-purple-400 font-medium">Developer Edition</span>
             </div>
             <p className="text-xs text-slate-400">
-              Instant REST endpoints, OpenAPI 3.1, GraphQL SDL, and Node.js Express microservices
+              REST endpoints, OpenAPI 3.1, GraphQL SDL, and Node.js Express microservices
             </p>
           </div>
         </div>
