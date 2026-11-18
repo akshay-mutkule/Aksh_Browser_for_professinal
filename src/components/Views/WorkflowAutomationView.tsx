@@ -1,36 +1,36 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect } from 'react';
 import {
   Workflow,
   Play,
   RotateCw,
   Plus,
   CheckCircle2,
-  Clock,
-  ExternalLink,
   Layers,
   Sparkles,
   Download,
   Copy,
   Check,
-  Shield,
-  Search,
-  Database,
   Terminal,
-  Activity,
   ArrowRight,
   FileText,
   Sliders,
-  Split,
-  Bot,
-  Zap,
   X,
-  Code2,
   FileJson,
-  Info
+  Info,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Save
 } from 'lucide-react';
+import Markdown from 'react-markdown';
 import { Tab, WorkflowRecipe, WorkflowStep } from '../../types';
-import { scrapeWebpage, sendAIChat } from '../../services/api';
+import {
+  scrapeWebpage,
+  sendAIChat,
+  extractStructuredData,
+  inspectCode,
+  generateMindmap,
+} from '../../services/api';
 
 interface WorkflowAutomationViewProps {
   activeTab: Tab | null;
@@ -38,11 +38,14 @@ interface WorkflowAutomationViewProps {
   onNavigateUrl: (url: string) => void;
 }
 
+const STORAGE_KEY = 'aksh_custom_workflows_v1';
+
 const DEFAULT_RECIPES: WorkflowRecipe[] = [
   {
     id: 'recipe-market-radar',
-    title: 'Daily Tech & AI Market Intelligence Radar',
-    description: 'Autonomous extraction and synthesis of trending advancements, emerging architectures, and key market signals.',
+    title: 'Tech & AI Signal Intelligence Radar',
+    description:
+      'Scrapes a live webpage, extracts structured entities and metrics, synthesizes an executive brief with Gemini, and exports to Notes.',
     category: 'intelligence',
     icon: 'Sparkles',
     tags: ['AI', 'Tech Radar', 'Autonomous'],
@@ -51,115 +54,111 @@ const DEFAULT_RECIPES: WorkflowRecipe[] = [
       {
         id: 'step-1',
         type: 'scrape_url',
-        title: 'Ingest Live Signal Sources',
-        description: 'Fetch and parse semantic content from primary tech publications.',
-        config: { url: 'https://news.ycombinator.com' },
+        title: 'Ingest Live Webpage',
+        description: 'Fetch semantic content, title, and headings from target URL or active tab.',
+        config: { url: 'https://news.ycombinator.com', fallbackToActiveTab: true },
       },
       {
         id: 'step-2',
         type: 'extract_entities',
-        title: 'Extract Core Entities & Metrics',
-        description: 'Isolate company names, model parameters, and technology frameworks.',
-        config: { depth: 'exhaustive' },
+        title: 'Extract Entities & Metrics',
+        description: 'Isolate organizations, architectures, numbers, and technical topics.',
+        config: { format: 'json' },
       },
       {
         id: 'step-3',
         type: 'ai_synthesize',
-        title: 'Gemini Cross-Source Synthesis',
-        description: 'Synthesize overarching trends, consensus breakthroughs, and market shifts.',
+        title: 'Synthesize Intelligence Brief',
+        description: 'Correlate scraped content and extracted entities into an executive brief.',
         config: { model: 'gemini-3.7-flash', tone: 'executive' },
       },
       {
         id: 'step-4',
         type: 'export_note',
-        title: 'Compile & Store in AI Notes',
-        description: 'Format as markdown executive brief and persist into browser notebook.',
-        config: { notebook: 'Market Intelligence' },
+        title: 'Save Deliverable to Notes',
+        description: 'Persist final synthesized Markdown artifact into workspace notes.',
+        config: { autoSave: false },
       },
     ],
   },
   {
     id: 'recipe-paper-deep-dive',
-    title: 'Academic Paper Deconstructor & Active Recall Builder',
-    description: 'Transforms technical preprints into Cornell notes, concept mindmaps, and 5 active recall quiz questions.',
+    title: 'Research Deconstructor & Concept Graph',
+    description:
+      'Extracts methodology from an active tab or URL, builds a topological concept graph, and compiles Cornell study notes.',
     category: 'research',
     icon: 'Layers',
-    tags: ['ArXiv', 'Cornell Notes', 'Quiz'],
+    tags: ['ArXiv', 'Cornell Notes', 'Graph'],
     scheduleInterval: 'manual',
     steps: [
       {
         id: 'step-1',
         type: 'scrape_url',
-        title: 'Extract Paper Abstract & Methodology',
-        description: 'Parse mathematical claims, benchmark results, and architectural diagrams.',
-        config: { url: 'https://arxiv.org' },
+        title: 'Ingest Paper / Article Context',
+        description: 'Extract abstract, methodology, and headings from active tab or URL.',
+        config: { url: 'activeTab' },
       },
       {
         id: 'step-2',
-        type: 'ai_synthesize',
-        title: 'Generate Structured Cornell Notes',
-        description: 'Formulate core cues, concise summary, and architectural breakdowns.',
-        config: { format: 'cornell' },
+        type: 'mindmap_generate',
+        title: 'Build Concept Knowledge Graph',
+        description: 'Map directed relationships between core concepts and downstream applications.',
+        config: { maxNodes: 12 },
       },
       {
         id: 'step-3',
-        type: 'mindmap_generate',
-        title: 'Build Concept Knowledge Graph',
-        description: 'Map hierarchical relationship between theorems, algorithms, and applications.',
-        config: { maxNodes: 12 },
+        type: 'ai_synthesize',
+        title: 'Generate Cornell Study Guide',
+        description: 'Produce structured cues, core equations, and summary takeaways.',
+        config: { format: 'cornell' },
       },
       {
         id: 'step-4',
         type: 'export_note',
-        title: 'Persist Study Guide',
-        description: 'Save ready-to-revise study guide into local workspace notebook.',
-        config: { notebook: 'Research & Study' },
+        title: 'Stage Study Guide',
+        description: 'Prepare study guide for saving into Notes.',
+        config: { autoSave: false },
       },
     ],
   },
   {
     id: 'recipe-competitor-matrix',
-    title: 'SaaS Competitor Feature & Pricing Showdown',
-    description: 'Crawls multiple competitor URLs, extracts tier pricing, and compiles side-by-side decision matrix.',
+    title: 'Product & Spec Comparison Extractor',
+    description:
+      'Ingests product specifications, extracts normalized comparison tables, and formulates a decision matrix.',
     category: 'productivity',
     icon: 'Activity',
-    tags: ['Pricing', 'Comparison', 'Decision Matrix'],
+    tags: ['Pricing', 'Comparison', 'Matrix'],
     scheduleInterval: 'manual',
     steps: [
       {
         id: 'step-1',
         type: 'scrape_url',
-        title: 'Scrape Candidate Product 1',
-        description: 'Extract feature matrices, API limits, and pricing tiers.',
-        config: { target: 'Product Alpha' },
+        title: 'Ingest Candidate Product Context',
+        description: 'Capture active tab or URL product documentation and specs.',
+        config: { url: 'activeTab' },
       },
       {
         id: 'step-2',
-        type: 'scrape_url',
-        title: 'Scrape Candidate Product 2',
-        description: 'Extract corresponding competitor parameters and value propositions.',
-        config: { target: 'Product Beta' },
+        type: 'compare_tables',
+        title: 'Extract Structured Spec Table',
+        description: 'Normalize tiers, limits, pricing, and key technical attributes.',
+        config: { format: 'table' },
       },
       {
         id: 'step-3',
-        type: 'compare_tables',
-        title: 'Extract Comparison Matrix',
-        description: 'Align features into unified markdown comparison table.',
-        config: { normalizeCurrency: true },
-      },
-      {
-        id: 'step-4',
         type: 'ai_synthesize',
-        title: 'Determine Best-Value Verdict',
-        description: 'Formulate unbiased recommendation based on budget and technical workload.',
-        config: { persona: 'neutral_evaluator' },
+        title: 'Decision Tradeoff Analysis',
+        description: 'Evaluate strengths, constraints, and best-fit workload verdict.',
+        config: { model: 'gemini-3.7-flash' },
       },
     ],
   },
   {
     id: 'recipe-security-audit',
-    title: 'Zero-Trust Web Privacy & Fingerprint Sweep',
-    description: 'Audits TLS cipher suites, third-party trackers, CSP policies, and WebRTC leak vectors.',
+    title: 'Web Security & Trust Boundary Audit',
+    description:
+      'Probes target URL structure, inspects scripts and exposure risks, and generates a hardening report.',
     category: 'security',
     icon: 'Shield',
     tags: ['Security', 'CSP', 'Zero-Trust'],
@@ -167,27 +166,37 @@ const DEFAULT_RECIPES: WorkflowRecipe[] = [
     steps: [
       {
         id: 'step-1',
-        type: 'security_audit',
-        title: 'Probe Cryptographic Handshake',
-        description: 'Inspect TLS 1.3 negotiation, post-quantum key exchange, and cert chains.',
-        config: { level: 'strict' },
+        type: 'scrape_url',
+        title: 'Capture Target Page Payload',
+        description: 'Inspect target page structure, links, and metadata.',
+        config: { url: 'activeTab' },
       },
       {
         id: 'step-2',
         type: 'security_audit',
-        title: 'Enumerate Third-Party Trackers',
-        description: 'Detect canvas fingerprinting, WebGL probes, and hidden cross-domain beacons.',
-        config: { blockAdNetworks: true },
+        title: 'Inspect Trust & Attack Surface',
+        description: 'Audit transport, headers posture, and exposure indicators.',
+        config: { level: 'strict' },
       },
       {
         id: 'step-3',
         type: 'ai_synthesize',
-        title: 'Compile Vulnerability & Hardening Report',
-        description: 'Calculate risk index (0-100) and generate defensive recommendations.',
-        config: { framework: 'CIS/NIST' },
+        title: 'Compile Hardening Checklist',
+        description: 'Prioritize actionable security remediations.',
+        config: { framework: 'OWASP/NIST' },
       },
     ],
   },
+];
+
+const STEP_TYPES: Array<{ value: WorkflowStep['type']; label: string }> = [
+  { value: 'scrape_url', label: 'Scrape URL / Tab' },
+  { value: 'extract_entities', label: 'Extract Entities' },
+  { value: 'compare_tables', label: 'Extract Comparison Table' },
+  { value: 'security_audit', label: 'Security Audit' },
+  { value: 'mindmap_generate', label: 'Generate Knowledge Graph' },
+  { value: 'ai_synthesize', label: 'AI Synthesis' },
+  { value: 'export_note', label: 'Export / Stage Note' },
 ];
 
 export const WorkflowAutomationView: React.FC<WorkflowAutomationViewProps> = ({
@@ -195,21 +204,41 @@ export const WorkflowAutomationView: React.FC<WorkflowAutomationViewProps> = ({
   onSaveAsNote,
   onNavigateUrl,
 }) => {
-  const [recipes, setRecipes] = useState<WorkflowRecipe[]>(DEFAULT_RECIPES);
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string>(DEFAULT_RECIPES[0].id);
+  const [recipes, setRecipes] = useState<WorkflowRecipe[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_RECIPES;
+  });
+
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string>(recipes[0]?.id || DEFAULT_RECIPES[0].id);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
+  const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(new Set());
+  const [stepOutputs, setStepOutputs] = useState<Record<string, any>>({});
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [executionResult, setExecutionResult] = useState<string | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
+  const [savedNoteFeedback, setSavedNoteFeedback] = useState<boolean>(false);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+
+  // Modal state
   const [showNewRecipeModal, setShowNewRecipeModal] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<'ai' | 'manual'>('ai');
   const [naturalLanguagePrompt, setNaturalLanguagePrompt] = useState<string>('');
   const [isGeneratingPipeline, setIsGeneratingPipeline] = useState<boolean>(false);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState<string>('');
   const [newDesc, setNewDesc] = useState<string>('');
   const [newCategory, setNewCategory] = useState<WorkflowRecipe['category']>('intelligence');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+    } catch {}
+  }, [recipes]);
 
   const selectedRecipe = recipes.find((r) => r.id === selectedRecipeId) || recipes[0];
 
@@ -218,64 +247,212 @@ export const WorkflowAutomationView: React.FC<WorkflowAutomationViewProps> = ({
     setTerminalLogs((prev) => [...prev, `[${time}] ${msg}`]);
   };
 
+  const updateSelectedRecipe = (updater: (recipe: WorkflowRecipe) => WorkflowRecipe) => {
+    setRecipes((prev) =>
+      prev.map((r) => (r.id === selectedRecipe.id ? updater(r) : r))
+    );
+  };
+
   const handleRunWorkflow = async () => {
-    if (isRunning) return;
+    if (isRunning || !selectedRecipe) return;
     setIsRunning(true);
     setActiveStepIndex(0);
+    setCompletedStepIds(new Set());
+    setStepOutputs({});
     setTerminalLogs([]);
     setExecutionResult(null);
 
-    addLog(`🚀 Initializing workflow pipeline: "${selectedRecipe.title}"`);
-    addLog(`Pipeline contains ${selectedRecipe.steps.length} sequential execution stages.`);
+    addLog(`Starting pipeline: "${selectedRecipe.title}" (${selectedRecipe.steps.length} stages)`);
+
+    // Shared chained execution state passed down between stages
+    const ctx: {
+      url: string;
+      title: string;
+      headings: string[];
+      text: string;
+      extractedEntities: string;
+      tableData: string;
+      securityReport: string;
+      mindmapSummary: string;
+    } = {
+      url: activeTab?.url || 'https://example.com',
+      title: activeTab?.title || selectedRecipe.title,
+      headings: activeTab?.headings || [],
+      text: activeTab?.pdfData?.text || activeTab?.extractedText || activeTab?.metaDescription || '',
+      extractedEntities: '',
+      tableData: '',
+      securityReport: '',
+      mindmapSummary: '',
+    };
+
+    let finalReport = '';
 
     try {
       for (let i = 0; i < selectedRecipe.steps.length; i++) {
         setActiveStepIndex(i);
         const step = selectedRecipe.steps[i];
-        addLog(`▶ [Stage ${i + 1}/${selectedRecipe.steps.length}]: ${step.title}`);
+        const stageStart = performance.now();
+        addLog(`Stage ${i + 1}/${selectedRecipe.steps.length} [${step.type}]: ${step.title}`);
 
-        // Step simulation/execution delay
-        await new Promise((r) => setTimeout(r, 900));
+        let stageOutput: any = null;
 
         if (step.type === 'scrape_url') {
-          addLog(`✓ Ingested target URL payload. Parsed DOM tree with 0 warnings.`);
-        } else if (step.type === 'extract_entities') {
-          addLog(`✓ Isolated 18 named entities, 4 metrics, and 3 technological protocols.`);
-        } else if (step.type === 'compare_tables') {
-          addLog(`✓ Unified 12 comparison criteria across candidate schemas.`);
-        } else if (step.type === 'security_audit') {
-          addLog(`✓ TLSv1.3 verified. CSP enforced. 0 cryptominers detected.`);
-        } else if (step.type === 'mindmap_generate') {
-          addLog(`✓ Hierarchical concept graph structured with 12 interconnected nodes.`);
-        } else if (step.type === 'ai_synthesize') {
-          addLog(`⚡ Dispatching to Gemini 3.7 Flash for deep multi-stage synthesis...`);
-          // Execute real AI call if possible or generate structured report
-          try {
-            const res = await sendAIChat(
-              `Execute automated workflow synthesis for: "${selectedRecipe.title}".
-Context details:
-Category: ${selectedRecipe.category}
-Goal: ${selectedRecipe.description}
-
-Produce a comprehensive, structured Markdown intelligence report with executive summary, data matrix, comparative breakdown, and next steps.`,
-              [],
-              undefined,
-              'general',
-              'gemini-3.7-flash'
-            );
-            setExecutionResult(res.reply);
-          } catch {
-            setExecutionResult(`### Executive Pipeline Deliverable: ${selectedRecipe.title}\n\n- **Status**: Completed successfully\n- **Execution Mode**: Autonomous Browser Macro Engine\n- **Timestamp**: ${new Date().toISOString()}\n\n#### Key Findings\n1. Autonomous ingestion verified across all target nodes.\n2. Signals cross-correlated with high semantic confidence (98.4%).\n3. High-density actionable report generated and staged for export.`);
+          const configuredUrl = String(step.config?.url || '').trim();
+          const useActive = !configuredUrl || configuredUrl === 'activeTab' || !configuredUrl.startsWith('http');
+          if (!useActive) {
+            try {
+              const scraped = await scrapeWebpage(configuredUrl);
+              ctx.url = scraped.url || configuredUrl;
+              ctx.title = scraped.title || ctx.title;
+              ctx.headings = scraped.headings || [];
+              ctx.text = scraped.textContent || scraped.metaDescription || '';
+              addLog(`Scraped "${ctx.title}" (${ctx.text.length} chars, ${ctx.headings.length} headings)`);
+              stageOutput = {
+                source: 'live_scrape',
+                url: ctx.url,
+                title: ctx.title,
+                headingsCount: ctx.headings.length,
+                charactersCaptured: ctx.text.length,
+                excerpt: ctx.text.slice(0, 320),
+              };
+            } catch (err: any) {
+              addLog(`Live scrape fallback to active tab (${err?.message || 'unreachable'})`);
+              stageOutput = {
+                source: 'active_tab_fallback',
+                url: ctx.url,
+                title: ctx.title,
+                charactersCaptured: ctx.text.length,
+              };
+            }
+          } else {
+            addLog(`Ingested active browser tab context: "${ctx.title}" (${ctx.text.length} chars)`);
+            stageOutput = {
+              source: 'active_tab',
+              url: ctx.url,
+              title: ctx.title,
+              headingsCount: ctx.headings.length,
+              charactersCaptured: ctx.text.length,
+            };
           }
+        } else if (step.type === 'extract_entities') {
+          const contentSample = ctx.text.slice(0, 5000) || `Topic: ${selectedRecipe.title}. ${selectedRecipe.description}`;
+          const res = await extractStructuredData(contentSample, ctx.title, ctx.url, step.config?.format || 'json');
+          ctx.extractedEntities = res.data;
+          addLog(`Extracted structured entities (${res.data.length} chars)`);
+          stageOutput = {
+            format: step.config?.format || 'json',
+            preview: res.data.slice(0, 500),
+          };
+        } else if (step.type === 'compare_tables') {
+          const contentSample = ctx.text.slice(0, 5000) || `${selectedRecipe.title}: ${selectedRecipe.description}`;
+          const res = await extractStructuredData(contentSample, ctx.title, ctx.url, 'table');
+          ctx.tableData = res.data;
+          addLog(`Constructed comparative matrix (${res.data.length} chars)`);
+          stageOutput = {
+            format: 'table',
+            preview: res.data.slice(0, 500),
+          };
+        } else if (step.type === 'security_audit') {
+          const res = await inspectCode(ctx.url, ctx.title, ctx.headings, ctx.text.slice(0, 3500), 'security');
+          ctx.securityReport = res.report;
+          addLog(`Completed security boundary inspection (${res.report.length} chars)`);
+          stageOutput = {
+            targetUrl: ctx.url,
+            reportPreview: res.report.slice(0, 500),
+          };
+        } else if (step.type === 'mindmap_generate') {
+          const res = await generateMindmap(ctx.title, ctx.text.slice(0, 3500));
+          const nodes = res.graph?.nodes || [];
+          const edges = res.graph?.edges || [];
+          ctx.mindmapSummary = nodes.map((n) => `- **${n.label}** (${n.category}): ${n.description}`).join('\n');
+          addLog(`Generated knowledge graph (${nodes.length} nodes, ${edges.length} edges)`);
+          stageOutput = {
+            root: res.graph?.root,
+            nodeCount: nodes.length,
+            edgeCount: edges.length,
+            sampleNodes: nodes.slice(0, 5).map((n) => n.label),
+          };
+        } else if (step.type === 'ai_synthesize') {
+          const chainedContext = [
+            `Source Title: ${ctx.title}`,
+            `Source URL: ${ctx.url}`,
+            ctx.text ? `Primary Content Excerpt:\n${ctx.text.slice(0, 3500)}` : '',
+            ctx.extractedEntities ? `Extracted Entities:\n${ctx.extractedEntities.slice(0, 1500)}` : '',
+            ctx.tableData ? `Extracted Spec Table:\n${ctx.tableData.slice(0, 1500)}` : '',
+            ctx.securityReport ? `Security Findings:\n${ctx.securityReport.slice(0, 1500)}` : '',
+            ctx.mindmapSummary ? `Knowledge Graph Concepts:\n${ctx.mindmapSummary.slice(0, 1500)}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n\n---\n\n');
+
+          const res = await sendAIChat(
+            `Execute synthesis stage "${step.title}" for workflow "${selectedRecipe.title}".
+Goal: ${selectedRecipe.description}
+Step Instructions: ${step.description}
+
+Using the chained stage data below, produce a structured Markdown deliverable with clear executive conclusions, supporting evidence, and prioritized next steps.
+
+${chainedContext}`,
+            [],
+            undefined,
+            'general',
+            step.config?.model || 'gemini-3.7-flash'
+          );
+          finalReport = res.reply;
+          setExecutionResult(finalReport);
+          addLog(`Synthesis completed (${finalReport.length} chars)`);
+          stageOutput = {
+            model: step.config?.model || 'gemini-3.7-flash',
+            outputLength: finalReport.length,
+          };
         } else if (step.type === 'export_note') {
-          addLog(`✓ Persisted deliverable artifact to local browser knowledge base.`);
+          const artifact =
+            finalReport ||
+            [ctx.securityReport, ctx.tableData, ctx.mindmapSummary, ctx.extractedEntities]
+              .filter(Boolean)
+              .join('\n\n');
+          if (artifact && step.config?.autoSave) {
+            onSaveAsNote(selectedRecipe.title, artifact);
+            setSavedNoteFeedback(true);
+            setTimeout(() => setSavedNoteFeedback(false), 2500);
+            addLog(`Auto-saved artifact directly to Notes.`);
+          } else {
+            addLog(`Staged final artifact (${artifact.length} chars) for review/export.`);
+          }
+          stageOutput = {
+            staged: true,
+            autoSaved: Boolean(step.config?.autoSave),
+          };
         }
+
+        const durationMs = Math.round(performance.now() - stageStart);
+        setStepOutputs((prev) => ({
+          ...prev,
+          [step.id]: {
+            status: 'completed',
+            durationMs,
+            data: stageOutput,
+          },
+        }));
+        setCompletedStepIds((prev) => new Set([...prev, step.id]));
       }
 
-      addLog(`✨ Workflow pipeline completed successfully! All artifacts verified.`);
+      if (!finalReport) {
+        const fallbackArtifact = [
+          ctx.tableData,
+          ctx.securityReport,
+          ctx.mindmapSummary,
+          ctx.extractedEntities,
+        ]
+          .filter(Boolean)
+          .join('\n\n---\n\n');
+        if (fallbackArtifact) setExecutionResult(fallbackArtifact);
+      }
+
+      addLog(`Pipeline completed cleanly.`);
       setActiveStepIndex(-1);
     } catch (err: any) {
-      addLog(`❌ Pipeline error: ${err.message || String(err)}`);
+      addLog(`Pipeline error: ${err?.message || String(err)}`);
     } finally {
       setIsRunning(false);
     }
@@ -284,41 +461,52 @@ Produce a comprehensive, structured Markdown intelligence report with executive 
   const handleSaveToNotes = () => {
     if (!executionResult) return;
     onSaveAsNote(selectedRecipe.title, executionResult);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setSavedNoteFeedback(true);
+    setTimeout(() => setSavedNoteFeedback(false), 2200);
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!executionResult) return;
+    const blob = new Blob([executionResult], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedRecipe.id}-output.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleCreateRecipe = () => {
     if (!newTitle.trim()) return;
     const newRecipe: WorkflowRecipe = {
       id: `recipe-${Date.now()}`,
-      title: newTitle,
-      description: newDesc || 'Custom user-configured workflow pipeline.',
+      title: newTitle.trim(),
+      description: newDesc.trim() || 'Custom multi-stage automation pipeline.',
       category: newCategory,
       icon: 'Sliders',
-      tags: ['Custom', 'User Pipeline'],
+      tags: ['Custom'],
       scheduleInterval: 'manual',
       steps: [
         {
-          id: 'step-1',
+          id: `step-${Date.now()}-1`,
           type: 'scrape_url',
-          title: 'Extract Content from Active Tab',
+          title: 'Ingest Target Context',
           description: 'Capture active webpage text, metadata, and headings.',
-          config: { url: activeTab?.url || 'https://google.com' },
+          config: { url: activeTab?.url || 'activeTab' },
         },
         {
-          id: 'step-2',
+          id: `step-${Date.now()}-2`,
           type: 'ai_synthesize',
-          title: 'Gemini Deep Synthesis',
+          title: 'Synthesize Findings',
           description: 'Process captured content with custom instructions.',
           config: { model: 'gemini-3.7-flash' },
         },
         {
-          id: 'step-3',
+          id: `step-${Date.now()}-3`,
           type: 'export_note',
-          title: 'Export to AI Notes',
-          description: 'Save output directly to personal knowledge base.',
-          config: { notebook: 'Workflows' },
+          title: 'Stage Output Note',
+          description: 'Prepare output for personal knowledge base.',
+          config: { autoSave: false },
         },
       ],
     };
@@ -334,26 +522,25 @@ Produce a comprehensive, structured Markdown intelligence report with executive 
     if (!naturalLanguagePrompt.trim() || isGeneratingPipeline) return;
     setIsGeneratingPipeline(true);
     try {
-      const prompt = `You are the Aksh Autonomous Workflow & Macro Architect.
-Convert the user's automation request into a pristine multi-step browser pipeline.
+      const prompt = `You are a Workflow Automation Architect.
+Convert the user's automation request into a multi-step browser pipeline.
 
 User Prompt: "${naturalLanguagePrompt}"
-Active Tab URL: "${activeTab?.url || 'https://google.com'}"
+Active Tab URL: "${activeTab?.url || 'https://example.com'}"
 
 Return STRICTLY a JSON object matching this schema:
 {
   "title": "<Concise 3-7 word pipeline title>",
-  "description": "<1-2 sentence description of what the autonomous workflow executes>",
+  "description": "<1-2 sentence description>",
   "category": "intelligence" | "research" | "productivity" | "security",
-  "tags": ["<tag1>", "<tag2>", "<tag3>"],
   "scheduleInterval": "manual" | "hourly" | "daily",
   "steps": [
     {
       "id": "step-1",
       "type": "scrape_url" | "extract_entities" | "compare_tables" | "security_audit" | "mindmap_generate" | "ai_synthesize" | "export_note",
       "title": "<Short action title>",
-      "description": "<Detailed step action>",
-      "config": { ... }
+      "description": "<Step objective>",
+      "config": {}
     }
   ]
 }`;
@@ -369,44 +556,79 @@ Return STRICTLY a JSON object matching this schema:
           description: parsed.description || naturalLanguagePrompt,
           category: parsed.category || 'intelligence',
           icon: 'Sparkles',
-          tags: parsed.tags || ['AI Generated', 'Macro'],
+          tags: ['AI'],
           scheduleInterval: parsed.scheduleInterval || 'manual',
-          steps: parsed.steps && parsed.steps.length > 0 ? parsed.steps : [
-            {
-              id: 'step-1',
-              type: 'scrape_url',
-              title: 'Ingest Source Web Content',
-              description: 'Extract raw text and DOM tree structure.',
-              config: { url: activeTab?.url || 'https://google.com' },
-            },
-            {
-              id: 'step-2',
-              type: 'ai_synthesize',
-              title: 'Gemini Autonomous Synthesis',
-              description: 'Process and analyze captured information.',
-              config: { model: 'gemini-3.7-flash' },
-            },
-            {
-              id: 'step-3',
-              type: 'export_note',
-              title: 'Export to AI Notes',
-              description: 'Save synthesized knowledge directly into workspace.',
-              config: { notebook: 'Automations' },
-            },
-          ],
+          steps:
+            Array.isArray(parsed.steps) && parsed.steps.length > 0
+              ? parsed.steps.map((s: any, idx: number) => ({
+                  id: s.id || `step-${Date.now()}-${idx}`,
+                  type: s.type || 'ai_synthesize',
+                  title: s.title || `Stage ${idx + 1}`,
+                  description: s.description || '',
+                  config: s.config || {},
+                }))
+              : [
+                  {
+                    id: `step-${Date.now()}-1`,
+                    type: 'scrape_url',
+                    title: 'Ingest Web Context',
+                    description: 'Extract text and headings.',
+                    config: { url: activeTab?.url || 'activeTab' },
+                  },
+                  {
+                    id: `step-${Date.now()}-2`,
+                    type: 'ai_synthesize',
+                    title: 'Synthesize Output',
+                    description: naturalLanguagePrompt,
+                    config: { model: 'gemini-3.7-flash' },
+                  },
+                ],
         };
 
         setRecipes((prev) => [newRecipe, ...prev]);
         setSelectedRecipeId(newRecipe.id);
         setShowNewRecipeModal(false);
         setNaturalLanguagePrompt('');
-        addLog(`✨ AI Pipeline Architect created new pipeline: "${newRecipe.title}"`);
+        addLog(`Created pipeline: "${newRecipe.title}"`);
       }
     } catch (err: any) {
-      addLog(`❌ Pipeline generation failed: ${err.message || err}`);
+      addLog(`Pipeline generation failed: ${err?.message || err}`);
     } finally {
       setIsGeneratingPipeline(false);
     }
+  };
+
+  const handleAddStage = () => {
+    const newStep: WorkflowStep = {
+      id: `step-${Date.now()}`,
+      type: 'ai_synthesize',
+      title: 'New Analysis Stage',
+      description: 'Process outputs from previous stages.',
+      config: { model: 'gemini-3.7-flash' },
+    };
+    updateSelectedRecipe((r) => ({ ...r, steps: [...r.steps, newStep] }));
+    setSelectedStepId(newStep.id);
+  };
+
+  const handleMoveStage = (stepId: string, dir: -1 | 1) => {
+    updateSelectedRecipe((r) => {
+      const idx = r.steps.findIndex((s) => s.id === stepId);
+      if (idx < 0) return r;
+      const target = idx + dir;
+      if (target < 0 || target >= r.steps.length) return r;
+      const next = [...r.steps];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return { ...r, steps: next };
+    });
+  };
+
+  const handleDeleteStage = (stepId: string) => {
+    if (selectedRecipe.steps.length <= 1) return;
+    updateSelectedRecipe((r) => ({
+      ...r,
+      steps: r.steps.filter((s) => s.id !== stepId),
+    }));
+    if (selectedStepId === stepId) setSelectedStepId(null);
   };
 
   const handleExportManifest = () => {
@@ -420,25 +642,22 @@ Return STRICTLY a JSON object matching this schema:
     URL.revokeObjectURL(url);
   };
 
+  const selectedStep = selectedRecipe.steps.find((s) => s.id === selectedStepId) || null;
+
   return (
-    <div className="h-full flex flex-col bg-slate-900 text-slate-100 select-text overflow-hidden font-sans">
-      {/* Top Header */}
-      <div className="h-14 px-6 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
+    <div className="h-full flex flex-col bg-slate-950 text-slate-100 select-text overflow-hidden font-sans">
+      {/* Clean Header */}
+      <div className="px-6 py-3 border-b border-slate-800 bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-            <Workflow className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center shrink-0">
+            <Workflow className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold tracking-tight text-white">
-                Autonomous Workflow & Macro Studio
-              </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-semibold">
-                aksh://workflows
-              </span>
-            </div>
+            <h1 className="text-sm font-semibold tracking-tight text-white">
+              Workflow Automation Studio
+            </h1>
             <p className="text-xs text-slate-400">
-              Multi-step web automation, scheduled intelligence pipelines & Gemini agent execution
+              Chained live scraping · Entity &amp; table extraction · Multi-stage AI synthesis
             </p>
           </div>
         </div>
@@ -446,36 +665,34 @@ Return STRICTLY a JSON object matching this schema:
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowNewRecipeModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-indigo-400" />
+            <Plus className="w-3.5 h-3.5" />
             <span>New Pipeline</span>
           </button>
 
           <button
             onClick={handleRunWorkflow}
             disabled={isRunning}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 text-xs font-semibold transition-colors cursor-pointer"
           >
             {isRunning ? (
-              <RotateCw className="w-4 h-4 animate-spin" />
+              <RotateCw className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Play className="w-4 h-4 fill-white" />
+              <Play className="w-3.5 h-3.5 fill-current" />
             )}
-            <span>{isRunning ? 'Executing Pipeline...' : 'Run Workflow'}</span>
+            <span>{isRunning ? 'Executing...' : 'Run Pipeline'}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar: Recipes List */}
-        <div className="w-80 border-r border-slate-800 bg-slate-950/40 p-4 flex flex-col gap-3 shrink-0 overflow-y-auto">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider px-1">
-            <span>Automation Pipelines</span>
-            <span className="text-[10px] text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-800/40">
-              {recipes.length} Active
-            </span>
+      {/* Main Split Workspace */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Left Sidebar: Saved Pipelines */}
+        <div className="w-full md:w-76 border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/40 p-4 flex flex-col gap-3 shrink-0 overflow-y-auto max-h-56 md:max-h-none">
+          <div className="flex items-center justify-between text-xs text-slate-400 font-medium px-1">
+            <span>Pipelines</span>
+            <span className="font-mono tabular-nums text-slate-500">{recipes.length} saved</span>
           </div>
 
           <div className="space-y-2">
@@ -484,57 +701,43 @@ Return STRICTLY a JSON object matching this schema:
               return (
                 <div
                   key={recipe.id}
-                  onClick={() => setSelectedRecipeId(recipe.id)}
-                  className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                  onClick={() => {
+                    setSelectedRecipeId(recipe.id);
+                    setSelectedStepId(null);
+                  }}
+                  className={`p-3 rounded-xl border text-left cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-indigo-950/40 border-indigo-500/60 shadow-md ring-1 ring-indigo-500/30'
-                      : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-850 hover:border-slate-700'
+                      ? 'bg-slate-900 border-cyan-500/70'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-200 line-clamp-1">
-                      {recipe.title}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-800">
-                      {recipe.steps.length} steps
-                    </span>
+                  <div className="text-xs font-semibold text-white line-clamp-1 mb-1">
+                    {recipe.title}
                   </div>
-                  <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-2.5">
+                  <div className="text-[11px] text-slate-400 capitalize mb-1.5">
+                    {recipe.category} · {recipe.steps.length} stages · {recipe.scheduleInterval || 'manual'}
+                  </div>
+                  <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
                     {recipe.description}
                   </p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {recipe.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[9px] font-medium px-2 py-0.5 rounded bg-slate-800/80 text-slate-400"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Center/Right Content View */}
+        {/* Center/Right Pipeline Editor & Execution View */}
         <div className="flex-1 flex flex-col p-6 overflow-y-auto space-y-6">
-          {/* Active Recipe Overview Banner */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-850 to-slate-900 border border-slate-800 flex items-start justify-between shadow-xl">
-            <div className="space-y-1.5 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-semibold text-[10px] uppercase tracking-wider border border-indigo-500/30">
-                  {selectedRecipe.category}
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  Trigger: {selectedRecipe.scheduleInterval?.toUpperCase()}
-                </span>
+          {/* Active Recipe Overview */}
+          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-1 max-w-2xl">
+              <div className="text-xs text-slate-400 capitalize">
+                {selectedRecipe.category} · {selectedRecipe.scheduleInterval || 'manual'} trigger · {selectedRecipe.steps.length} chained stages
               </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">
+              <h2 className="text-base font-semibold text-white tracking-tight">
                 {selectedRecipe.title}
               </h2>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-400 leading-relaxed">
                 {selectedRecipe.description}
               </p>
             </div>
@@ -542,133 +745,226 @@ Return STRICTLY a JSON object matching this schema:
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleExportManifest}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition-colors cursor-pointer"
-                title="Export Pipeline JSON Manifest"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
               >
-                <FileJson className="w-3.5 h-3.5 text-cyan-400" />
+                <FileJson className="w-3.5 h-3.5" />
                 <span>Manifest</span>
               </button>
-
               <button
-                onClick={handleRunWorkflow}
-                disabled={isRunning}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                onClick={handleAddStage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
               >
-                <Play className="w-3.5 h-3.5 fill-white" />
-                <span>Launch Run</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Stage</span>
               </button>
             </div>
           </div>
 
-          {/* Sequential Execution Node Graph */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Execution Pipeline Stages (Click stage to inspect payload)</span>
-              </h3>
-              <span className="text-xs font-mono text-slate-500">
-                Stage {activeStepIndex >= 0 ? activeStepIndex + 1 : '-'}/{selectedRecipe.steps.length}
+          {/* Pipeline Stages */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="flex items-center gap-2 font-medium text-slate-300">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                <span>Pipeline Stages (Click a stage to configure or inspect live output)</span>
+              </div>
+              <span className="font-mono tabular-nums text-slate-500">
+                {activeStepIndex >= 0 ? `Running stage ${activeStepIndex + 1}/${selectedRecipe.steps.length}` : 'Ready'}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {selectedRecipe.steps.map((step, idx) => {
                 const isActive = activeStepIndex === idx;
-                const isCompleted = activeStepIndex > idx || (!isRunning && terminalLogs.length > 0);
+                const isCompleted = completedStepIds.has(step.id);
                 const isSelected = selectedStepId === step.id;
+                const outputInfo = stepOutputs[step.id];
 
                 return (
                   <div
                     key={step.id}
                     onClick={() => setSelectedStepId(isSelected ? null : step.id)}
-                    className={`p-4 rounded-xl border relative transition-all cursor-pointer ${
+                    className={`p-4 rounded-xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-indigo-950/80 border-cyan-400 ring-2 ring-cyan-500/40 shadow-xl'
+                        ? 'bg-slate-900 border-cyan-500 ring-1 ring-cyan-500/40'
                         : isActive
-                        ? 'bg-indigo-950/60 border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg'
+                        ? 'bg-slate-900 border-amber-500'
                         : isCompleted
-                        ? 'bg-slate-850/80 border-emerald-500/40 hover:border-emerald-400'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                        ? 'bg-slate-900/70 border-emerald-500/50'
+                        : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold font-mono bg-slate-800 text-slate-300">
-                        {idx + 1}
+                    <div className="flex items-center justify-between text-xs mb-2">
+                      <span className="font-mono text-slate-400">
+                        0{idx + 1} · {step.type}
                       </span>
-                      {isActive && (
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                      )}
-                      {isCompleted && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      )}
+                      {isActive ? (
+                        <RotateCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                      ) : isCompleted ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : null}
                     </div>
-                    <h4 className="text-xs font-bold text-slate-200 mb-1 line-clamp-1">
+                    <h4 className="text-xs font-semibold text-white mb-1 line-clamp-1">
                       {step.title}
                     </h4>
                     <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
                       {step.description}
                     </p>
+                    {outputInfo && (
+                      <div className="mt-2 pt-2 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+                        Completed in {outputInfo.durationMs} ms
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Stage Payload & Config Inspector */}
-            {selectedStepId && (
-              <div className="p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/40 shadow-2xl space-y-3 animate-in fade-in">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
-                  <div className="flex items-center gap-2">
+            {/* Interactive Stage Configurator & Real Output Inspector */}
+            {selectedStep && (
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-700 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800 text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-white">
                     <Info className="w-4 h-4 text-cyan-400" />
-                    <span className="font-bold text-white">
-                      Stage Inspector: {selectedRecipe.steps.find((s) => s.id === selectedStepId)?.title}
-                    </span>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/50">
-                      {selectedRecipe.steps.find((s) => s.id === selectedStepId)?.type}
-                    </span>
+                    <span>Stage Settings &amp; Live Payload</span>
                   </div>
-                  <button
-                    onClick={() => setSelectedStepId(null)}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleMoveStage(selectedStep.id, -1)}
+                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                      title="Move earlier"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleMoveStage(selectedStep.id, 1)}
+                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                      title="Move later"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    {selectedRecipe.steps.length > 1 && (
+                      <button
+                        onClick={() => handleDeleteStage(selectedStep.id)}
+                        className="p-1.5 rounded bg-slate-800 hover:bg-rose-950 text-rose-400 cursor-pointer"
+                        title="Remove Stage"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSelectedStepId(null)}
+                      className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">
-                      Step Configuration
-                    </span>
-                    <pre className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-cyan-300 overflow-x-auto text-[11px] leading-relaxed">
-                      {JSON.stringify(
-                        selectedRecipe.steps.find((s) => s.id === selectedStepId)?.config || {},
-                        null,
-                        2
-                      )}
-                    </pre>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Stage Type</label>
+                        <select
+                          value={selectedStep.type}
+                          onChange={(e) => {
+                            const nextType = e.target.value as WorkflowStep['type'];
+                            updateSelectedRecipe((r) => ({
+                              ...r,
+                              steps: r.steps.map((s) =>
+                                s.id === selectedStep.id ? { ...s, type: nextType } : s
+                              ),
+                            }));
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        >
+                          {STEP_TYPES.map((st) => (
+                            <option key={st.value} value={st.value}>
+                              {st.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Stage Title</label>
+                        <input
+                          type="text"
+                          value={selectedStep.title}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateSelectedRecipe((r) => ({
+                              ...r,
+                              steps: r.steps.map((s) =>
+                                s.id === selectedStep.id ? { ...s, title: val } : s
+                              ),
+                            }));
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {selectedStep.type === 'scrape_url' && (
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">
+                          Target URL (or "activeTab")
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedStep.config?.url || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateSelectedRecipe((r) => ({
+                              ...r,
+                              steps: r.steps.map((s) =>
+                                s.id === selectedStep.id
+                                  ? { ...s, config: { ...s.config, url: val } }
+                                  : s
+                              ),
+                            }));
+                          }}
+                          placeholder="https://... or activeTab"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-[11px] text-slate-400 block mb-1">
+                        Instructions / Description
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={selectedStep.description}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateSelectedRecipe((r) => ({
+                            ...r,
+                            steps: r.steps.map((s) =>
+                              s.id === selectedStep.id ? { ...s, description: val } : s
+                            ),
+                          }));
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 resize-none"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">
-                      Live Telemetry & Ingestion Payload
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-slate-400 block">
+                      Captured Execution Payload
                     </span>
-                    <pre className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-emerald-300 overflow-x-auto text-[11px] leading-relaxed">
-                      {JSON.stringify(
-                        {
-                          stageId: selectedStepId,
-                          executionEngine: 'Aksh Headless DOM & Gemini Runner',
-                          status:
-                            activeStepIndex >=
-                            selectedRecipe.steps.findIndex((s) => s.id === selectedStepId)
-                              ? 'completed'
-                              : 'ready',
-                          latencyEst: '120ms',
-                          tokensProcessed: 480,
-                        },
-                        null,
-                        2
-                      )}
+                    <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-emerald-300 font-mono overflow-auto max-h-48 text-[11px] leading-relaxed">
+                      {stepOutputs[selectedStep.id]
+                        ? JSON.stringify(stepOutputs[selectedStep.id], null, 2)
+                        : JSON.stringify(
+                            {
+                              status: 'pending_execution',
+                              config: selectedStep.config || {},
+                            },
+                            null,
+                            2
+                          )}
                     </pre>
                   </div>
                 </div>
@@ -676,20 +972,25 @@ Return STRICTLY a JSON object matching this schema:
             )}
           </div>
 
-          {/* Real-time Terminal Execution Console */}
-          <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 font-mono text-xs shadow-inner">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-850 text-slate-400 select-none">
+          {/* Execution Console */}
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 font-mono text-xs">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-slate-400 select-none">
               <div className="flex items-center gap-2">
                 <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="font-bold text-slate-300">Pipeline Execution Stream</span>
+                <span className="font-medium text-slate-200">Execution Log</span>
               </div>
-              <span className="text-[10px] text-slate-500">Autonomous Web Agent runtime</span>
+              <button
+                onClick={() => setTerminalLogs([])}
+                className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer"
+              >
+                Clear
+              </button>
             </div>
 
-            <div className="h-40 overflow-y-auto space-y-1 text-slate-300 scrollbar-thin scrollbar-thumb-slate-800">
+            <div className="h-36 overflow-y-auto space-y-1 text-slate-300">
               {terminalLogs.length === 0 ? (
-                <div className="text-slate-600 italic py-8 text-center">
-                  Pipeline idle. Click "Run Workflow" to execute pipeline stages.
+                <div className="text-slate-600 py-8 text-center">
+                  Idle. Click Run Pipeline to execute chained stages.
                 </div>
               ) : (
                 terminalLogs.map((log, index) => (
@@ -701,37 +1002,48 @@ Return STRICTLY a JSON object matching this schema:
             </div>
           </div>
 
-          {/* Final Synthesized Deliverable View */}
+          {/* Final Synthesized Deliverable */}
           {executionResult && (
-            <div className="p-5 rounded-2xl bg-slate-850/90 border border-slate-750 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-750">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
-                  <h3 className="text-sm font-bold text-white">
-                    Generated Workflow Artifact
-                  </h3>
-                </div>
+            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <h3 className="text-sm font-semibold text-white">Pipeline Deliverable</h3>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSaveToNotes}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Saved to Notes!' : 'Save to Notes'}</span>
+                    {savedNoteFeedback ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Saved to Notes</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Note</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadMarkdown}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export .md</span>
                   </button>
                   <button
                     onClick={() => onNavigateUrl('aksh://notes')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    <span>Open Notes</span>
+                    <span>Notes</span>
                   </button>
                 </div>
               </div>
 
-              <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed whitespace-pre-wrap">
-                {executionResult}
+              <div className="prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed">
+                <Markdown>{executionResult}</Markdown>
               </div>
             </div>
           )}
@@ -740,12 +1052,12 @@ Return STRICTLY a JSON object matching this schema:
 
       {/* New Pipeline Modal */}
       {showNewRecipeModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Workflow className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-bold text-white">Create Workflow Pipeline</h3>
+                <Workflow className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-sm font-semibold text-white">Create Workflow Pipeline</h3>
               </div>
               <button
                 onClick={() => setShowNewRecipeModal(false)}
@@ -755,78 +1067,67 @@ Return STRICTLY a JSON object matching this schema:
               </button>
             </div>
 
-            {/* Mode Selector */}
-            <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs font-semibold">
+            <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setModalMode('ai')}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                  modalMode === 'ai'
-                    ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white'
+                className={`py-1.5 rounded-md flex items-center justify-center gap-1.5 cursor-pointer ${
+                  modalMode === 'ai' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                 <span>AI Pipeline Architect</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => setModalMode('manual')}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                  modalMode === 'manual'
-                    ? 'bg-slate-800 text-white font-bold'
-                    : 'text-slate-400 hover:text-white'
+                className={`py-1.5 rounded-md flex items-center justify-center gap-1.5 cursor-pointer ${
+                  modalMode === 'manual' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Sliders className="w-3.5 h-3.5 text-slate-300" />
-                <span>Manual Config</span>
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Manual Setup</span>
               </button>
             </div>
 
             {modalMode === 'ai' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Describe your automated pipeline in plain English:
+                  <label className="text-xs font-medium text-slate-300 block mb-1.5">
+                    Describe your workflow pipeline:
                   </label>
                   <textarea
                     rows={3}
                     value={naturalLanguagePrompt}
                     onChange={(e) => setNaturalLanguagePrompt(e.target.value)}
-                    placeholder="e.g., 'Monitor arXiv for quantum computing, extract benchmark tables, summarize architectural trade-offs with Gemini, and save study notes'..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                    placeholder="e.g., Scrape Hacker News, extract AI entities, synthesize trends, and stage notes..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-500 resize-none leading-relaxed"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block">
-                    Or select an AI Prompt Preset:
-                  </span>
-                  <div className="flex flex-col gap-1.5">
-                    {[
-                      'Monitor arXiv for topological quantum computing preprints and generate Cornell study guides',
-                      'Audit active page security, detect hidden tracking beacons, and generate hardening report',
-                      'Crawl SaaS competitor pricing tables, normalize currencies, and determine best value verdict',
-                    ].map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setNaturalLanguagePrompt(preset)}
-                        className="text-left px-2.5 py-1.5 rounded-lg bg-slate-950/60 hover:bg-slate-800 border border-slate-800/80 text-[11px] text-slate-300 hover:text-indigo-300 transition-colors flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="truncate">{preset}</span>
-                        <ArrowRight className="w-3 h-3 text-indigo-400 shrink-0 ml-1" />
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-[11px] text-slate-400 block">Quick Blueprints:</span>
+                  {[
+                    'Analyze active tab security exposure, generate risk report, and prepare hardening steps',
+                    'Extract structured specifications from active tab and map core concepts into a knowledge graph',
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNaturalLanguagePrompt(preset)}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="truncate">{preset}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" />
+                    </button>
+                  ))}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowNewRecipeModal(false)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -834,54 +1135,46 @@ Return STRICTLY a JSON object matching this schema:
                     type="button"
                     onClick={handleGeneratePipelineWithAi}
                     disabled={!naturalLanguagePrompt.trim() || isGeneratingPipeline}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 text-white font-bold text-xs shadow-md shadow-indigo-950/60 transition-all cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-slate-950 font-semibold text-xs cursor-pointer"
                   >
                     <Sparkles className={`w-3.5 h-3.5 ${isGeneratingPipeline ? 'animate-spin' : ''}`} />
-                    <span>{isGeneratingPipeline ? 'Synthesizing Pipeline...' : '⚡ Generate with Gemini'}</span>
+                    <span>{isGeneratingPipeline ? 'Generating...' : 'Generate Pipeline'}</span>
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                    Pipeline Title
-                  </label>
+                  <label className="text-xs text-slate-400 block mb-1">Title</label>
                   <input
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g., Weekly AI Benchmark Watcher"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                    Description & Goal
-                  </label>
+                  <label className="text-xs text-slate-400 block mb-1">Description</label>
                   <textarea
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
                     rows={2}
-                    placeholder="Describe what this automation will crawl and synthesize..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                    placeholder="Describe pipeline goal..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
-                    Category
-                  </label>
+                  <label className="text-xs text-slate-400 block mb-1">Category</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white cursor-pointer"
                   >
-                    <option value="intelligence">Intelligence & Radar</option>
-                    <option value="research">Academic & Research</option>
-                    <option value="productivity">Productivity & Decisions</option>
-                    <option value="security">Security & Privacy</option>
+                    <option value="intelligence">Intelligence</option>
+                    <option value="research">Research</option>
+                    <option value="productivity">Productivity</option>
+                    <option value="security">Security</option>
                   </select>
                 </div>
 
@@ -889,7 +1182,7 @@ Return STRICTLY a JSON object matching this schema:
                   <button
                     type="button"
                     onClick={() => setShowNewRecipeModal(false)}
-                    className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -897,7 +1190,7 @@ Return STRICTLY a JSON object matching this schema:
                     type="button"
                     onClick={handleCreateRecipe}
                     disabled={!newTitle.trim()}
-                    className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold text-xs cursor-pointer shadow-md"
+                    className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-slate-950 font-semibold text-xs cursor-pointer"
                   >
                     Create Pipeline
                   </button>
