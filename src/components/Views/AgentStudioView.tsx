@@ -1,41 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Bot,
   Sparkles,
   Play,
-  Pause,
   RotateCw,
   Copy,
   Check,
   Download,
   StickyNote,
   Terminal,
-  Activity,
   Layers,
   Cpu,
   BrainCircuit,
   ArrowRight,
   CheckCircle2,
-  AlertCircle,
   FileText,
-  Clock,
-  ExternalLink,
   Sliders,
   Send,
-  Globe,
   Code2,
-  MousePointer,
-  ChevronLeft,
-  ChevronRight,
   Database,
-  FastForward,
-  ShieldCheck,
-  Maximize2
+  Globe
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import Markdown from 'react-markdown';
 import { Tab, AIModelId } from '../../types';
-import { sendAIChat } from '../../services/api';
+import { sendAIChat, scrapeWebpage, extractStructuredData } from '../../services/api';
 
 interface AgentStudioViewProps {
   activeTab: Tab | null;
@@ -43,39 +31,39 @@ interface AgentStudioViewProps {
   onNavigate: (url: string) => void;
 }
 
-interface SimulatedDomAction {
+interface ExecutionStage {
   id: string;
-  stepNumber: number;
-  label: string;
-  actionType: 'NAVIGATE' | 'DOM_QUERY' | 'CLICK' | 'EXTRACT' | 'VERIFY' | 'SYNTHESIZE';
-  targetSelector: string;
+  step: number;
+  title: string;
+  role: string;
+  status: 'idle' | 'running' | 'completed';
+  durationMs?: number;
   detail: string;
-  cursorPos: { x: number; y: number };
+  outputPreview?: string;
 }
 
 interface SwarmAgentLog {
-  agent: 'Planner' | 'Scout' | 'Verifier' | 'Synthesizer';
-  color: string;
+  agent: 'Planner' | 'Scout' | 'Extractor' | 'Synthesizer';
   message: string;
   timestamp: string;
 }
 
 const PRESET_MISSIONS = [
   {
-    label: '🔬 Deep Tech Due Diligence',
-    goal: 'Conduct an in-depth technological due diligence: extract technical architecture, evaluate scalability limits, and highlight critical dependencies.',
+    label: 'Technical Due Diligence',
+    goal: 'Evaluate technical architecture, scaling limits, key dependencies, and security posture.',
   },
   {
-    label: '📊 Competitive Matrix & Specs',
-    goal: 'Extract and formulate a side-by-side comparison table of features, pricing, performance tradeoffs, and market alternatives.',
+    label: 'Comparative Spec Breakdown',
+    goal: 'Extract core capabilities, pricing tiers, performance tradeoffs, and alternatives into a structured comparison.',
   },
   {
-    label: '🛡️ Vulnerability & Security Audit',
-    goal: 'Perform an adversarial security review: inspect trust boundaries, data transmission privacy, third-party trackers, and potential attack vectors.',
+    label: 'Threat & Privacy Audit',
+    goal: 'Inspect trust boundaries, data transmission risks, authentication design, and attack vectors.',
   },
   {
-    label: '📋 Executive Action Brief',
-    goal: 'Distill this subject into an executive briefing with high-conviction conclusions, risks, and a 4-step prioritized action plan.',
+    label: 'Executive Action Brief',
+    goal: 'Distill into key strategic conclusions, quantified risks, and a prioritized 4-step roadmap.',
   },
 ];
 
@@ -84,97 +72,87 @@ export const AgentStudioView: React.FC<AgentStudioViewProps> = ({
   onSaveAsNote,
   onNavigate,
 }) => {
-  const [goal, setGoal] = useState('Analyze the key technological innovations, evaluate architectural tradeoffs, and summarize core strategic insights.');
+  const [goal, setGoal] = useState(
+    'Analyze key technical capabilities, evaluate architectural tradeoffs, and summarize strategic insights.'
+  );
+  const [targetSourceMode, setTargetSourceMode] = useState<'activeTab' | 'customUrl'>('activeTab');
+  const [customTargetUrl, setCustomTargetUrl] = useState('https://example.com');
   const [selectedModel, setSelectedModel] = useState<AIModelId>('gemini-3.7-flash');
-  const [reasoningDepth, setReasoningDepth] = useState<'fast' | 'deep'>('deep');
   const [executionMode, setExecutionMode] = useState<'single' | 'swarm'>('swarm');
+
   const [isRunning, setIsRunning] = useState(false);
-  const [activeOutputTab, setActiveOutputTab] = useState<'dag' | 'dossier' | 'sandbox' | 'data' | 'recipe'>('dag');
-  const [selectedDagNode, setSelectedDagNode] = useState<string>('planner');
+  const [activeOutputTab, setActiveOutputTab] = useState<'pipeline' | 'dossier' | 'context' | 'data' | 'recipe'>('pipeline');
+  const [selectedStageId, setSelectedStageId] = useState<string>('planner');
+
+  const [hitlConstraints, setHitlConstraints] = useState<string[]>([]);
   const [injectedDirective, setInjectedDirective] = useState<string>('');
   const [injectedSuccess, setInjectedSuccess] = useState<boolean>(false);
 
-  // DOM Simulator & Playback states
-  const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
-  const [isPlaybackPlaying, setIsPlaybackPlaying] = useState<boolean>(true);
   const [scratchpadLogs, setScratchpadLogs] = useState<string[]>([]);
   const [swarmLogs, setSwarmLogs] = useState<SwarmAgentLog[]>([]);
+  const [stages, setStages] = useState<ExecutionStage[]>([
+    {
+      id: 'planner',
+      step: 1,
+      title: 'Mission Framing & Plan Decomposition',
+      role: 'Planner Agent',
+      status: 'idle',
+      detail: 'Structures objective and applies user HITL constraints.',
+    },
+    {
+      id: 'scout',
+      step: 2,
+      title: 'Web Context Ingestion & Heading Audit',
+      role: 'Scout Agent',
+      status: 'idle',
+      detail: 'Captures target URL content, headings, and metadata.',
+    },
+    {
+      id: 'extractor',
+      step: 3,
+      title: 'Structured Entity & Schema Extraction',
+      role: 'Extractor Agent',
+      status: 'idle',
+      detail: 'Parses structured entities and metrics into portable JSON.',
+    },
+    {
+      id: 'synthesizer',
+      step: 4,
+      title: 'Grounded Executive Dossier Synthesis',
+      role: 'Synthesizer Agent',
+      status: 'idle',
+      detail: 'Compiles verified findings and actionable recommendations.',
+    },
+  ]);
 
-  // Outputs
+  // Captured real run metrics & outputs
+  const [capturedContext, setCapturedContext] = useState<{
+    url: string;
+    title: string;
+    headings: string[];
+    textLength: number;
+    excerpt: string;
+  } | null>(null);
+  const [runMetrics, setRunMetrics] = useState<{
+    totalDurationMs: number;
+    sourceChars: number;
+    outputWords: number;
+    modelUsed: string;
+  } | null>(null);
   const [agentResult, setAgentResult] = useState<string | null>(null);
   const [extractedJsonData, setExtractedJsonData] = useState<any>(null);
+
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [savedToNotes, setSavedToNotes] = useState(false);
 
-  // Simulated browser DOM actions pipeline
-  const SIMULATED_ACTIONS: SimulatedDomAction[] = [
-    {
-      id: 'step-1',
-      stepNumber: 1,
-      label: 'Initialize Context & Semantic Framing',
-      actionType: 'NAVIGATE',
-      targetSelector: 'window.location',
-      detail: `Targeting URL: ${activeTab?.url || 'aksh://newtab'}`,
-      cursorPos: { x: 30, y: 18 },
-    },
-    {
-      id: 'step-2',
-      stepNumber: 2,
-      label: 'Scrape Main Article & Heading Nodes',
-      actionType: 'DOM_QUERY',
-      targetSelector: 'main > article, section.content-body',
-      detail: `Parsed ${(activeTab?.extractedText || '').length} raw characters into semantic token stream`,
-      cursorPos: { x: 55, y: 40 },
-    },
-    {
-      id: 'step-3',
-      stepNumber: 3,
-      label: 'Isolate Quantitative Benchmark Tables',
-      actionType: 'EXTRACT',
-      targetSelector: 'table.metrics-data, div.data-grid',
-      detail: 'Extracted key metrics, benchmarks, latency tradeoffs, and citations',
-      cursorPos: { x: 65, y: 65 },
-    },
-    {
-      id: 'step-4',
-      stepNumber: 4,
-      label: 'Fact-Check Boundary & Epistemic Verification',
-      actionType: 'VERIFY',
-      targetSelector: 'api.google.grounding.verify',
-      detail: 'Cross-checked statements against external consensus knowledge bases (98% confidence score)',
-      cursorPos: { x: 80, y: 35 },
-    },
-    {
-      id: 'step-5',
-      stepNumber: 5,
-      label: 'Synthesize Multi-Criteria Intelligence Dossier',
-      actionType: 'SYNTHESIZE',
-      targetSelector: 'output.executive_brief.md',
-      detail: 'Formulated decision framework, risks, and prioritized action plan',
-      cursorPos: { x: 50, y: 80 },
-    },
-  ];
-
-  // Auto-play through simulated steps when isRunning
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isRunning && isPlaybackPlaying) {
-      const intervalMs = 900 / playbackSpeed;
-      timer = setInterval(() => {
-        setActiveStepIndex((prev) => {
-          if (prev < SIMULATED_ACTIONS.length - 1) return prev + 1;
-          return prev;
-        });
-      }, intervalMs);
-    }
-    return () => clearInterval(timer);
-  }, [isRunning, isPlaybackPlaying, playbackSpeed, SIMULATED_ACTIONS.length]);
+  const updateStage = (id: string, patch: Partial<ExecutionStage>) => {
+    setStages((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
 
   const handleStartMission = async (customGoal?: string) => {
-    const activeGoal = customGoal || goal;
-    if (!activeGoal.trim() || isRunning) return;
+    const activeGoal = (customGoal || goal).trim();
+    if (!activeGoal || isRunning) return;
 
     setIsRunning(true);
     setAgentResult(null);
@@ -182,91 +160,174 @@ export const AgentStudioView: React.FC<AgentStudioViewProps> = ({
     setSavedToNotes(false);
     setScratchpadLogs([]);
     setSwarmLogs([]);
-    setActiveStepIndex(0);
-    setIsPlaybackPlaying(true);
+    setRunMetrics(null);
+    setStages((prev) => prev.map((s) => ({ ...s, status: 'idle', durationMs: undefined, outputPreview: undefined })));
 
+    const missionStart = performance.now();
     const log = (msg: string) => {
-      setScratchpadLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+      setScratchpadLogs((prev) => [
+        ...prev,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] ${msg}`,
+      ]);
     };
-
-    const addSwarmLog = (agent: SwarmAgentLog['agent'], color: string, message: string) => {
+    const addSwarmLog = (agent: SwarmAgentLog['agent'], message: string) => {
       setSwarmLogs((prev) => [
         ...prev,
-        { agent, color, message, timestamp: new Date().toLocaleTimeString() },
+        { agent, message, timestamp: new Date().toLocaleTimeString([], { hour12: false }) },
       ]);
     };
 
     try {
-      log(`Mission initialized in [${executionMode.toUpperCase()}] mode.`);
-      log(`Model: ${selectedModel} | Depth: ${reasoningDepth}`);
-      addSwarmLog('Planner', '#8b5cf6', `Deconstructed mission: "${activeGoal.slice(0, 60)}..." into 5 execution stages.`);
+      // Stage 1: Planner
+      const s1Start = performance.now();
+      updateStage('planner', { status: 'running' });
+      log(`Mission started (${executionMode} · ${selectedModel}).`);
+      addSwarmLog('Planner', `Framed goal: "${activeGoal.slice(0, 80)}"${hitlConstraints.length ? ` with ${hitlConstraints.length} HITL constraint(s).` : '.'}`);
+      updateStage('planner', {
+        status: 'completed',
+        durationMs: Math.round(performance.now() - s1Start),
+        outputPreview: JSON.stringify({ goal: activeGoal, constraints: hitlConstraints, mode: executionMode }, null, 2),
+      });
 
-      await new Promise((r) => setTimeout(r, 600));
-      log(`Ingesting DOM text tokens from [${activeTab?.title || 'Current Webpage'}]...`);
-      addSwarmLog('Scout', '#3b82f6', `Discovered 14 relevant semantic nodes, headings, and data tables on "${activeTab?.url || 'target web page'}".`);
+      // Stage 2: Scout (real tab context or live scrape)
+      const s2Start = performance.now();
+      updateStage('scout', { status: 'running' });
+      let targetUrl = activeTab?.url || 'aksh://newtab';
+      let targetTitle = activeTab?.title || 'Active Session';
+      let targetHeadings = activeTab?.headings || [];
+      let targetText = activeTab?.pdfData?.text || activeTab?.extractedText || activeTab?.metaDescription || '';
 
-      await new Promise((r) => setTimeout(r, 700));
-      log('Running multi-criteria entity correlation and tradeoff isolation...');
-      addSwarmLog('Verifier', '#10b981', 'Verified factual consistency against Google Grounding. No anomalous contradictions identified (Confidence: 98%).');
+      if (targetSourceMode === 'customUrl' && customTargetUrl.trim()) {
+        const normalizedUrl =
+          customTargetUrl.startsWith('http://') || customTargetUrl.startsWith('https://')
+            ? customTargetUrl.trim()
+            : `https://${customTargetUrl.trim()}`;
+        const scraped = await scrapeWebpage(normalizedUrl);
+        targetUrl = scraped.url || normalizedUrl;
+        targetTitle = scraped.title || normalizedUrl;
+        targetHeadings = scraped.headings || [];
+        targetText = scraped.textContent || scraped.metaDescription || '';
+        log(`Scraped ${targetUrl} (${targetText.length} chars, ${targetHeadings.length} headings).`);
+      } else {
+        log(`Ingested active tab "${targetTitle}" (${targetText.length} chars).`);
+      }
 
-      await new Promise((r) => setTimeout(r, 600));
-      log('Formulating executive strategic brief and structured data artifacts...');
-      addSwarmLog('Synthesizer', '#f59e0b', 'Generating markdown deliverable, structured JSON dataset, and browser automation recipe.');
+      const contextSnapshot = {
+        url: targetUrl,
+        title: targetTitle,
+        headings: targetHeadings,
+        textLength: targetText.length,
+        excerpt: targetText.slice(0, 1200),
+      };
+      setCapturedContext(contextSnapshot);
+      addSwarmLog('Scout', `Captured ${targetText.length} chars and ${targetHeadings.length} headings from ${targetUrl}.`);
+      updateStage('scout', {
+        status: 'completed',
+        durationMs: Math.round(performance.now() - s2Start),
+        outputPreview: JSON.stringify({ url: targetUrl, title: targetTitle, headings: targetHeadings.slice(0, 6), chars: targetText.length }, null, 2),
+      });
 
-      const webpageContext = activeTab
-        ? {
-            url: activeTab.url,
-            title: activeTab.title,
-            textContent: activeTab.pdfData?.text || activeTab.extractedText || '',
+      // Stage 3: Extractor (real structured data call in swarm mode or if text exists)
+      const s3Start = performance.now();
+      updateStage('extractor', { status: 'running' });
+      let extractedPayload: any = null;
+      if (executionMode === 'swarm') {
+        try {
+          const extRes = await extractStructuredData(
+            targetText.slice(0, 4500) || `Topic: ${activeGoal}`,
+            targetTitle,
+            targetUrl,
+            'json'
+          );
+          try {
+            const match = extRes.data.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+            extractedPayload = match ? JSON.parse(match[0]) : { raw: extRes.data };
+          } catch {
+            extractedPayload = { extractedMarkdown: extRes.data };
           }
-        : undefined;
+          addSwarmLog('Extractor', `Extracted structured schema (${extRes.data.length} chars).`);
+        } catch (err: any) {
+          extractedPayload = { note: 'Structured extraction skipped', reason: err?.message };
+        }
+      } else {
+        extractedPayload = {
+          mode: 'single_agent_pass',
+          sourceUrl: targetUrl,
+          headingsCaptured: targetHeadings,
+        };
+      }
+      setExtractedJsonData(extractedPayload);
+      updateStage('extractor', {
+        status: 'completed',
+        durationMs: Math.round(performance.now() - s3Start),
+        outputPreview: JSON.stringify(extractedPayload, null, 2).slice(0, 800),
+      });
 
-      const agentSystemPrompt = `You are the Aksh AI Autonomous Web Agent running a high-conviction research mission.
-Objective: "${activeGoal}"
+      // Stage 4: Synthesizer (real Gemini call with HITL constraints & scraped context)
+      const s4Start = performance.now();
+      updateStage('synthesizer', { status: 'running' });
+      const constraintBlock =
+        hitlConstraints.length > 0
+          ? `\nStrict User Constraints (HITL):\n${hitlConstraints.map((c) => `- ${c}`).join('\n')}`
+          : '';
 
-Webpage Title: ${activeTab?.title || 'Target Web Resource'}
-Webpage URL: ${activeTab?.url || 'Web Source'}
+      const prompt = `Execute the following autonomous web intelligence mission cleanly and rigorously.
 
-Execute this mission with world-class clarity and structured depth:
-1. ### 🎯 Strategic Assessment & Verdict
-(Direct synthesis and primary conclusions)
+Mission Objective: ${activeGoal}
+Source Title: ${targetTitle}
+Source URL: ${targetUrl}${constraintBlock}
 
-2. ### 📊 Critical Findings & Comparative Evidence
-(Structured markdown table or data breakdown of key metrics, facts, and assertions)
+${extractedPayload ? `Extracted Structured Context:\n${JSON.stringify(extractedPayload).slice(0, 1800)}` : ''}
 
-3. ### 💡 Architectural & Risk Tradeoffs
-(Underlying caveats, potential failure modes, or hidden costs)
+Deliver a well-structured Markdown report with:
+1. Executive Assessment & Conclusions
+2. Key Findings & Evidence Table
+3. Architectural / Risk Tradeoffs
+4. Prioritized Next Actions`;
 
-4. ### ⚡ Operational Milestones & Next Actions
-(Prioritized roadmap items with expected impact)`;
+      const res = await sendAIChat(
+        prompt,
+        [],
+        { url: targetUrl, title: targetTitle, textContent: targetText.slice(0, 5000) },
+        'general',
+        selectedModel
+      );
 
-      const res = await sendAIChat(agentSystemPrompt, [], webpageContext, 'general', selectedModel);
+      const replyText = res.reply || 'No output generated.';
+      setAgentResult(replyText);
+      const totalDurationMs = Math.round(performance.now() - missionStart);
+      const outputWords = replyText.trim().split(/\s+/).filter(Boolean).length;
 
-      setActiveStepIndex(4);
-      log('Deliverable finalized and verified against source constraints.');
-      setAgentResult(res.reply);
-
-      // Auto-extract structured mock JSON data for the data tab
-      setExtractedJsonData({
-        missionId: `agent-${Date.now()}`,
-        objective: activeGoal,
-        targetUrl: activeTab?.url || 'https://example.com',
-        timestamp: new Date().toISOString(),
-        confidenceScore: 0.98,
-        findingsSummary: [
-          { category: 'Architecture', status: 'Optimal', impact: 'High', latencyMs: 42 },
-          { category: 'Scalability', status: 'Verified', impact: 'Very High', throughput: '10,000+ ops/sec' },
-          { category: 'Security Posture', status: 'Shielded', impact: 'Critical', tlsVersion: 'TLS 1.3 / Kyber-768' },
-        ],
-        citationsCount: 6,
+      setRunMetrics({
+        totalDurationMs,
+        sourceChars: targetText.length,
+        outputWords,
         modelUsed: selectedModel,
       });
+
+      updateStage('synthesizer', {
+        status: 'completed',
+        durationMs: Math.round(performance.now() - s4Start),
+        outputPreview: replyText.slice(0, 600),
+      });
+      addSwarmLog('Synthesizer', `Completed executive dossier (${outputWords} words) in ${totalDurationMs} ms.`);
+      log(`Mission completed in ${totalDurationMs} ms.`);
     } catch (err: any) {
-      log(`ERROR: Agent interrupted - ${err.message || 'Network error'}`);
-      setAgentResult(`### ❌ Mission Interrupted\n${err.message || 'An error occurred during autonomous execution.'}`);
+      log(`Mission error: ${err?.message || 'Execution failed'}`);
+      setAgentResult(`### Mission Interrupted\n${err?.message || 'An error occurred during execution.'}`);
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const handleInjectConstraint = () => {
+    const clean = injectedDirective.trim();
+    if (!clean) return;
+    setHitlConstraints((prev) => [...prev, clean]);
+    setScratchpadLogs((prev) => [...prev, `[HITL] Added constraint: "${clean}"`]);
+    setInjectedDirective('');
+    setInjectedSuccess(true);
+    setTimeout(() => setInjectedSuccess(false), 2000);
   };
 
   const handleCopyResult = () => {
@@ -278,16 +339,22 @@ Execute this mission with world-class clarity and structured depth:
 
   const handleSaveToNotes = () => {
     if (!agentResult) return;
-    onSaveAsNote(`Agent Dossier: ${goal.slice(0, 40)}`, agentResult, activeTab?.url);
+    onSaveAsNote(
+      `Agent Dossier: ${goal.slice(0, 48)}`,
+      agentResult,
+      capturedContext?.url || activeTab?.url
+    );
     setSavedToNotes(true);
-    setTimeout(() => setSavedToNotes(false), 3000);
+    setTimeout(() => setSavedToNotes(false), 2500);
   };
 
   const handleDownloadMarkdown = () => {
     if (!agentResult) return;
     const blob = new Blob(
-      [`# Aksh AI Agent Mission Report\n\n**Goal:** ${goal}\n**Date:** ${new Date().toLocaleString()}\n**Source:** ${activeTab?.url || 'Web'}\n\n---\n\n${agentResult}`],
-      { type: 'text/markdown' }
+      [
+        `# Agent Mission Dossier\n\nObjective: ${goal}\nSource: ${capturedContext?.url || activeTab?.url || 'Web'}\n\n---\n\n${agentResult}`,
+      ],
+      { type: 'text/markdown;charset=utf-8' }
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -297,91 +364,77 @@ Execute this mission with world-class clarity and structured depth:
     URL.revokeObjectURL(url);
   };
 
-  const generatedAutomationScript = `// Aksh AI Autonomous Browser Automation Recipe
-// Generated for: "${goal}"
-// Engine: Playwright / Chromium Headless
+  const targetUrlForScript =
+    targetSourceMode === 'customUrl'
+      ? customTargetUrl
+      : activeTab?.url || 'https://example.com';
 
+  const generatedAutomationScript = `// Autonomous Playwright Extraction Script
+// Objective: "${goal}"
 import { chromium } from 'playwright';
 
-async function runAutonomousMission() {
+async function runMission() {
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  const page = await browser.newPage();
 
-  console.log('Navigating to target web context...');
-  await page.goto('${activeTab?.url || 'https://google.com'}', { waitUntil: 'domcontentloaded' });
+  await page.goto('${targetUrlForScript}', { waitUntil: 'domcontentloaded' });
+  const title = await page.title();
+  const headings = await page.$$eval('h1, h2, h3', els => els.map(e => e.textContent?.trim()).filter(Boolean));
+  const bodyText = await page.locator('main, article, body').first().innerText();
 
-  // 1. Isolate main content container
-  const content = await page.locator('main, article, div.content-container').first().innerText();
-  console.log('Ingested text tokens, length:', content.length);
-
-  // 2. Extract structured comparative table rows
-  const tableData = await page.$$eval('table tr', rows => 
-    rows.map(r => Array.from(r.querySelectorAll('th, td')).map(cell => cell.textContent?.trim()))
-  );
-  console.log('Extracted table rows:', tableData.length);
-
-  // 3. Close browser session
+  console.log({ title, headingsCount: headings.length, chars: bodyText.length });
   await browser.close();
-  return { content, tableData };
 }
 
-runAutonomousMission();`;
+runMission();`;
 
-  const currentAction = SIMULATED_ACTIONS[activeStepIndex] || SIMULATED_ACTIONS[0];
+  const activeStage = stages.find((s) => s.id === selectedStageId) || stages[0];
 
   return (
-    <div className="h-full flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Top Studio Bar */}
-      <div className="border-b border-slate-800 bg-slate-900/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md shrink-0">
+    <div className="h-full flex flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans select-text">
+      {/* Clean Header Bar */}
+      <div className="border-b border-slate-800 bg-slate-900 px-6 py-3 flex flex-wrap items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 shadow-sm">
-            <Bot className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 text-cyan-400 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                Autonomous Co-Browser & Agent Swarm
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  Agent 3.5 Frontier
-                </span>
-              </h1>
-            </div>
+            <h1 className="text-sm font-semibold tracking-tight text-white">
+              Autonomous Web Agent Studio
+            </h1>
             <p className="text-xs text-slate-400">
-              Autonomous multi-agent orchestration, live simulated DOM actions, and verifiable intelligence deliverables.
+              Multi-stage web ingestion, structured schema extraction, HITL constraints &amp; grounded synthesis
             </p>
           </div>
         </div>
 
-        {/* Configuration Controls */}
-        <div className="flex items-center gap-3">
-          {/* Swarm Mode Toggle */}
-          <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-xl border border-slate-700 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs font-medium">
             <button
               onClick={() => setExecutionMode('single')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                executionMode === 'single' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                executionMode === 'single' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Single Agent
+              Single Pass
             </button>
             <button
               onClick={() => setExecutionMode('swarm')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                executionMode === 'swarm' ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                executionMode === 'swarm' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
-              <BrainCircuit className="w-3.5 h-3.5" />
-              <span>Agent Swarm (4x)</span>
+              <BrainCircuit className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Multi-Agent Pipeline</span>
             </button>
           </div>
 
-          {/* Model Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-700 text-xs">
-            <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
             <select
+              aria-label="Agent AI Model"
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as any)}
+              onChange={(e) => setSelectedModel(e.target.value as AIModelId)}
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
             >
               <option value="gemini-3.7-flash" className="bg-slate-900">Gemini 3.7 Flash</option>
@@ -392,45 +445,86 @@ runAutonomousMission();`;
         </div>
       </div>
 
-      {/* Main Studio Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Side: Mission Setup & Execution Controls */}
-        <div className="w-96 md:w-[410px] border-r border-slate-800 bg-slate-900/40 flex flex-col shrink-0 overflow-y-auto custom-scrollbar p-5 space-y-5">
+      {/* Main Split Body */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Configuration Column */}
+        <div className="w-full lg:w-96 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/40 flex flex-col shrink-0 overflow-y-auto p-5 space-y-5 max-h-72 lg:max-h-none">
+          {/* Source Selector */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-300">Target Context</span>
+              <div className="flex items-center bg-slate-950 p-0.5 rounded-md border border-slate-800 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setTargetSourceMode('activeTab')}
+                  className={`px-2 py-0.5 rounded cursor-pointer ${
+                    targetSourceMode === 'activeTab' ? 'bg-slate-800 text-white' : 'text-slate-400'
+                  }`}
+                >
+                  Active Tab
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTargetSourceMode('customUrl')}
+                  className={`px-2 py-0.5 rounded cursor-pointer ${
+                    targetSourceMode === 'customUrl' ? 'bg-slate-800 text-white' : 'text-slate-400'
+                  }`}
+                >
+                  Custom URL
+                </button>
+              </div>
+            </div>
+
+            {targetSourceMode === 'activeTab' ? (
+              <div className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 truncate">
+                {activeTab?.title || 'Current Tab'} ({activeTab?.url || 'aksh://newtab'})
+              </div>
+            ) : (
+              <div className="relative">
+                <Globe className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={customTargetUrl}
+                  onChange={(e) => setCustomTargetUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full pl-8 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Objective Form */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Mission Objective
-            </label>
+            <label className="text-xs font-medium text-slate-300 block">Mission Objective</label>
             <textarea
               rows={3}
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
-              placeholder="What should the autonomous agent accomplish?"
-              className="w-full p-3 rounded-2xl bg-slate-950 border border-slate-700/80 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed resize-none"
+              placeholder="Define what the autonomous agent should investigate and extract..."
+              className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 leading-relaxed resize-none"
             />
             <button
               onClick={() => handleStartMission()}
               disabled={isRunning || !goal.trim()}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 text-xs font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               {isRunning ? (
                 <>
                   <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                  Executing Autonomous Mission...
+                  <span>Executing Pipeline...</span>
                 </>
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  Launch Autonomous Agent
+                  <span>Run Agent Mission</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Quick Mission Presets */}
+          {/* Mission Presets */}
           <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-slate-400 block">Mission Blueprints</span>
+            <span className="text-xs font-medium text-slate-400 block">Mission Blueprints</span>
             <div className="grid grid-cols-1 gap-1.5">
               {PRESET_MISSIONS.map((preset, idx) => (
                 <button
@@ -440,102 +534,25 @@ runAutonomousMission();`;
                     handleStartMission(preset.goal);
                   }}
                   disabled={isRunning}
-                  className="p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-left text-xs font-medium text-slate-300 hover:text-white transition-all cursor-pointer flex items-center justify-between group"
+                  className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-between"
                 >
                   <span className="truncate pr-2">{preset.label}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Step Scrubber & Playback Controls */}
-          <div className="space-y-2 pt-2 border-t border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                DOM Action Timeline
-              </span>
-              <div className="flex items-center gap-1 text-[11px]">
-                <button
-                  onClick={() => setActiveStepIndex((prev) => Math.max(0, prev - 1))}
-                  disabled={activeStepIndex === 0}
-                  className="p-1 rounded hover:bg-slate-800 text-slate-400 disabled:opacity-40 cursor-pointer"
-                  title="Previous Step"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setIsPlaybackPlaying(!isPlaybackPlaying)}
-                  className="p-1 rounded hover:bg-slate-800 text-indigo-400 cursor-pointer"
-                  title={isPlaybackPlaying ? 'Pause Playback' : 'Resume Playback'}
-                >
-                  {isPlaybackPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                </button>
-                <button
-                  onClick={() => setActiveStepIndex((prev) => Math.min(SIMULATED_ACTIONS.length - 1, prev + 1))}
-                  disabled={activeStepIndex === SIMULATED_ACTIONS.length - 1}
-                  className="p-1 rounded hover:bg-slate-800 text-slate-400 disabled:opacity-40 cursor-pointer"
-                  title="Next Step"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-
-                <button
-                  onClick={() => setPlaybackSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1))}
-                  className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] cursor-pointer"
-                  title="Playback Speed"
-                >
-                  {playbackSpeed}x
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              {SIMULATED_ACTIONS.map((action, idx) => {
-                const isSelected = activeStepIndex === idx;
-                const isPast = activeStepIndex > idx;
-                return (
-                  <div
-                    key={action.id}
-                    onClick={() => setActiveStepIndex(idx)}
-                    className={`p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-950/60 border-indigo-500 text-white shadow-xs'
-                        : isPast
-                        ? 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                        : 'bg-slate-950/40 border-slate-900 text-slate-600'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between font-mono text-[10px] mb-0.5">
-                      <span className={isSelected ? 'text-indigo-400 font-bold' : ''}>
-                        STEP {action.stepNumber}: {action.actionType}
-                      </span>
-                      {isPast && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
-                    </div>
-                    <p className="font-semibold text-[11px] truncate">{action.label}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{action.targetSelector}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Swarm Agent Live Chat Dialogue */}
-          {executionMode === 'swarm' && swarmLogs.length > 0 && (
+          {/* Swarm Log Stream */}
+          {swarmLogs.length > 0 && (
             <div className="space-y-1.5 pt-2 border-t border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
-                Swarm Agent Consensus Stream
-              </span>
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 max-h-40 overflow-y-auto custom-scrollbar text-[11px]">
+              <span className="text-xs font-medium text-slate-400 block">Agent Activity</span>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2 max-h-40 overflow-y-auto text-[11px]">
                 {swarmLogs.map((logItem, idx) => (
-                  <div key={idx} className="flex flex-col gap-0.5">
-                    <span
-                      className="font-bold text-[10px] uppercase tracking-wider"
-                      style={{ color: logItem.color }}
-                    >
-                      {logItem.agent} Agent:
-                    </span>
+                  <div key={idx} className="space-y-0.5">
+                    <div className="font-mono text-cyan-400">
+                      {logItem.agent} · {logItem.timestamp}
+                    </div>
                     <p className="text-slate-300 leading-snug">{logItem.message}</p>
                   </div>
                 ))}
@@ -543,95 +560,53 @@ runAutonomousMission();`;
             </div>
           )}
 
-          {/* Raw Scratchpad Logs */}
           {scratchpadLogs.length > 0 && (
             <div className="space-y-1.5 pt-2 border-t border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-                Live Agent Scratchpad
-              </span>
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 font-mono text-[10px] text-indigo-300/80 space-y-1 max-h-28 overflow-y-auto custom-scrollbar">
+              <span className="text-xs font-medium text-slate-400 block">Execution Log</span>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] text-slate-400 space-y-1 max-h-28 overflow-y-auto">
                 {scratchpadLogs.map((log, idx) => (
-                  <p key={idx} className="leading-relaxed">{log}</p>
+                  <div key={idx}>{log}</div>
                 ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Right Side: Tabbed Deliverables & Interactive DOM Sandbox */}
+        {/* Right Workspace */}
         <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-          {/* Header Bar with Tabs and Actions */}
-          <div className="px-6 py-3 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between shrink-0">
-            {/* View Tabs */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveOutputTab('dag')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeOutputTab === 'dag'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <BrainCircuit className="w-3.5 h-3.5" />
-                <span>Swarm DAG Flow</span>
-              </button>
-
-              <button
-                onClick={() => setActiveOutputTab('dossier')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeOutputTab === 'dossier'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Executive Dossier</span>
-              </button>
-
-              <button
-                onClick={() => setActiveOutputTab('sandbox')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeOutputTab === 'sandbox'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <MousePointer className="w-3.5 h-3.5" />
-                <span>Live Action Sandbox</span>
-              </button>
-
-              <button
-                onClick={() => setActiveOutputTab('data')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeOutputTab === 'data'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>Structured Dataset</span>
-              </button>
-
-              <button
-                onClick={() => setActiveOutputTab('recipe')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeOutputTab === 'recipe'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Automation Code</span>
-              </button>
+          <div className="px-6 py-2.5 border-b border-slate-800 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-1 p-0.5 bg-slate-950 border border-slate-800 rounded-lg overflow-x-auto text-xs font-medium">
+              {(
+                [
+                  { id: 'pipeline', label: 'Pipeline & HITL', icon: BrainCircuit },
+                  { id: 'dossier', label: 'Executive Dossier', icon: FileText },
+                  { id: 'context', label: 'Captured Context', icon: Globe },
+                  { id: 'data', label: 'Extracted JSON', icon: Database },
+                  { id: 'recipe', label: 'Playwright Script', icon: Code2 },
+                ] as const
+              ).map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveOutputTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+                      activeOutputTab === tab.id
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onNavigate('aksh://canvas')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-medium transition-all cursor-pointer"
-                title="Explore and connect this dossier on the Spatial Knowledge Canvas"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Canvas</span>
@@ -641,22 +616,21 @@ runAutonomousMission();`;
                 <>
                   <button
                     onClick={handleSaveToNotes}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
                   >
                     <StickyNote className="w-3.5 h-3.5" />
-                    <span>{savedToNotes ? 'Saved!' : 'Save Note'}</span>
+                    <span>{savedToNotes ? 'Saved' : 'Save Note'}</span>
                   </button>
                   <button
                     onClick={handleCopyResult}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                   <button
                     onClick={handleDownloadMarkdown}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-all cursor-pointer"
-                    title="Download as Markdown"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export</span>
@@ -666,281 +640,134 @@ runAutonomousMission();`;
             </div>
           </div>
 
-          {/* View Tab Body */}
-          <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-            {/* 0. Swarm DAG Orchestration Flow & Interactive Topology */}
-            {activeOutputTab === 'dag' && (
+          <div className="flex-1 p-6 overflow-y-auto">
+            {activeOutputTab === 'pipeline' && (
               <div className="max-w-5xl mx-auto space-y-6">
-                {/* Live Swarm Telemetry HUD Strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
-                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Total Inferred Tokens</div>
-                    <div className="text-base font-bold text-white font-mono flex items-center justify-between">
-                      <span>3,500 TOK</span>
-                      <Cpu className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">1,120 prompt • 2,380 output</span>
+                {runMetrics && (
+                  <div className="text-xs text-slate-400 flex flex-wrap items-center gap-3 pb-3 border-b border-slate-800">
+                    <span>Model: {runMetrics.modelUsed}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums">Elapsed: {runMetrics.totalDurationMs} ms</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums">Source: {runMetrics.sourceChars.toLocaleString()} chars</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono tabular-nums">Output: {runMetrics.outputWords} words</span>
                   </div>
+                )}
 
-                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
-                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Inference Velocity</div>
-                    <div className="text-base font-bold text-cyan-400 font-mono flex items-center justify-between">
-                      <span>58.4 tok/s</span>
-                      <Activity className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">Streaming Multi-Threaded</span>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
-                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Grounding Confidence</div>
-                    <div className="text-base font-bold text-emerald-400 font-mono flex items-center justify-between">
-                      <span>98.6%</span>
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">Google Grounding Verified</span>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
-                    <div className="text-[10px] font-mono uppercase text-slate-500 font-bold">Estimated Cost</div>
-                    <div className="text-base font-bold text-amber-400 font-mono flex items-center justify-between">
-                      <span>$0.0028</span>
-                      <Clock className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">Cost Optimized (Flash)</span>
-                  </div>
-                </div>
-
-                {/* Swarm DAG Graph & Node Inspector Split */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left (2 cols): Visual DAG Nodes Pipeline */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <BrainCircuit className="w-4 h-4 text-purple-400" />
-                        Directed Acyclic Graph (DAG) Pipeline
-                      </h3>
-                      <span className="text-[10px] font-mono text-slate-400">Click any node to inspect artifacts</span>
+                  {/* Pipeline Stages */}
+                  <div className="lg:col-span-2 space-y-3">
+                    <div className="text-xs font-medium text-slate-300">
+                      Execution Stages (Click a stage to inspect artifacts)
                     </div>
-
-                    <div className="p-4 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3 relative">
-                      {[
-                        {
-                          id: 'planner',
-                          step: 1,
-                          title: 'Goal Ingestion & Swarm Planner',
-                          role: 'Planner Agent',
-                          model: 'Gemini 3.7 Pro',
-                          latency: '120ms',
-                          tokens: 340,
-                          status: 'COMPLETED',
-                          color: '#8b5cf6',
-                          detail: 'Deconstructed raw mission into 5 sub-tasks with dependency topology.',
-                        },
-                        {
-                          id: 'scout',
-                          step: 2,
-                          title: 'Headless DOM Crawler & Semantic Sieve',
-                          role: 'Scout Agent',
-                          model: 'Chromium Headless / V8',
-                          latency: '48ms',
-                          tokens: 1120,
-                          status: 'COMPLETED',
-                          color: '#3b82f6',
-                          detail: 'Parsed active tab DOM, filtered noise, and captured 14 structural nodes.',
-                        },
-                        {
-                          id: 'data',
-                          step: 3,
-                          title: 'Quantitative Benchmark & Metrics Isolator',
-                          role: 'Data Analyst Agent',
-                          model: 'Deterministic Parser',
-                          latency: '18ms',
-                          tokens: 450,
-                          status: 'COMPLETED',
-                          color: '#06b6d4',
-                          detail: 'Extracted benchmark tables, throughput stats, and feature metrics.',
-                        },
-                        {
-                          id: 'verifier',
-                          step: 4,
-                          title: 'Epistemic Grounding & Fact Verification',
-                          role: 'Verifier Agent',
-                          model: 'Google Search Grounding',
-                          latency: '320ms',
-                          tokens: 280,
-                          status: 'COMPLETED',
-                          color: '#10b981',
-                          detail: 'Cross-checked empirical claims against external consensus knowledge bases.',
-                        },
-                        {
-                          id: 'synthesizer',
-                          step: 5,
-                          title: 'Multi-Criteria Executive Synthesis',
-                          role: 'Synthesizer Agent',
-                          model: 'Gemini 3.7 Flash',
-                          latency: '540ms',
-                          tokens: 890,
-                          status: 'COMPLETED',
-                          color: '#f59e0b',
-                          detail: 'Formulated decision framework, comparative findings, and milestone roadmap.',
-                        },
-                        {
-                          id: 'auditor',
-                          step: 6,
-                          title: 'Adversarial Red-Team Stress Audit',
-                          role: 'Auditor Agent',
-                          model: 'Zero-Trust Heuristics',
-                          latency: '210ms',
-                          tokens: 420,
-                          status: 'COMPLETED',
-                          color: '#f43f5e',
-                          detail: 'Stress-tested architectural caveats, vendor lock-in, and undisclosed failure modes.',
-                        },
-                      ].map((node, idx) => {
-                        const isSelected = selectedDagNode === node.id;
+                    <div className="space-y-2.5">
+                      {stages.map((stage) => {
+                        const isSelected = selectedStageId === stage.id;
                         return (
-                          <div key={node.id} className="relative">
-                            {idx > 0 && (
-                              <div className="flex justify-center -my-1 py-0.5">
-                                <div className="w-0.5 h-3 bg-gradient-to-b from-purple-500/50 to-indigo-500/50" />
+                          <button
+                            key={stage.id}
+                            onClick={() => setSelectedStageId(stage.id)}
+                            className={`w-full text-left p-4 rounded-xl border transition-colors cursor-pointer flex items-center justify-between gap-3 ${
+                              isSelected
+                                ? 'bg-slate-900 border-cyan-500/70 text-white'
+                                : 'bg-slate-900/50 hover:bg-slate-900 border-slate-800 text-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-mono text-xs text-cyan-400 shrink-0">
+                                0{stage.step}
                               </div>
-                            )}
-                            <button
-                              onClick={() => setSelectedDagNode(node.id)}
-                              className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                                isSelected
-                                  ? 'bg-purple-950/60 border-purple-500 text-white shadow-lg ring-1 ring-purple-500/30'
-                                  : 'bg-slate-950/70 hover:bg-slate-950 border-slate-800 text-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className="w-7 h-7 rounded-xl flex items-center justify-center font-bold font-mono text-xs text-white shrink-0 shadow-xs"
-                                  style={{ backgroundColor: node.color }}
-                                >
-                                  0{node.step}
+                              <div className="min-w-0">
+                                <div className="text-xs font-semibold text-white truncate">
+                                  {stage.title}
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="text-xs font-bold text-white">{node.title}</h4>
-                                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
-                                      {node.model}
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-slate-400 line-clamp-1">{node.detail}</p>
+                                <div className="text-[11px] text-slate-400 truncate">
+                                  {stage.role} · {stage.detail}
                                 </div>
                               </div>
+                            </div>
 
-                              <div className="flex items-center gap-3 shrink-0 font-mono text-[10px]">
-                                <span className="text-slate-400">{node.latency}</span>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  <span>{node.status}</span>
-                                </span>
-                              </div>
-                            </button>
-                          </div>
+                            <div className="flex items-center gap-2 shrink-0 text-xs font-mono">
+                              {stage.durationMs !== undefined && (
+                                <span className="text-slate-400 tabular-nums">{stage.durationMs} ms</span>
+                              )}
+                              {stage.status === 'running' && (
+                                <RotateCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                              )}
+                              {stage.status === 'completed' && (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              )}
+                            </div>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Right (1 col): Selected Node Deep Inspector & HITL Controls */}
+                  {/* Stage Inspector + HITL Constraints */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                        Node Telemetry Inspector
-                      </h3>
-                      <span className="text-[10px] font-mono text-cyan-400">Node: {selectedDagNode.toUpperCase()}</span>
-                    </div>
-
-                    <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                      <div className="space-y-1 pb-3 border-b border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-white">Agent Sub-System</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300">
-                            HITL ENABLED
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400">
-                          Inspect runtime parameters and inject on-the-fly execution constraints.
-                        </p>
-                      </div>
-
-                      {/* Node parameters */}
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
-                          <span>Active Mission:</span>
-                          <span className="text-white truncate max-w-[150px]">{goal.slice(0, 24)}...</span>
-                        </div>
-                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
-                          <span>Assigned Agent:</span>
-                          <span className="text-purple-300 font-semibold">{selectedDagNode.toUpperCase()} ENGINE</span>
-                        </div>
-                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
-                          <span>Context Window:</span>
-                          <span className="text-emerald-400">128K Tokens</span>
-                        </div>
-                        <div className="flex justify-between text-slate-400 font-mono text-[11px]">
-                          <span>Deterministic Fallback:</span>
-                          <span className="text-cyan-400">Active</span>
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+                      <div className="pb-2.5 border-b border-slate-800">
+                        <div className="text-xs font-semibold text-white flex items-center gap-2">
+                          <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{activeStage.role} Artifact</span>
                         </div>
                       </div>
 
-                      {/* Human-In-The-Loop (HITL) Dynamic Directive Injection */}
-                      <div className="space-y-2 pt-2 border-t border-slate-800">
-                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                          <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                          Inject Runtime Constraint (HITL)
-                        </span>
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="e.g. Prioritize pricing model over latency..."
-                            value={injectedDirective}
-                            onChange={(e) => setInjectedDirective(e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-purple-500"
-                          />
-                          <button
-                            onClick={() => {
-                              if (!injectedDirective.trim()) return;
-                              setScratchpadLogs((prev) => [
-                                ...prev,
-                                `[HITL OVERRIDE] User injected directive: "${injectedDirective}"`,
-                              ]);
-                              setInjectedSuccess(true);
-                              setTimeout(() => setInjectedSuccess(false), 2500);
-                              setInjectedDirective('');
-                            }}
-                            className="w-full px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            {injectedSuccess ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
-                            <span>{injectedSuccess ? 'Directive Injected!' : 'Inject Constraint'}</span>
-                          </button>
+                      {activeStage.outputPreview ? (
+                        <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-emerald-300 overflow-auto max-h-44 whitespace-pre-wrap">
+                          {activeStage.outputPreview}
+                        </pre>
+                      ) : (
+                        <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-500">
+                          Run the mission to inspect this stage's real output payload.
                         </div>
-                      </div>
+                      )}
 
-                      {/* Export Swarm DAG Spec */}
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                      {/* Human-In-The-Loop Constraints */}
+                      <div className="space-y-2.5 pt-2 border-t border-slate-800">
+                        <div className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Prompt Constraints (HITL)</span>
+                        </div>
+
+                        {hitlConstraints.length > 0 && (
+                          <div className="space-y-1 text-xs">
+                            {hitlConstraints.map((c, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300"
+                              >
+                                <span className="truncate">{c}</span>
+                                <button
+                                  onClick={() =>
+                                    setHitlConstraints((prev) => prev.filter((_, i) => i !== idx))
+                                  }
+                                  className="text-slate-500 hover:text-rose-400 cursor-pointer"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <input
+                          type="text"
+                          placeholder="e.g. Prioritize TCO pricing over latency..."
+                          value={injectedDirective}
+                          onChange={(e) => setInjectedDirective(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleInjectConstraint()}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        />
                         <button
-                          onClick={() => {
-                            const spec = {
-                              mission: goal,
-                              pipeline: 'DAG-6-NODE-SWARM',
-                              nodes: ['planner', 'scout', 'data', 'verifier', 'synthesizer', 'auditor'],
-                              groundingScore: 0.986,
-                              model: selectedModel,
-                              timestamp: new Date().toISOString(),
-                            };
-                            navigator.clipboard.writeText(JSON.stringify(spec, null, 2));
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                          }}
-                          className="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          onClick={handleInjectConstraint}
+                          disabled={!injectedDirective.trim()}
+                          className="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>Export Swarm Manifest</span>
+                          {injectedSuccess ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Send className="w-3.5 h-3.5" />}
+                          <span>{injectedSuccess ? 'Constraint Added' : 'Add Constraint'}</span>
                         </button>
                       </div>
                     </div>
@@ -949,131 +776,81 @@ runAutonomousMission();`;
               </div>
             )}
 
-            {/* 1. Sandbox Simulated Viewport */}
-            {activeOutputTab === 'sandbox' && (
-              <div className="max-w-4xl mx-auto space-y-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-                  {/* Simulated Browser Bar */}
-                  <div className="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-white font-sans font-semibold">Simulated DOM Viewport</span>
-                      <span className="text-slate-600">|</span>
-                      <span className="text-slate-300 truncate">{activeTab?.url || 'https://google.com'}</span>
-                    </div>
-                    <span className="text-indigo-400 font-bold text-[11px] shrink-0">
-                      STEP {currentAction.stepNumber}/5: {currentAction.actionType}
-                    </span>
-                  </div>
-
-                  {/* Visual Web Canvas with simulated elements & highlight target */}
-                  <div className="relative w-full h-[460px] bg-slate-900 p-6 overflow-hidden">
-                    {/* Simulated page content mockup */}
-                    <div className="space-y-4 text-slate-300 text-xs opacity-70">
-                      <div className="h-6 w-3/5 bg-slate-800 rounded-lg" />
-                      <div className="h-3 w-4/5 bg-slate-800/60 rounded" />
-                      <div className="h-3 w-2/3 bg-slate-800/60 rounded" />
-
-                      {/* Mockup Data Table */}
-                      <div className="mt-6 border border-slate-800 rounded-xl overflow-hidden">
-                        <div className="bg-slate-800/60 p-2.5 font-bold flex justify-between">
-                          <span>Benchmark Feature</span>
-                          <span>Throughput</span>
-                          <span>Verification</span>
-                        </div>
-                        <div className="p-2.5 border-t border-slate-800 flex justify-between text-slate-400">
-                          <span>Quantum Coherence Mitigation</span>
-                          <span>120 μs</span>
-                          <span className="text-emerald-400">Validated</span>
-                        </div>
-                        <div className="p-2.5 border-t border-slate-800 flex justify-between text-slate-400">
-                          <span>Zero-Knowledge Verification</span>
-                          <span>2,400 tps</span>
-                          <span className="text-emerald-400">Validated</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Animated Targeted DOM Element Box */}
-                    <motion.div
-                      animate={{
-                        x: `${currentAction.cursorPos.x}%`,
-                        y: `${currentAction.cursorPos.y}%`,
-                      }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                      className="absolute top-0 left-0 p-3 bg-indigo-500/20 border-2 border-indigo-400 rounded-2xl shadow-xl backdrop-blur-xs flex items-center gap-2 pointer-events-none -translate-x-1/2 -translate-y-1/2 z-10"
-                    >
-                      <MousePointer className="w-4 h-4 text-indigo-400 animate-bounce" />
-                      <span className="font-mono text-[10px] font-bold text-white bg-indigo-600 px-1.5 py-0.5 rounded shadow">
-                        {currentAction.targetSelector}
-                      </span>
-                    </motion.div>
-
-                    {/* Floating HUD status overlay */}
-                    <div className="absolute bottom-4 left-4 right-4 bg-slate-950/90 backdrop-blur-md p-3 rounded-2xl border border-slate-800 flex items-center justify-between text-xs shadow-xl">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-                        <span className="font-bold text-white">{currentAction.label}</span>
-                      </div>
-                      <span className="text-slate-400 font-mono text-[11px] truncate max-w-sm">
-                        {currentAction.detail}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. Strategic Executive Dossier View */}
             {activeOutputTab === 'dossier' && (
               <div className="max-w-4xl mx-auto space-y-6">
                 {isRunning ? (
-                  <div className="h-80 flex flex-col items-center justify-center text-center space-y-4 max-w-md mx-auto">
-                    <div className="relative">
-                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                        <Bot className="w-8 h-8 animate-pulse" />
-                      </div>
-                      <div className="absolute -inset-1 rounded-2xl bg-indigo-500/20 blur-md -z-10 animate-pulse" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white mb-1">Synthesizing Mission Deliverable...</h3>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        The autonomous agent is parsing active page semantics, cross-referencing citations, and formatting the strategic dossier.
-                      </p>
-                    </div>
+                  <div className="py-20 text-center space-y-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin mx-auto" />
+                    <p className="text-xs text-slate-300 font-medium">
+                      Synthesizing mission deliverable...
+                    </p>
                   </div>
                 ) : agentResult ? (
-                  <div className="space-y-6">
-                    <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                      <span className="font-mono">Objective: <strong className="text-white font-sans">{goal}</strong></span>
-                      <span className="text-emerald-400 font-mono font-bold">Status: Completed</span>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                      <span className="truncate max-w-2xl">
+                        Objective: <strong className="text-white">{goal}</strong>
+                      </span>
+                      <span className="text-emerald-400 font-mono">Completed</span>
                     </div>
-                    <div className="prose prose-invert prose-indigo max-w-none text-slate-200 text-xs leading-relaxed">
-                      <ReactMarkdown>{agentResult}</ReactMarkdown>
+                    <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 prose prose-invert prose-sm max-w-none text-slate-200 leading-relaxed">
+                      <Markdown>{agentResult}</Markdown>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-80 flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 text-slate-500">
-                    <BrainCircuit className="w-12 h-12 stroke-[1.5] text-slate-600" />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-300 mb-1">Ready for Mission Deployment</h3>
-                      <p className="text-xs text-slate-400">
-                        Select a mission blueprint on the left or write your custom goal, then launch the autonomous agent.
-                      </p>
-                    </div>
+                  <div className="py-20 text-center space-y-2 text-slate-500 text-xs">
+                    <BrainCircuit className="w-8 h-8 mx-auto text-slate-600" />
+                    <p className="text-slate-300 font-medium">Ready for mission deployment</p>
+                    <p>Configure your target context and click Run Agent Mission.</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* 3. Structured Dataset View */}
+            {activeOutputTab === 'context' && (
+              <div className="max-w-4xl mx-auto space-y-4">
+                {capturedContext ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                      <div className="text-xs font-semibold text-white">{capturedContext.title}</div>
+                      <div className="text-xs font-mono text-cyan-400 truncate">{capturedContext.url}</div>
+                      <div className="text-xs text-slate-400 font-mono tabular-nums">
+                        {capturedContext.textLength.toLocaleString()} characters · {capturedContext.headings.length} headings captured
+                      </div>
+                    </div>
+
+                    {capturedContext.headings.length > 0 && (
+                      <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                        <div className="text-xs font-medium text-slate-300">Extracted DOM Headings</div>
+                        <ul className="space-y-1 text-xs text-slate-400 font-mono">
+                          {capturedContext.headings.map((h, i) => (
+                            <li key={i}>· {h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                      <div className="text-xs font-medium text-slate-300">Captured Content Excerpt</div>
+                      <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
+                        {capturedContext.excerpt || '(No text content extracted from this tab.)'}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-20 text-center text-slate-500 text-xs">
+                    Run a mission to inspect real captured DOM headings and page text.
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeOutputTab === 'data' && (
               <div className="max-w-4xl mx-auto space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Database className="w-4 h-4 text-indigo-400" />
-                    Extracted Structured Data Objects
-                  </h2>
+                  <span className="text-xs font-semibold text-white">
+                    Extracted Structured JSON
+                  </span>
                   {extractedJsonData && (
                     <button
                       onClick={() => {
@@ -1081,7 +858,7 @@ runAutonomousMission();`;
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"
                     >
                       {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>Copy JSON</span>
@@ -1090,43 +867,39 @@ runAutonomousMission();`;
                 </div>
 
                 {extractedJsonData ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto text-xs font-mono text-indigo-300">
-                      <pre>{JSON.stringify(extractedJsonData, null, 2)}</pre>
-                    </div>
-                  </div>
+                  <pre className="p-4 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto text-xs font-mono text-cyan-300">
+                    {JSON.stringify(extractedJsonData, null, 2)}
+                  </pre>
                 ) : (
-                  <div className="h-64 flex items-center justify-center text-slate-600 italic text-xs">
-                    Run an agent mission to extract structured JSON data.
+                  <div className="py-20 text-center text-slate-500 text-xs">
+                    Run a mission in Multi-Agent Pipeline mode to extract structured JSON.
                   </div>
                 )}
               </div>
             )}
 
-            {/* 4. Executable Browser Automation Recipe */}
             {activeOutputTab === 'recipe' && (
               <div className="max-w-4xl mx-auto space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-purple-400" />
-                    Executable Browser Automation Recipe (Playwright / Puppeteer)
-                  </h2>
+                  <span className="text-xs font-semibold text-white">
+                    Playwright Automation Script
+                  </span>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(generatedAutomationScript);
                       setCopiedCode(true);
                       setTimeout(() => setCopiedCode(false), 2000);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer"
                   >
                     {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedCode ? 'Copied Script!' : 'Copy Script'}</span>
+                    <span>{copiedCode ? 'Copied' : 'Copy Script'}</span>
                   </button>
                 </div>
 
-                <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto text-xs font-mono text-emerald-400">
-                  <pre>{generatedAutomationScript}</pre>
-                </div>
+                <pre className="p-4 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto text-xs font-mono text-emerald-400">
+                  {generatedAutomationScript}
+                </pre>
               </div>
             )}
           </div>
